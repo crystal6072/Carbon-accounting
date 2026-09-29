@@ -1,0 +1,38 @@
+/* 物料库（基础库 A1-1）：轻量基础数据（列表 + 查看 / 新增 / 编辑弹窗，支持批量启用 / 停用） */
+/* 通用内容块（.view-block / .char-count）已上移至 shared/styles/global.css，供各模块复用 */
+
+/* 列表：列较多，容器内横向滚动兜底，并收紧单元格留白避免窄窗口下内容折行 */
+.material-table-wrap {
+  overflow-x: auto;
+}
+.material-table-wrap .data-table thead th,
+.material-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.material-table-wrap .data-table .cell-ellipsis {
+  display: block;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 批量选择列 */
+.material-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 描述字数统计（右下角 12px） */
+.char-count {
+  margin-top: var(--space-xxs);
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.char-count-over {
+  color: var(--color-error);
+}

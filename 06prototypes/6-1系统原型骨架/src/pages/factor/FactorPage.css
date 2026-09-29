@@ -1,0 +1,220 @@
+/* 排放因子库（核算模型 A2-6 / A2-7）：列表 + 独立详情页 + 独立新增 / 编辑页 */
+
+/* 页面纵向分块（详情 / 表单页） */
+.factor-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 分块标题栏 */
+.factor-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.factor-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.factor-section-body {
+  padding: var(--space-lg);
+}
+.factor-section-flush {
+  padding: 0;
+}
+/* 分块底部说明（规则口径提示） */
+.factor-section-tip {
+  border-top: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* 详情页跨行字段 */
+.factor-detail-item-full {
+  grid-column: 1 / -1;
+}
+
+/* 批量选择列 */
+.factor-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 列表：列较多，容器内横向滚动兜底，并收紧单元格留白 */
+.factor-table-wrap {
+  overflow-x: auto;
+}
+.factor-table-wrap .data-table thead th,
+.factor-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 列表：固定「操作」列（最后一列吸附右侧，不随横向滚动） */
+.factor-table-sticky .data-table th:last-child,
+.factor-table-sticky .data-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--color-bg-container);
+  box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18);
+}
+.factor-table-sticky .data-table thead th:last-child {
+  z-index: 3;
+  background: var(--color-bg-spotlight);
+}
+.factor-table-sticky .data-table tbody tr:hover td:last-child {
+  background: var(--color-bg-hover);
+}
+
+/* 表单页底部操作栏 */
+.factor-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+
+/* 批量结果摘要 */
+.factor-batch-summary {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+.factor-batch-summary strong {
+  color: var(--color-text);
+}
+
+/* 只读文本（来源 / 提示等不可编辑项） */
+.factor-readonly {
+  display: flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 11px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-disabled);
+  color: var(--color-text-secondary);
+}
+
+/* Tab 切换（因子信息 / 来源信息） */
+.factor-tabs {
+  display: flex;
+  gap: var(--space-lg);
+  padding: 0 var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.factor-tab {
+  position: relative;
+  padding: var(--space-md) 0;
+  border: none;
+  background: none;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.factor-tab:hover {
+  color: var(--color-primary);
+}
+.factor-tab-active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.factor-tab-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+/* 弹窗内表格：限高滚动（引入后台因子 / 导入说明） */
+.factor-modal-table {
+  max-height: 320px;
+  overflow: auto;
+}
+.factor-modal-table .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-bg-spotlight);
+}
+
+/* 导入流程步骤 */
+.factor-import-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-lg);
+}
+
+/* 导入：校验 / 上传错误提示 */
+.factor-import-error {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+/* 导入模板：必填标记 */
+.factor-import-required {
+  color: var(--color-error);
+}
+
+/* 列表工具栏：只读因子提示（行内） */
+.factor-inline-warn {
+  color: var(--color-warning);
+}
+
+/* 数据来源文件选择 */
+.factor-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xxs);
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+.factor-upload:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.factor-upload-plus {
+  font-size: 24px;
+  line-height: 1;
+}
+.factor-upload-filled {
+  flex-direction: row;
+  justify-content: space-between;
+  min-height: auto;
+  color: var(--color-text);
+  cursor: default;
+}
+.factor-upload-filled:hover {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}

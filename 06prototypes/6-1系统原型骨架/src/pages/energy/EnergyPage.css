@@ -1,0 +1,32 @@
+/* 能源库（基础库 A1-2）：轻量基础数据（列表 + 查看 / 新增 / 编辑弹窗，支持批量启用 / 停用） */
+
+/* 列表：列较多，容器内横向滚动兜底，并收紧单元格留白避免窄窗口下内容折行 */
+.energy-table-wrap {
+  overflow-x: auto;
+}
+.energy-table-wrap .data-table thead th,
+.energy-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.energy-table-wrap .data-table .cell-ellipsis {
+  display: block;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 批量选择列 */
+.energy-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 表单辅助说明（能源类型口径） */
+.energy-form-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}

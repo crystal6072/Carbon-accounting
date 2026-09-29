@@ -1,0 +1,68 @@
+/* 计量单位库（基础库 A1-9）：列表 + 独立详情页 + 独立新增 / 编辑页 */
+
+/* 页面纵向分块（详情 / 表单页） */
+.unit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 分块标题栏 */
+.unit-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.unit-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.unit-section-body {
+  padding: var(--space-lg);
+}
+.unit-section-flush {
+  padding: 0;
+}
+/* 分块底部说明（规则口径提示） */
+.unit-section-tip {
+  border-top: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* 详情页跨行字段 */
+.detail-item.full {
+  grid-column: 1 / -1;
+}
+
+/* 批量选择列 */
+.unit-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 列表：列较多，容器内横向滚动兜底，并收紧单元格留白避免窄窗口下内容折行 */
+.unit-table-wrap {
+  overflow-x: auto;
+}
+.unit-table-wrap .data-table thead th,
+.unit-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 表单页底部操作栏 */
+.unit-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}

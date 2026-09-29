@@ -1,0 +1,69 @@
+---
+description: 竹木系统 UI 设计 Token（色彩/字体/间距/圆角/阴影），源自碳足迹公共服务平台截图
+globs: 06prototypes/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Design Tokens
+
+参考系统：国家碳计量中心碳足迹公共服务平台（Ant Design 风格 B 端后台）。
+Token 文件：`06prototypes/6-1系统原型骨架/src/shared/styles/design-tokens.css`。
+所有新页面/组件必须引用其中的 CSS 变量，禁止硬编码近似色、近似间距。
+
+> 新增颜色 / 间距前先确认 token 是否已存在；确需新增时**先补 token 文件再用**，不得在页面里写一次性数值。
+
+## 色彩
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--color-primary` | `#1890FF` | 主按钮、链接、Tab 下划线、分页当前页 |
+| `--color-primary-hover` | `#4096FF` | 主色 hover |
+| `--color-primary-active` | `#0958D9` | 主色 active/pressed |
+| `--color-primary-bg` | `#E6F4FF` | 选中行、Tag 蓝底、侧栏 hover |
+| `--color-success` | `#52C41A` | 成功状态文字 |
+| `--color-success-bg` | `#F6FFED` | 成功 Tag/统计卡背景 |
+| `--color-warning` | `#FA8C16` | 待处理/警告文字 |
+| `--color-warning-bg` | `#FFF7E6` | 待处理 Tag/统计卡背景 |
+| `--color-error` | `#FF4D4F` | 删除链接、必填星号、错误提示 |
+| `--color-error-bg` | `#FFF2F0` | 错误提示背景 |
+| `--color-text` | `#262626` | 标题、表格正文 |
+| `--color-text-secondary` | `#595959` | 表单 label、表格次要信息 |
+| `--color-text-tertiary` | `#8C8C8C` | 面包屑、辅助说明 |
+| `--color-text-placeholder` | `#BFBFBF` | 输入框 placeholder |
+| `--color-bg-layout` | `#F0F2F5` | 页面整体背景 |
+| `--color-bg-container` | `#FFFFFF` | 卡片、表格、弹窗、侧栏 |
+| `--color-bg-spotlight` | `#FAFAFA` | 表头、筛选区背景 |
+| `--color-border` | `#D9D9D9` | 输入框、按钮描边、卡片边框 |
+| `--color-border-secondary` | `#F0F0F0` | 表格行分隔线 |
+| `--color-step-active-bg` | `#E6FFFB` | 步骤条当前步背景（浅薄荷绿） |
+
+## 字体
+
+- 字体栈：`"PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif`
+- 页面标题：20px / 600 / line-height 28px
+- 区块标题：16px / 600 / line-height 24px
+- 正文/表格/表单：14px / 400 / line-height 22px
+- 辅助文字/表头：12px / 400 / line-height 20px
+- 大数字（统计卡）：32–36px / 600
+
+## 间距（8px 网格）
+
+- 页面内容区内边距：`24px`（`--space-lg`）
+- 卡片内边距：`24px`；卡片间距：`16px`
+- 表单项纵向间距：`24px`；label 与控件间距：`8px`
+- 按钮组间距：`8px`；表格单元格 padding：`16px 16px`
+- 筛选区表单项横向间距：`16px`
+
+## 圆角与阴影
+
+- 按钮/输入框/Select：`4px`（`--radius-base`）
+- 卡片/Modal：`8px`（`--radius-lg`）
+- Tag/Badge：`2px`
+- 侧栏激活菜单项：`4px`
+- 卡片：`box-shadow: var(--shadow-sm)` 或 `1px solid var(--color-border-secondary)`，不用大阴影
+- Modal 遮罩：`rgba(0,0,0,0.45)`；Modal 阴影：`var(--shadow-base)`
+
+## 禁止
+
+- 不使用竹木原型早期的绿色渐变、大圆角（28px）、毛玻璃侧栏风格
+- 不写「简洁美观」等模糊描述代替具体数值

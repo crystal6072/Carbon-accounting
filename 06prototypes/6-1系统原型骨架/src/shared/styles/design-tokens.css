@@ -1,0 +1,95 @@
+/**
+ * Design Tokens · 产品碳足迹核算系统原型
+ * 参考：国家碳计量中心碳足迹公共服务平台（Ant Design 风格 B 端后台）
+ * 约束：所有页面与组件必须引用本文件变量，禁止硬编码近似色 / 近似间距。
+ */
+:root {
+  /* ===================== 色彩 ===================== */
+  --color-primary: #1890ff;
+  --color-primary-hover: #4096ff;
+  --color-primary-active: #0958d9;
+  --color-primary-bg: #e6f4ff;
+
+  --color-success: #52c41a;
+  --color-success-bg: #f6ffed;
+  --color-warning: #fa8c16;
+  --color-warning-bg: #fff7e6;
+  --color-error: #ff4d4f;
+  --color-error-bg: #fff2f0;
+
+  --color-text: #262626;
+  --color-text-secondary: #595959;
+  --color-text-tertiary: #8c8c8c;
+  --color-text-placeholder: #bfbfbf;
+  --color-text-inverse: #ffffff;
+
+  --color-bg-layout: #f0f2f5;
+  --color-bg-container: #ffffff;
+  --color-bg-spotlight: #fafafa;
+  --color-bg-hover: #fafafa;
+  --color-bg-disabled: #f5f5f5;
+
+  --color-border: #d9d9d9;
+  --color-border-secondary: #f0f0f0;
+  --color-mask: rgba(0, 0, 0, 0.45);
+
+  /* 状态 Tag 描边（比底色深一档） */
+  --color-success-border: #b7eb8f;
+  --color-warning-border: #ffd591;
+  --color-error-border: #ffa39e;
+  --color-primary-border: #91caff;
+
+  /* 步骤条当前步背景（浅薄荷绿） */
+  --color-step-active-bg: #e6fffb;
+
+  /* ===================== 字体 ===================== */
+  --font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-title: 18px;
+  --font-size-page-title: 20px;
+  --font-size-display: 32px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --line-height-xs: 20px;
+  --line-height-base: 22px;
+  --line-height-lg: 24px;
+  --line-height-title: 28px;
+
+  /* ===================== 间距（8px 网格） ===================== */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* ===================== 圆角 ===================== */
+  --radius-sm: 2px;
+  --radius-base: 4px;
+  --radius-lg: 8px;
+
+  /* ===================== 阴影 ===================== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-base: 0 6px 16px rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12);
+
+  /* ===================== Layout 尺寸 ===================== */
+  --header-height: 56px;
+  --sidebar-width: 208px;
+  --sidebar-width-collapsed: 64px;
+  --control-height: 32px;
+  --control-height-sm: 24px;
+
+  /* ===================== 层级 ===================== */
+  --z-header: 100;
+  --z-modal: 1000;
+  --z-toast: 1100;
+}

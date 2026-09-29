@@ -1,0 +1,48 @@
+---
+description: 竹木系统 Layout 规范（顶栏/侧栏/内容区/面包屑/步骤条）
+globs: 06prototypes/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Layout 规范
+
+结构：**顶栏 Header + 左侧 Sidebar + 右侧 Content**，页面背景 `--color-bg-layout`，内容区白底卡片。
+
+实现位置：`src/layouts/BasicLayout.tsx`（+ `BasicLayout.css`）；布局尺寸取自 tokens（`--header-height: 56px`、`--sidebar-width: 208px`）。
+菜单结构唯一来源为 `src/router/menu.ts`，禁止在布局组件里写死菜单项。
+
+## 顶栏 Header
+
+- 高度：`56px`（`--header-height`），背景 `#FFFFFF`，底边 `1px solid #F0F0F0`
+- 左侧：Logo + 系统名称（14–16px 加粗）
+- 中部：一级导航 Tab（工作台、驾驶舱等），inactive `#595959`，active `#1890FF` + 可选下划线
+- 右侧：地区选择器、通知铃铛、用户头像+名称；间距 `16px`
+
+## 侧栏 Sidebar
+
+- 宽度：`208px`（`--sidebar-width`），背景 `#FFFFFF`，右边框 `1px solid #F0F0F0`
+- 模块标题（如「产品碳足迹核算」）：14px 加粗 `#1890FF`，上内边距 `16px`
+- 菜单项：高 `40px`，左右 padding `16px`，14px 文字 + 16px 线性图标
+- **激活态**：背景 `#1890FF`，文字/图标 `#FFFFFF`，圆角 `4px`，左右 margin `8px`
+- **默认态**：文字 `#595959`；hover 背景 `#E6F4FF`
+- 可展开项：右侧 chevron；子菜单缩进 `24px`
+
+## 内容区 Content
+
+- padding：`24px`；最小宽度 `1280px`
+- 面包屑：12–13px，`#8C8C8C`，分隔符 `/`，当前页 `#1890FF` 或 `#262626`
+- 页面标题（内容区顶部）：18–20px 加粗，距面包屑 `8px`
+- 主内容容器：白底卡片，圆角 `8px`，padding `24px`，可选 `1px #F0F0F0` 边框
+
+## 步骤条 Stepper（配置/向导页）
+
+- 横向 3–4 步，chevron 箭头连接
+- 当前步：背景 `#E6FFFB`，序号圆圈 `#1890FF` 白字
+- 未完成：白底 + `#D9D9D9` 边框，序号 `#8C8C8C`
+- 底部操作栏：右对齐，「上一步」ghost + 「下一步」primary，间距 `8px`
+
+## 分栏工作区（配置详情页）
+
+- 左树右表：左栏宽约 `240px`，右边 flex:1
+- 左树选中：背景 `#E6F4FF`，左侧可选 `3px #1890FF` 指示条
+- 底部固定操作栏：白底，上边框 `1px #F0F0F0`，padding `12px 24px`，按钮右对齐

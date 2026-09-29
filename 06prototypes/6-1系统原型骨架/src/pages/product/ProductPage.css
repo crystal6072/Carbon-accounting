@@ -1,0 +1,517 @@
+/* 产品信息库：完整主数据（列表 / 详情 / 新增编辑） */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.section-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.section-body {
+  padding: var(--space-lg);
+}
+.section-body-flush {
+  padding: 0;
+}
+
+/* 折叠面板（操作日志） */
+.collapse-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.collapse-trigger:hover {
+  color: var(--color-primary);
+}
+.collapse-caret {
+  display: inline-flex;
+  transition: transform 0.2s;
+  color: var(--color-text-tertiary);
+}
+.collapse-caret.expanded {
+  transform: rotate(90deg);
+}
+
+/* 子表区（工艺 / 工序） */
+.sub-block {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  margin-bottom: var(--space-md);
+  overflow: hidden;
+}
+.sub-block:last-child {
+  margin-bottom: 0;
+}
+.sub-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-spotlight);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.sub-block-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: var(--font-weight-medium);
+}
+.sub-block-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* 投入 / 产出清单 */
+.flow-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.flow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+  color: var(--color-text-secondary);
+}
+.flow-chip-in {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+.flow-chip-out {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+.flow-qty {
+  color: var(--color-text-tertiary);
+}
+.template-flag {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+}
+
+/* 列表列数较多：容器内横向滚动兜底，并收紧单元格留白避免窄窗口下内容折行 */
+.product-table-wrap {
+  overflow-x: auto;
+}
+.product-table-wrap .data-table thead th,
+.product-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+/* 产品名称过长时省略号截断，保证行高一致（完整值见 title 与详情页） */
+.product-table-wrap .data-table .cell-ellipsis {
+  display: block;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 产品图片（选填，原型仅本地预览） */
+.image-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.image-thumb {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+}
+.image-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+.image-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* 表单页 */
+.form-block {
+  padding: var(--space-lg) var(--space-lg) 0;
+}
+.form-block-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-md);
+  padding-left: var(--space-xs);
+  border-left: 3px solid var(--color-primary);
+  line-height: 16px;
+}
+.form-page-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+.form-tip {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* 组合编辑器 */
+.compose-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1.6fr) 64px;
+  gap: var(--space-sm);
+  align-items: center;
+}
+/* 列表模式下工序投入 / 产出数据项明细 */
+.flow-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+.flow-detail-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.flow-detail-label {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.compose-seq {
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.compose-row-head {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.compose-empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+}
+
+/* 工艺与工序：画布 / 列表视图切换 */
+.pcf-view-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+}
+.pcf-view-switch button {
+  padding: 2px 12px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.pcf-view-switch button.active {
+  background: var(--color-bg-container);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 产品工艺与工序 · 流程画布（只读） */
+.pcf-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+.pcf-canvas-toolbar .toolbar-tip {
+  margin-left: var(--space-xs);
+}
+.pcf-canvas-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 画布舞台：网格纸背景 + 横向滚动 */
+.pcf-flow-stage {
+  overflow-x: auto;
+  background-color: var(--color-bg-container);
+  background-image: linear-gradient(var(--color-border-secondary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-secondary) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.flow-track {
+  display: flex;
+  align-items: center;
+  min-width: max-content;
+  padding: 34px var(--space-lg);
+}
+.flow-empty {
+  padding: var(--space-lg);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 节点之间的虚线连接 + 箭头 */
+.flow-link {
+  position: relative;
+  flex: 0 0 auto;
+  width: 76px;
+  height: 2px;
+  margin: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 2px dashed var(--color-text-placeholder);
+}
+.flow-link::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -5px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 7px solid var(--color-text-placeholder);
+}
+
+/* 工序节点（只读） */
+.flow-node {
+  position: relative;
+  flex: 0 0 auto;
+  width: 244px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  box-shadow: var(--shadow-base);
+  cursor: pointer;
+}
+.flow-node:hover {
+  border-color: var(--color-primary-hover);
+}
+.flow-node-selected {
+  box-shadow: 0 0 0 2px var(--color-primary-bg), var(--shadow-base);
+}
+.flow-node-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+.flow-node-seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+}
+.flow-node-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+.flow-node-close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  padding: 0 2px;
+  color: var(--color-text-tertiary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.flow-node-close:hover {
+  color: var(--color-error);
+}
+.flow-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.flow-node-sep {
+  color: var(--color-text-placeholder);
+}
+.flow-node-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.flow-node-flow-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 节点上下锚点（视觉锚点） */
+.flow-node-anchor {
+  position: absolute;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--color-primary);
+  background: var(--color-bg-container);
+}
+.flow-node-anchor-top {
+  top: -5px;
+}
+.flow-node-anchor-bottom {
+  bottom: -5px;
+}
+
+/* 末尾「+ 添加工序」 */
+.flow-node-add {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 64px;
+  margin-left: var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+.flow-node-add:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* 工序详情弹窗内的只读分组 */
+.op-view-block {
+  margin-top: var(--space-md);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+}
+.op-view-block .section-header {
+  padding: var(--space-xs) var(--space-md);
+}
+.process-table-wrap {
+  overflow-x: auto;
+}
+.process-table-wrap .data-table thead th,
+.process-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 画布全屏 */
+.pcf-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-layout);
+}
+.pcf-fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  height: var(--header-height);
+  padding: 0 var(--space-lg);
+  background: var(--color-bg-container);
+  border-bottom: 1px solid var(--color-border-secondary);
+  flex-shrink: 0;
+}
+.pcf-fullscreen-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.pcf-fullscreen-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+/* 全屏：画布内容区域撑满整屏（工具栏保留在顶部） */
+.pcf-fullscreen .pcf-fullscreen-body {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md) var(--space-lg);
+}
+.pcf-fullscreen .pcf-canvas-toolbar {
+  flex-shrink: 0;
+  margin-bottom: var(--space-sm);
+}
+.pcf-fullscreen .pcf-canvas-body {
+  flex: 1;
+  min-height: 0;
+}
+.pcf-fullscreen .pcf-canvas-body > .sub-block {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pcf-fullscreen .pcf-flow-stage {
+  flex: 1;
+  min-height: 0;
+}
+.pcf-fullscreen .flow-track {
+  min-height: 100%;
+  box-sizing: border-box;
+}

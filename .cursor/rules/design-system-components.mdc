@@ -1,0 +1,82 @@
+---
+description: 竹木系统通用组件规范（Button/Input/Table/Modal/Tree/Tag/Pagination/Toast 等）
+globs: 06prototypes/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# 组件规范
+
+> 组件实现位置：`06prototypes/6-1系统原型骨架/src/shared/components/`，统一从 `@/shared/components` 具名导入。
+> 组件样式类定义在 `src/shared/styles/global.css`，颜色/间距全部引用 design tokens。
+
+## Button
+
+| 类型 | 样式 |
+|------|------|
+| Primary | 背景 `#1890FF`，文字 `#FFF`，高 32px，padding `4px 15px`，圆角 4px；hover `#4096FF` |
+| Default | 白底，`1px #D9D9D9` 边框，文字 `#262626`；hover 边框/文字 `#1890FF` |
+| Ghost/链接 | 无边框，文字 `#1890FF`；危险操作用 `#FF4D4F`（如「删除」） |
+| Disabled | 背景 `#F5F5F5`，文字 `#BFBFBF`，不可点击 |
+
+主按钮可带 `+` 或箭头图标；表格行内操作为文字链接，不用实心按钮。
+
+## Input / Select / Textarea
+
+- 高 32px（Textarea 最小 80px），圆角 4px，边框 `#D9D9D9`
+- padding `4px 11px`；placeholder `#BFBFBF`
+- focus：边框 `#1890FF`，外发光 `0 0 0 2px rgba(24,144,255,0.2)`
+- 搜索框：右侧放大镜图标；Select 右侧 chevron
+- 表单 label 在上、控件在下；必填红色 `*` 在 label 前
+- 字数统计：右下角 12px `#8C8C8C`（如 `15/64`）
+
+## Table
+
+- 表头：背景 `#FAFAFA`，文字 14px `#262626` 或 `#595959`，高 ~55px
+- 行：高 ~54px，仅水平分隔线 `#F0F0F0`，无竖线
+- 行 hover：`#FAFAFA`
+- 操作列：链接 `#1890FF`（配置/编辑/复制），删除 `#FF4D4F`，间距 12px
+- 可折叠分组：左侧 chevron + 标题（如「输入项 (11)」）
+- 空状态：居中灰色提示文字
+
+## Modal 弹窗
+
+- 宽度：表单 520–560px；遮罩 `rgba(0,0,0,0.45)`
+- 圆角 8px，白底，shadow `var(--shadow-base)`
+- Header：标题 16px 加粗左对齐，右上 ✕ 关闭；padding `16px 24px`，底边 `#F0F0F0`
+- Body：padding `24px`，表单纵向排列
+- Footer：右对齐，「取消」Default + 「确定」Primary；padding `10px 16px`，顶边 `#F0F0F0`
+
+## Tree 树形导航
+
+- 节点高 32–36px，14px 文字；展开/收起 caret
+- 选中：背景 `#E6F4FF`，文字 `#1890FF`
+- 可选左侧 3px 主色指示条；层级缩进 16px
+
+## Tag / Badge
+
+- 高 ~22px，padding `0 8px`，圆角 2px，12px 文字
+- 默认：背景 `#FAFAFA`，文字 `#595959`，边框 `#D9D9D9`
+- 状态：待处理 `#FFF7E6`/`#FA8C16`；已完成 `#F6FFED`/`#52C41A`；信息 `#E6F4FF`/`#1890FF`
+
+## Tabs
+
+- 线型 Tab：inactive `#595959`，active `#1890FF` + 2px 下划线
+- Tab 间距 32px，padding bottom 12px
+
+## Pagination 分页
+
+- 右对齐；总数文字 14px `#595959`
+- 页码：32×32，当前页背景 `#1890FF` 白字，其余白底 `#D9D9D9` 边框
+- 含每页条数 Select、「跳至」输入框
+
+## 统计卡片（工作台）
+
+- 白底圆角 8px，padding 24px；大数字 32px 加粗
+- 欢迎横幅：浅绿渐变背景 `#F6FFED → #FFFFFF`
+- 任务卡片：左侧信息 + 右侧「去完成」Primary 按钮；状态 Tag 区分颜色
+
+## 实现约定
+
+- 优先使用 CSS 变量 + 语义化 class（如 `.btn-primary`、`.data-table`）
+- 新组件样式写在 `global.css` 或模块 CSS，遵循上述 token
+- 交互必须包含 hover；disabled/loading 需视觉区分

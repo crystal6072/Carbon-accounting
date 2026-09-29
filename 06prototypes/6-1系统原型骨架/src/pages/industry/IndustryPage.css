@@ -1,0 +1,63 @@
+/* 行业库（基础库 A1-4）：轻量行业字典 —— 左树 + 右表 + 弹窗，交互对齐「产品分类」 */
+
+/* 轻量配置工作台：左树 + 右表 */
+.workbench {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.workbench-tree {
+  width: 232px;
+  flex-shrink: 0;
+  padding: var(--space-sm);
+  border-right: 1px solid var(--color-border-secondary);
+  overflow-y: auto;
+}
+.workbench-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xs) var(--space-xs);
+  margin-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.workbench-tree-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+.workbench-tree-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-border-secondary);
+}
+
+.workbench-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 右侧详情面板（选中左树节点时展示） */
+.industry-detail {
+  padding: var(--space-sm) var(--space-md) var(--space-lg);
+  overflow-y: auto;
+}
+.industry-detail-text {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base, 1.6);
+  white-space: pre-wrap;
+}
+.workbench-table-wrap {
+  overflow-x: auto;
+}
+/* 收紧单元格横向留白，把宽度让给「操作」列，避免窄窗口下表格被挤出卡片 */
+.workbench .data-table thead th,
+.workbench .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}

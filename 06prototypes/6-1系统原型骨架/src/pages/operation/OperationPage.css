@@ -1,0 +1,196 @@
+/* 工序（工艺库 A1-8）：完整主数据（列表 / 详情 / 新增编辑，带投入项 / 产出项两张子表） */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.section-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.section-body {
+  padding: var(--space-lg);
+}
+.section-body-flush {
+  padding: 0;
+}
+
+/* 折叠面板（操作日志） */
+.collapse-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.collapse-trigger:hover {
+  color: var(--color-primary);
+}
+.collapse-caret {
+  display: inline-flex;
+  transition: transform 0.2s;
+  color: var(--color-text-tertiary);
+}
+.collapse-caret.expanded {
+  transform: rotate(90deg);
+}
+
+/* 表单页 */
+.form-block {
+  padding: var(--space-sm) var(--space-lg) var(--space-md);
+}
+.form-tip {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-xs);
+}
+.form-page-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-bg-container);
+}
+
+/* 工序图标（选填，原型仅本地预览） */
+.image-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.image-thumb {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+}
+.image-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+.image-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* 列表：列较多，容器内横向滚动兜底 */
+.operation-table-wrap {
+  overflow-x: auto;
+}
+.operation-table-wrap .data-table thead th,
+.operation-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.operation-table-wrap .data-table .cell-ellipsis {
+  display: block;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 按工序类型分组展示 */
+.operation-group-wrap {
+  padding: var(--space-sm) 0 0;
+}
+.operation-group {
+  border-top: 1px solid var(--color-border-secondary);
+}
+.operation-group:first-child {
+  border-top: none;
+}
+.operation-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-bg-spotlight);
+}
+
+/* 投入项 / 产出项编辑子表（只维护数据项：流类型 + 物料 + 单位；数量不在此填写） */
+.flow-editor-scroll {
+  overflow-x: auto;
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+}
+.flow-editor-empty {
+  min-width: 640px;
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+}
+.flow-row {
+  display: grid;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-bottom: var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
+}
+.flow-row-input {
+  grid-template-columns: 40px 118px minmax(200px, 1.5fr) 100px 200px minmax(160px, 1fr) 56px;
+  min-width: 900px;
+}
+.flow-row-output {
+  grid-template-columns: 40px 112px minmax(180px, 1.4fr) 96px 104px 200px minmax(150px, 1fr) 56px;
+  min-width: 1080px;
+}
+.flow-row-head {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-secondary);
+  border-radius: 0;
+  margin-bottom: var(--space-xs);
+}
+.flow-row:not(.flow-row-head) {
+  padding: var(--space-xs);
+}
+.flow-row:not(.flow-row-head):hover {
+  background: var(--color-bg-hover);
+}
+.flow-row-error {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+.flow-seq {
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.flow-static {
+  color: var(--color-text-placeholder);
+  text-align: center;
+}

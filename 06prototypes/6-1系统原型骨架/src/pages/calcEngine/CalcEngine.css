@@ -1,0 +1,257 @@
+/* 计算引擎配置（后台管理 → 核算模型 → 计算引擎配置）：
+   计算公式（列表 / 表单 / 详情）+ 公式试算 + 配置公式键盘 */
+
+/* 页面纵向分块（详情 / 表单页） */
+.ce-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 分块标题栏 */
+.ce-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.ce-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.ce-section-body {
+  padding: var(--space-lg);
+}
+.ce-section-flush {
+  padding: 0;
+}
+/* 分块底部说明（规则口径提示） */
+.ce-section-tip {
+  border-top: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+.ce-section-tip strong {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 详情页跨行字段 */
+.ce-detail-item-full {
+  grid-column: 1 / -1;
+}
+
+/* 列表：列较多时容器内横向滚动兜底，并收紧单元格留白 */
+.ce-table-wrap {
+  overflow-x: auto;
+}
+.ce-table-wrap .data-table thead th,
+.ce-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+/* 固定「操作」列（吸附右侧，不随横向滚动） */
+.ce-table-sticky .data-table th:last-child,
+.ce-table-sticky .data-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--color-bg-container);
+  box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18);
+}
+.ce-table-sticky .data-table thead th:last-child {
+  z-index: 3;
+  background: var(--color-bg-spotlight);
+}
+.ce-table-sticky .data-table tbody tr:hover td:last-child {
+  background: var(--color-bg-hover);
+}
+
+/* 表单页底部操作栏 */
+.ce-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+
+.ce-add-row {
+  margin-top: var(--space-md);
+}
+
+/* 公式预览（受控表达式只读展示） */
+.ce-expression {
+  padding: 8px 11px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+/* 试算结果 */
+.ce-test-result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-radius: var(--radius-base);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+}
+.ce-test-result-label {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+.ce-test-result-value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.ce-test-error {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-base);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+  font-size: var(--font-size-base);
+}
+
+/* ============ 配置计算公式（键盘 + 数据因素点选） ============ */
+
+.ce-expr-preview {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  word-break: break-all;
+  min-height: var(--control-height);
+}
+.ce-expr-builder {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+}
+.ce-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 56px);
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+.ce-key {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.ce-key:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.ce-key-op {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.ce-key-op:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--color-text-inverse);
+}
+.ce-factor-panel {
+  flex: 1;
+  min-width: 0;
+  padding-left: var(--space-lg);
+  border-left: 1px solid var(--color-border-secondary);
+}
+.ce-factor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+.ce-chip {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-border);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+.ce-chip:hover {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.ce-factor-empty {
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.ce-expr-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+/* 数据因素行（算法配置） */
+.ce-factor-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.ce-factor-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.ce-factor-label {
+  flex-shrink: 0;
+  width: 84px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+.ce-factor-row .input,
+.ce-factor-row .select {
+  width: auto;
+  min-width: 140px;
+}
+.ce-factor-value {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-height);
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-disabled);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+

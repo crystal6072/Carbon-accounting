@@ -1,0 +1,77 @@
+/* 生命周期阶段（基础库 A1-10）：轻量基础数据，单页 + 弹窗维护（与物料库 / 能源库同构） */
+
+/* 列表：列较多，容器内横向滚动兜底 */
+.lifecycle-table-wrap {
+  overflow-x: auto;
+}
+.lifecycle-table-wrap .data-table thead th,
+.lifecycle-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 阶段名称单元格：一级优先展示，二级缩进展示其归属 */
+.stage-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+.stage-indent {
+  color: var(--color-text-placeholder);
+  font-family: var(--font-family-mono);
+}
+.stage-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-name-primary {
+  font-weight: var(--font-weight-medium);
+}
+.stage-name-child {
+  color: var(--color-text-secondary);
+}
+.stage-child-count {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* 适用行业单元格：全行业通用弱化展示 */
+.industry-cell {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.industry-common {
+  color: var(--color-text-tertiary);
+}
+
+/* 查看弹窗：两个边界的纳入规则（Tag + 三态含义提示） */
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.rule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+.rule-label {
+  flex-shrink: 0;
+  width: 96px;
+  color: var(--color-text-tertiary);
+}
+.rule-value {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  color: var(--color-text);
+}
+.form-tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-xs);
+}

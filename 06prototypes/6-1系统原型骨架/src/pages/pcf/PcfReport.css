@@ -1,0 +1,471 @@
+/* 工作台步骤⑤「报告生成与编辑」专用样式（批次 6）
+   通用面板 / 表格 / 提示条复用 PcfPage.css，此处仅补充报告区结构样式 */
+
+/* 生成区：模板选择 + 生成动作 */
+.pcf-report-gen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pcf-report-gen-label {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.pcf-report-gen .select {
+  min-width: 260px;
+}
+
+.pcf-report-gen-hint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 生成区说明（生成前需先补充必要信息） */
+.pcf-report-gen-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 20px;
+}
+
+/* 产品图片上传（本期支持，选填；原型本地预览） */
+.pcf-report-image-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.pcf-report-image-thumb {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+}
+
+.pcf-report-image-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+
+.pcf-report-image-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* 报告正文「产品图片」（Word 预览控件内） */
+.pcf-report-kv-image {
+  max-width: 200px;
+  max-height: 120px;
+  display: block;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+}
+
+/* 必填标记 */
+.pcf-report-req {
+  margin-left: 3px;
+  font-style: normal;
+  color: #d93026;
+}
+
+/* 「填写报告信息」弹窗内容区（内容较长，弹窗内滚动） */
+.pcf-report-form-body {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pcf-report-form-body .pcf-form-tip {
+  margin-bottom: 14px;
+}
+
+/* 封面与概况信息：两列表单栅格 */
+.pcf-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+.pcf-report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pcf-report-field-full {
+  grid-column: 1 / -1;
+}
+
+.pcf-report-field-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pcf-report-field-value {
+  min-width: 0;
+}
+
+.pcf-report-readonly {
+  display: block;
+  font-size: 13px;
+  color: #1f2937;
+  line-height: 20px;
+  word-break: break-all;
+}
+
+.pcf-report-sub-title {
+  margin: 16px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  border-left: 3px solid #2f7d4f;
+  padding-left: 8px;
+}
+
+/* 报告正文（文档式呈现） */
+.pcf-report-doc {
+  padding: 4px 2px 8px;
+}
+
+.pcf-report-preview-head {
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #d1d5db;
+  margin-bottom: 14px;
+}
+
+.pcf-report-preview-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pcf-report-preview-head p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.pcf-report-chapter {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.pcf-report-para {
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: #1f2937;
+}
+
+.pcf-report-kv {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0 10px;
+}
+
+.pcf-report-kv-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pcf-report-kv-row:last-child {
+  border-bottom: none;
+}
+
+.pcf-report-kv-label {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.pcf-report-kv-value {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  word-break: break-all;
+}
+
+/* 图 2 占位 */
+.pcf-report-figure {
+  margin: 12px 0 4px;
+  padding: 28px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  background: #fafbfc;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pcf-report-figure-tip {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 动作区 */
+.pcf-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* 报告文件卡：页面主体不平铺正文，正文在「Word 预览控件」中查看 */
+.pcf-report-file {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pcf-report-file-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: #2b579a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.pcf-report-file-main {
+  flex: 1;
+  min-width: 220px;
+}
+
+.pcf-report-file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  word-break: break-all;
+}
+
+.pcf-report-file-meta {
+  margin-top: 4px;
+  display: flex;
+  gap: 6px 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pcf-report-file-actions {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* 说明性章节编辑（表单式，不铺开成文档） */
+.pcf-report-section-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pcf-report-section-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pcf-report-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ===================== Word 预览控件（原型模拟 Office 在线预览） ===================== */
+
+.pcf-word-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pcf-word-dialog {
+  width: min(1120px, 100%);
+  height: min(88vh, 880px);
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.pcf-word-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pcf-word-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pcf-word-file-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #2b579a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.pcf-word-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pcf-word-badge {
+  font-size: 11px;
+  color: #6b7280;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.pcf-word-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pcf-word-pager {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.pcf-word-zoom {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.pcf-word-zoom button {
+  width: 26px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+}
+
+.pcf-word-zoom button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.pcf-word-zoom span {
+  min-width: 48px;
+  text-align: center;
+  font-size: 12px;
+  color: #374151;
+}
+
+.pcf-word-scroller {
+  flex: 1;
+  overflow: auto;
+  background: #eef1f5;
+  padding: 18px 0;
+}
+
+.pcf-word-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.pcf-word-sheet {
+  width: 794px;
+  min-height: 1040px;
+  background: #fff;
+  padding: 52px 56px 32px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+}
+
+.pcf-word-sheet-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pcf-word-sheet-footer {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid #eef0f3;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* 纸张内表格收敛：字号下调 + 允许横向滚动，避免撑破 A4 版心 */
+.pcf-word-sheet .data-table {
+  font-size: 12px;
+}
+
+.pcf-word-sheet .data-table th,
+.pcf-word-sheet .data-table td {
+  padding: 5px 6px;
+}
+
+.pcf-word-sheet .pcf-table-wrap {
+  overflow-x: auto;
+}

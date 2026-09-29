@@ -1,0 +1,23 @@
+/** 我的产品库（前台 · P27）页面补充样式；通用布局 / 画布 / 表单类名复用后台产品库 `ProductPage.css` */
+
+.my-source-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.my-source-readonly-tip {
+  color: var(--color-text-tertiary, #909399);
+  font-size: 12px;
+}
+
+.my-reference-modal-tip {
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary, #909399);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.my-batch-tip {
+  margin-top: 8px;
+}

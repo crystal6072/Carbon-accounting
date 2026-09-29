@@ -1,0 +1,1141 @@
+/* 前台业务平台 · 核算项目（P17 / P18 + 项目工作台）：对齐《模块拆分与交互骨架》§4 */
+
+/* ===================== 项目摘要条 ===================== */
+
+.pcf-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.pcf-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+.pcf-summary-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.pcf-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pcf-summary-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* ===================== 顶部步骤条 ===================== */
+
+.pcf-steps-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  margin: 0;
+  padding: var(--space-sm) var(--space-lg);
+  list-style: none;
+  border-bottom: 1px solid var(--color-border-secondary);
+  overflow-x: auto;
+}
+.pcf-steps-bar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  flex-shrink: 0;
+}
+.pcf-steps-bar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-xxs) var(--space-xs);
+  border: none;
+  border-radius: var(--radius-base);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  cursor: default;
+}
+.pcf-steps-bar-btn:not(:disabled) {
+  cursor: pointer;
+}
+.pcf-steps-bar-btn:not(:disabled):hover {
+  background: var(--color-bg-hover);
+}
+.pcf-steps-bar-btn:disabled {
+  color: var(--color-text-placeholder);
+}
+.pcf-steps-bar-item.is-done .pcf-steps-bar-btn {
+  color: var(--color-text);
+}
+.pcf-steps-bar-item.is-active .pcf-steps-bar-btn {
+  background: var(--color-step-active-bg);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.pcf-steps-bar-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-bg-disabled);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+.pcf-steps-bar-item.is-done .pcf-steps-bar-index {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+.pcf-steps-bar-item.is-active .pcf-steps-bar-index {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.pcf-steps-bar-item.is-locked .pcf-steps-bar-index {
+  color: var(--color-text-placeholder);
+}
+.pcf-steps-bar-name {
+  line-height: var(--line-height-base);
+}
+.pcf-steps-bar-tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pcf-steps-bar-line {
+  display: inline-block;
+  width: 12px;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* ===================== 内容区 / 底部状态条 ===================== */
+
+.pcf-content {
+  min-height: 320px;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+.pcf-content-title {
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+.pcf-placeholder {
+  padding: var(--space-xl) var(--space-lg);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+.pcf-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ===================== 新建项目 / 步骤① 表单 ===================== */
+
+.pcf-form-card {
+  padding: var(--space-lg);
+}
+.pcf-form-tip {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-base);
+  background: var(--color-primary-bg);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+
+/* 表格横向滚动容器（列表页字段较多） */
+.pcf-table-wrap {
+  overflow-x: auto;
+}
+
+/* 产品选择弹窗查询区 */
+.pcf-picker-query {
+  margin-bottom: var(--space-sm);
+}
+
+/* 只读态分组标题间距 */
+.pcf-readonly-group + .pcf-readonly-group {
+  margin-top: var(--space-lg);
+}
+
+/* ===================== 步骤表单（分组面板，V0.5 重排） ===================== */
+
+.pcf-step-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.pcf-panel {
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-container);
+}
+
+.pcf-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+.pcf-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.pcf-panel-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+.pcf-panel-tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.pcf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md) var(--space-lg);
+}
+
+/* 同排组合（输入 + 按钮 / 日期区间 / 数值 + 单位） */
+.pcf-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pcf-inline .input {
+  flex: 1;
+  min-width: 0;
+}
+.pcf-inline-sep {
+  color: var(--color-text-tertiary);
+}
+.pcf-unit-select {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+/* 生命周期阶段列表（步骤②） */
+.pcf-stage-list {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+}
+.pcf-stage-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-base);
+}
+.pcf-stage-row:last-child {
+  border-bottom: none;
+}
+.pcf-stage-row-level2 {
+  padding-left: var(--space-xl);
+}
+.pcf-stage-name {
+  flex: 1;
+  min-width: 0;
+}
+.pcf-stage-row.is-off .pcf-stage-name {
+  color: var(--color-text-placeholder);
+}
+.pcf-stage-reason {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+/* 核算工序分组（步骤②） */
+.pcf-stage-group + .pcf-stage-group {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--color-border-secondary);
+}
+.pcf-stage-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+.pcf-op-group + .pcf-op-group {
+  margin-top: var(--space-md);
+}
+.pcf-op-group-title {
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+.pcf-op-flow {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-base);
+}
+
+/* -------- 排放来源（排放因子）弹窗单选 + 单元格回显（步骤②） -------- */
+
+/* 单元格触发区：外形对齐同排 Select 控件 */
+.pcf-factor-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.pcf-factor-picker:hover {
+  border-color: var(--color-primary-hover);
+}
+.pcf-factor-picker.is-empty .pcf-factor-name {
+  color: var(--color-text-placeholder);
+}
+.pcf-factor-picker.is-invalid {
+  border-color: var(--color-error);
+}
+.pcf-factor-picker:hover .pcf-factor-name {
+  color: var(--color-primary);
+}
+.pcf-factor-picker > svg {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+/* 只读态回显：纯文本，不显示下拉箭头 */
+.pcf-factor-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+.pcf-factor-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pcf-factor-value {
+  flex: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+/* 弹窗内表格：限制高度，超出滚动 */
+.pcf-factor-table {
+  max-height: 360px;
+  overflow-y: auto;
+}
+/* 弹窗内表格选中行高亮 */
+.data-table tbody tr.is-picked td {
+  background: var(--color-primary-bg);
+}
+.pcf-factor-tip {
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-base);
+}
+
+/* ===================== 数据填报（步骤④：左树右表） ===================== */
+
+.pcf-fill-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.pcf-fill-tree {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm);
+  max-height: 560px;
+  overflow: auto;
+}
+
+.pcf-fill-tree-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border-secondary);
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pcf-fill-main {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  min-width: 0;
+}
+
+.pcf-fill-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.pcf-tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: 6px var(--space-xs);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+}
+.pcf-tree-level1 {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.pcf-tree-level2 {
+  padding-left: var(--space-md);
+  color: var(--color-text-secondary);
+}
+/* 自定义工艺的工序直接挂在阶段下（跳过工艺层级），可点击选中 */
+.pcf-tree-node.pcf-tree-level2.is-clickable {
+  cursor: pointer;
+}
+.pcf-tree-node.pcf-tree-level2.is-clickable:hover {
+  background: var(--color-bg-spotlight);
+}
+.pcf-tree-node.pcf-tree-level2.is-active {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.pcf-tree-level3 {
+  padding-left: var(--space-xl);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.pcf-tree-level3:hover {
+  background: var(--color-bg-spotlight);
+}
+.pcf-tree-level3.is-active {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.pcf-tree-dot {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+}
+.pcf-tree-tag {
+  flex-shrink: 0;
+  padding: 0 var(--space-xxs);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pcf-tree-remove {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  cursor: pointer;
+  visibility: hidden;
+}
+.pcf-tree-node:hover .pcf-tree-remove {
+  visibility: visible;
+}
+.pcf-tree-empty {
+  margin: var(--space-xxs) 0 var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-base);
+}
+.pcf-tree-warn {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+.pcf-ratio-warn {
+  margin-left: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+/* 面板折叠按钮 */
+.pcf-panel-toggle {
+  border: none;
+  background: transparent;
+  padding: 0 var(--space-xxs) 0 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+/* 活动量动态字段（运输等公式含多个 activity 因素） */
+.pcf-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.pcf-activity-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+.pcf-activity-item > .input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+.pcf-activity-item > .select,
+.pcf-activity-item .pcf-unit-select {
+  flex: 0 0 76px;
+  width: 76px !important;
+  min-width: 0;
+}
+.pcf-activity-label {
+  flex: none;
+  min-width: 64px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.pcf-activity-unit {
+  flex: none;
+  min-width: 36px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* 只读值：浅灰底，与可编辑输入框形成对比 */
+.pcf-readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  word-break: break-all;
+}
+
+/* ===================== 产品维度两层列表（产品核算记录页） ===================== */
+
+.pcf-product-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.pcf-product-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+
+.pcf-product-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-bg);
+  overflow: hidden;
+}
+.pcf-product-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pcf-product-cover-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+}
+
+.pcf-product-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  word-break: break-all;
+}
+
+.pcf-product-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+}
+.pcf-product-field {
+  display: flex;
+  gap: var(--space-xxs);
+  line-height: var(--line-height-base);
+}
+.pcf-product-field-label {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+
+.pcf-product-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+/* 产品图片上传（产品信息修改弹窗，原型本地预览） */
+.image-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+.image-thumb {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-spotlight);
+}
+.image-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+.image-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.pcf-record-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.pcf-record-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pcf-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+
+.pcf-record-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-container);
+  transition: border-color 0.15s ease;
+}
+.pcf-record-card:hover {
+  border-color: var(--color-primary);
+}
+
+.pcf-record-no {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pcf-record-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.pcf-record-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+.pcf-record-name {
+  word-break: break-all;
+}
+
+.pcf-record-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xxs) var(--space-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.pcf-record-field-label {
+  margin-right: 4px;
+  color: var(--color-text-tertiary);
+}
+
+.pcf-record-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 900px) {
+  .pcf-product-layout {
+    grid-template-columns: 1fr;
+  }
+  .pcf-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pcf-record-card {
+    flex-direction: column;
+  }
+  .pcf-record-actions {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* ===================== 生命周期阶段（目标与范围） ===================== */
+
+.pcf-lifecycle-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  margin-bottom: var(--space-md);
+}
+.pcf-lifecycle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xxs) var(--space-xs);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-base);
+}
+.pcf-lifecycle-row:hover {
+  background: var(--color-bg-hover);
+}
+.pcf-lifecycle-row-level2 {
+  padding-left: var(--space-xl);
+}
+.pcf-lifecycle-row.is-off .pcf-lifecycle-name {
+  color: var(--color-text-placeholder);
+  text-decoration: line-through;
+}
+.pcf-lifecycle-name {
+  flex: 1;
+  min-width: 0;
+}
+.pcf-boundary-readonly {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-base);
+}
+.pcf-lifecycle-add {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+.pcf-lifecycle-add .input {
+  flex: 1;
+  min-width: 0;
+  max-width: 360px;
+}
+
+/* ===================== 数据检测（步骤③） ===================== */
+
+.pcf-check-card {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-secondary);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-container);
+}
+.pcf-check-card.pcf-check-pending {
+  border-left-color: var(--color-border);
+}
+.pcf-check-card.pcf-check-checking {
+  border-left-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+.pcf-check-card.pcf-check-passed {
+  border-left-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+.pcf-check-card.pcf-check-failed {
+  border-left-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.pcf-check-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.pcf-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-bg-disabled);
+  color: var(--color-text-tertiary);
+}
+.pcf-check-pending .pcf-check-icon {
+  background: var(--color-bg-disabled);
+  color: var(--color-text-tertiary);
+}
+.pcf-check-checking .pcf-check-icon {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.pcf-check-passed .pcf-check-icon {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+.pcf-check-failed .pcf-check-icon {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+.pcf-check-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+.pcf-check-title-main {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.pcf-check-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+
+.pcf-check-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-xs);
+}
+
+.pcf-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.pcf-check-issue {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+}
+
+.pcf-check-issue-tag {
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.pcf-check-issue-body {
+  flex: 1;
+  min-width: 0;
+}
+.pcf-check-issue-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+.pcf-check-issue-category {
+  flex-shrink: 0;
+  padding: 0 var(--space-xxs);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-disabled);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pcf-check-issue-text {
+  font-weight: var(--font-weight-medium);
+  word-break: break-all;
+}
+.pcf-check-issue-desc {
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+.pcf-check-issue-loc {
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.pcf-check-fix {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pcf-check-fix:hover {
+  color: var(--color-primary-hover);
+}
+
+.pcf-check-empty {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+.pcf-check-empty-ok {
+  border-color: var(--color-success-border);
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+/* ===================== 碳足迹核算（步骤④） ===================== */
+
+.pcf-calc-card {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border-secondary);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-container);
+}
+.pcf-calc-card.pcf-calc-idle {
+  border-left-color: var(--color-border);
+}
+.pcf-calc-card.pcf-calc-calculating {
+  border-left-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+.pcf-calc-card.pcf-calc-done {
+  border-left-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+.pcf-calc-card.pcf-calc-failed {
+  border-left-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.pcf-calc-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.pcf-calc-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-bg-disabled);
+  color: var(--color-text-tertiary);
+}
+.pcf-calc-calculating .pcf-calc-icon {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.pcf-calc-done .pcf-calc-icon {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+.pcf-calc-failed .pcf-calc-icon {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+.pcf-calc-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+.pcf-calc-title-main {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.pcf-calc-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+
+.pcf-calc-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-xs);
+}
+
+/* ===================== 核算结果（步骤④ 结果区） ===================== */
+
+.pcf-result-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-success-bg);
+}
+
+.pcf-result-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+.pcf-result-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pcf-result-value {
+  font-size: 28px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+  line-height: var(--line-height-base);
+}
+.pcf-result-value span {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+}
+.pcf-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.pcf-result-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-xs);
+}
+
+/* 占比色条 */
+.pcf-ratio-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 140px;
+}
+.pcf-ratio-bar-fill {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-primary);
+  min-width: 2px;
+}
+.pcf-ratio-bar-text {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.pcf-check-fix.is-active {
+  font-weight: var(--font-weight-medium);
+}

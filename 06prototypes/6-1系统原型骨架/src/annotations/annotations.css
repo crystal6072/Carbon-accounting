@@ -1,0 +1,334 @@
+/* ===================== 批注展示层（计算公式功能） ===================== */
+/* 仅覆盖展示：角标、Popover、全局抽屉、统一开关；不影响任何业务样式与逻辑 */
+
+.ann-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  pointer-events: none;
+}
+
+.ann-badge {
+  position: fixed;
+  z-index: 1501;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  transform: translate(-100%, -100%);
+}
+
+.ann-badge:hover {
+  filter: brightness(1.1);
+}
+
+.ann-badge-count {
+  margin-left: 2px;
+  padding-left: 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+}
+
+/* ---------- 批注详情 Popover ---------- */
+.ann-popover {
+  position: fixed;
+  z-index: 1600;
+  width: 360px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: var(--color-bg-container, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+}
+
+.ann-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.ann-popover-close {
+  border: none;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+.ann-popover-body {
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- 批注卡片 ---------- */
+.ann-card {
+  flex-shrink: 0;
+  min-width: 0;
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: var(--color-bg-container, #fff);
+}
+
+.ann-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+}
+
+.ann-card-title {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.ann-priority {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.ann-priority-high {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ann-priority-medium {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ann-priority-low {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.ann-card-content {
+  padding: 8px 10px;
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.6;
+  color: var(--color-text-secondary, #334155);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ann-card-content code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: #f1f5f9;
+  font-size: 12px;
+}
+
+.ann-card-meta {
+  margin: 0;
+  padding: 8px 10px;
+  border-top: 1px dashed var(--color-border-secondary, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.ann-card-meta > div {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ann-card-meta dt {
+  flex-shrink: 0;
+  width: 64px;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+.ann-card-meta dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text-secondary, #334155);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ann-match-list {
+  margin: 0;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ann-match-reason {
+  margin-left: 6px;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+/* ---------- 右下角固定入口（统一开关 + 全局批注） ---------- */
+.ann-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1550;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ann-dock-btn {
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: var(--color-bg-container, #fff);
+  padding: 6px 12px;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text-secondary, #334155);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.ann-dock-btn:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+.ann-dock-entry {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* ---------- 全局批注抽屉 ---------- */
+.ann-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1700;
+  width: 400px;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--color-border-secondary, #e2e8f0);
+  background: var(--color-bg-container, #fff);
+  box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+}
+
+.ann-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+}
+
+.ann-drawer-title {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.ann-drawer-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ann-drawer-actions button {
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: #fff;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--color-text-secondary, #334155);
+}
+
+.ann-drawer-actions button:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+.ann-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ann-drawer-empty {
+  flex-shrink: 0;
+  padding: 24px 0;
+  text-align: center;
+  color: var(--color-text-tertiary, #94a3b8);
+  font-size: var(--font-size-sm, 13px);
+}
+
+.ann-drawer-item {
+  flex-shrink: 0;
+  min-width: 0;
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  overflow: hidden;
+}
+
+.ann-drawer-item-head {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  text-align: left;
+}
+
+.ann-drawer-item-head:hover {
+  background: #f1f5f9;
+}
+
+.ann-drawer-item-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ann-drawer-item-caret {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+.ann-drawer-item .ann-card {
+  border: none;
+  border-radius: 0;
+}
