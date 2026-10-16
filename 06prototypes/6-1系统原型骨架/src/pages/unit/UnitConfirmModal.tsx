@@ -33,8 +33,8 @@ export default function UnitConfirmModal({ open, unit, mode, onClose, onConfirm 
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" onClick={onConfirm}>
+          <Button data-ann-target="unit.confirm.cancel" onClick={onClose}>取消</Button>
+          <Button variant="primary" data-ann-target="unit.confirm.ok" onClick={onConfirm}>
             {TITLE[mode]}
           </Button>
         </>

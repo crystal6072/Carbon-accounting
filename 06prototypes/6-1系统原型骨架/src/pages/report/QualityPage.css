@@ -1,0 +1,251 @@
+/* 数据质量评价（报告管理）原型样式
+ * 仅承载本模块页面布局，不覆盖 tdesign `t-` 样式。
+ */
+
+.q-page {
+  padding: 24px 32px 80px;
+}
+
+.q-page-head {
+  margin-bottom: 16px;
+}
+
+.q-breadcrumb {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.q-page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-page-desc {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+  margin: 0;
+}
+
+.q-definition {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  background: var(--td-bg-color-page, #f3f5f8);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-link {
+  color: var(--td-brand-color, #0052d9);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.q-link:hover {
+  opacity: 0.8;
+}
+
+.q-link-danger {
+  color: var(--td-error-color, #d54941);
+}
+
+.q-link-muted {
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+.q-nowrap {
+  white-space: nowrap;
+}
+
+.q-empty-cell {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+}
+
+.q-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 步骤条 */
+.q-steps-wrap {
+  margin: 16px 0;
+}
+
+/* 口径条 */
+.q-caliber-bar {
+  margin-bottom: 16px;
+}
+
+.q-field-label {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+}
+
+.q-stale-alert {
+  margin-bottom: 16px;
+}
+
+.q-step-card {
+  margin-bottom: 16px;
+}
+
+/* 定性步骤 表单行 */
+.q-form-like {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--td-component-stroke, #e7eaf0);
+}
+
+.q-form-like:last-child {
+  border-bottom: none;
+}
+
+.q-form-like-label {
+  width: 110px;
+  flex: none;
+  color: var(--td-text-color-secondary, #5e6470);
+  font-size: 14px;
+  padding-top: 6px;
+}
+
+.q-form-like-control {
+  flex: 1;
+}
+
+/* 评分面板（展开行） */
+.q-score-panel {
+  padding: 16px;
+  background: var(--td-bg-color-page, #f3f5f8);
+  border-radius: 6px;
+}
+
+.q-score-dims {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.q-score-dim {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.q-score-dim-label {
+  width: 104px;
+  flex: none;
+  color: var(--td-text-color-secondary, #5e6470);
+  font-size: 13px;
+}
+
+.q-score-basis {
+  margin-top: 16px;
+}
+
+.q-score-result {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 结果页 */
+.q-result-overview {
+  margin-bottom: 16px;
+}
+
+.q-result-stat {
+  display: flex;
+  align-items: center;
+}
+
+.q-result-levels {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 12px;
+}
+
+.q-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.q-key-sources {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .q-result-grid {
+    grid-template-columns: 1fr;
+  }
+  .q-score-dims {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 底部操作栏 */
+.q-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 32px;
+  background: var(--td-bg-color-container, #fff);
+  border-top: 1px solid var(--td-component-stroke, #e7eaf0);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 20;
+}
+
+/* 列表页 */
+.q-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+
+.q-toolbar-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.q-toolbar-tip {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+  font-size: 12px;
+}
+
+.q-toolbar-action {
+  margin-left: auto;
+}
+
+.q-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.q-create-preview {
+  margin-top: 16px;
+}
+
+.q-empty-tip {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+  font-size: 13px;
+}
+
+.q-required::before {
+  content: '*';
+  color: var(--td-error-color, #d54941);
+  margin-right: 4px;
+}

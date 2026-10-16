@@ -39,8 +39,8 @@ export default function MaterialConfirmModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant={mode === 'delete' ? 'danger' : 'primary'} onClick={onConfirm}>
+          <Button data-ann-target="material.confirm.cancel" onClick={onClose}>取消</Button>
+          <Button variant={mode === 'delete' ? 'danger' : 'primary'} data-ann-target="material.confirm.ok" onClick={onConfirm}>
             {TITLE[mode]}
           </Button>
         </>

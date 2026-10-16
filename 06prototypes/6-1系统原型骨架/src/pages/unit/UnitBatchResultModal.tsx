@@ -29,7 +29,7 @@ export default function UnitBatchResultModal({ open, mode, result, onClose }: Un
         </Button>
       }
     >
-      <div className="modal-confirm-text">
+      <div className="modal-confirm-text" data-ann-target="unit.batch.result">
         <div>
           批量{mode === 'enable' ? '启用' : '删除'}完成：成功 <strong>{result?.success ?? 0}</strong> 条，跳过{' '}
           <strong>{result?.failed.length ?? 0}</strong> 条。跳过条目未做任何改动。

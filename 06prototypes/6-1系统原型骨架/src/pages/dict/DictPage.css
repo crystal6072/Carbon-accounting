@@ -1,0 +1,92 @@
+/* 数据字典（平台支撑）：左字典类型 + 右字典项，交互对齐「行业库」工作台 */
+
+.dict-workbench {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.dict-types {
+  width: 240px;
+  flex-shrink: 0;
+  padding: var(--space-sm);
+  border-right: 1px solid var(--color-border-secondary);
+  overflow-y: auto;
+}
+.dict-types-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xs) var(--space-xs);
+  margin-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.dict-types-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+.dict-type-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dict-type-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text);
+}
+.dict-type-btn:hover {
+  background: var(--color-bg-hover);
+}
+.dict-type-btn.is-active {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary-border);
+  color: var(--color-primary);
+}
+.dict-type-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-weight: var(--font-weight-medium);
+}
+.dict-type-code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.dict-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dict-table-wrap {
+  overflow-x: auto;
+}
+.dict-table-wrap .data-table thead th,
+.dict-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.dict-remark {
+  color: var(--color-text-secondary);
+}
+
+/* 字典项新增 / 编辑弹窗：单列表单 */
+.dict-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

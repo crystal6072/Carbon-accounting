@@ -48,10 +48,16 @@
   margin-right: auto;
 }
 .app-header-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 0;
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
+}
+.app-header-nav a svg {
+  flex-shrink: 0;
 }
 .app-header-nav a:hover {
   color: var(--color-primary);

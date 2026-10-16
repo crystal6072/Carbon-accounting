@@ -2,7 +2,6 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Icon, PageHeader, Pagination, Table, Tag, useToast } from '@/shared/components'
 import type { Column } from '@/shared/components'
-import { buildFormulaLines } from '@/shared/formulaMeta'
 import {
   deleteProcess,
   fetchCategories,
@@ -111,7 +110,7 @@ export default function ProcessDetailPage() {
     }
   }
 
-  /** 列表视图（与产品信息库列表列一致）：工序 / 工序类型 / 投入项 / 产出项 / 计算公式 */
+  /** 列表视图（与产品信息库列表列一致）：工序 / 工序类型 / 投入项 / 产出项 */
   const operationColumns: Column<ProcessOperationItem>[] = [
     {
       key: 'opCode',
@@ -174,40 +173,6 @@ export default function ProcessDetailPage() {
         )
       },
     },
-    {
-      key: 'formula',
-      title: '计算公式',
-      render: (row) => {
-        const op = opMap.get(row.opCode)
-        if (!op) return '-'
-        const lines = buildFormulaLines([
-          ...op.inputs.map((item) => ({
-            name: item.refName,
-            flowType: item.flowType,
-            formulaName: item.formulaName,
-            formulaCode: item.formulaCode,
-            disposal: item.disposal,
-          })),
-          ...op.outputs.map((item) => ({
-            name: item.refName,
-            flowType: item.flowType,
-            formulaName: item.formulaName,
-            formulaCode: item.formulaCode,
-            disposal: item.disposal,
-          })),
-        ])
-        if (lines.length === 0) return '-'
-        return (
-          <div className="flow-detail">
-            {lines.map((line) => (
-              <span key={line} className="flow-detail-line">
-                {line}
-              </span>
-            ))}
-          </div>
-        )
-      },
-    },
   ]
 
   const logColumns: Column<OperationLogItem>[] = [
@@ -220,7 +185,7 @@ export default function ProcessDetailPage() {
   if (!detail) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '工艺流程管理', '工艺流程']} title="工艺流程详情" />
+        <PageHeader breadcrumb={['系统管理', '工艺流程管理', '工艺流程']} title="工艺流程详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '工艺流程不存在或已被删除'}</div>
         </div>
@@ -233,7 +198,7 @@ export default function ProcessDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工艺流程', detail.name]}
+        breadcrumb={['系统管理', '工艺流程管理', '工艺流程', detail.name]}
         title={detail.name}
         description={`工艺流程编码 ${detail.code} · ${useStatusText[detail.useStatus]} · 共 ${detail.operations.length} 道工序 · 不做版本化`}
         actions={
@@ -254,7 +219,7 @@ export default function ProcessDetailPage() {
         }
       />
 
-      <div className="stack">
+      <div className="stack" data-ann-target="process.detail.body">
         {disabledRefs.length > 0 && (
           <div className="notice notice-warning">
             <Icon name="warning" size={16} />
@@ -280,7 +245,7 @@ export default function ProcessDetailPage() {
           </div>
           <div className="section-body">
             <div className="detail-list">
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="process.detail.code">
                 <span className="detail-label">工艺流程编码</span>
                 <span className="detail-value mono">{detail.code}</span>
               </div>
@@ -303,31 +268,24 @@ export default function ProcessDetailPage() {
                 <span className="detail-value">{detail.lifecycleStage || '-'}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">基准数量</span>
-                <span className="detail-value">
-                  {detail.baseQty ?? '-'}
-                  {detail.baseUnit ? ` ${detail.baseUnit}` : ''}
-                </span>
-              </div>
-              <div className="detail-item">
                 <span className="detail-label">使用状态</span>
                 <span className="detail-value">
                   <Tag tone={useStatusTone[detail.useStatus]}>{useStatusText[detail.useStatus]}</Tag>
                 </span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="process.detail.disposal">
                 <span className="detail-label">是否含处置工序</span>
                 <span className="detail-value">{detail.hasDisposal ? '是' : '否'}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="process.detail.org">
                 <span className="detail-label">归属组织</span>
                 <span className="detail-value">{detail.org}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="process.detail.visibility">
                 <span className="detail-label">可见性</span>
                 <span className="detail-value">{visibilityText[detail.visibility]}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="process.detail.meta">
                 <span className="detail-label">创建人</span>
                 <span className="detail-value">{detail.createdBy}</span>
               </div>
@@ -339,7 +297,7 @@ export default function ProcessDetailPage() {
                 <span className="detail-label">最后修改</span>
                 <span className="detail-value">{detail.updatedAt}</span>
               </div>
-              <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+              <div className="detail-item" style={{ gridColumn: '1 / -1' }} data-ann-target="process.detail.desc">
                 <span className="detail-label">工艺流程描述</span>
                 <span className="detail-value">{detail.description || '-'}</span>
               </div>
@@ -347,7 +305,7 @@ export default function ProcessDetailPage() {
           </div>
           <div className="form-block">
             <div className="form-tip">
-              「基准数量 / 基准单位」按「单位产品」口径（已确认 Q04）；「是否主工艺」字段经业务确认取消（Q06）。
+              「是否主工艺」字段经业务确认取消（Q06）。
               复制情况：已复制本工艺流程的产品共 {detail.copiedProductCount} 个；副本内容固定、模板变更不回写，
               仅在副本上标记「模板已更新」（R-011 / 【待确认 Q09】）。
               {detail.copiedProductCount > 0

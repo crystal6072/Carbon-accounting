@@ -48,7 +48,14 @@
   color: var(--color-text-tertiary);
 }
 
-/* 查看弹窗：两个边界的纳入规则（Tag + 三态含义提示） */
+/* 适用系统边界：多个字典项 Tag 换行展示 */
+.boundary-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+/* 查看弹窗：适用系统边界（Tag + 说明） */
 .rule-list {
   display: flex;
   flex-direction: column;

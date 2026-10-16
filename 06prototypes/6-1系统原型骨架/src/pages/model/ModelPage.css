@@ -1,0 +1,535 @@
+/**
+ * 模型管理（前后台）独有样式：模型卡片 / 卡片网格 / 过滤面板 / 选模型弹窗 / 新增下拉菜单 / 向导底栏。
+ * 其余版式（`.pcf-panel` / `.pcf-grid` / `.pcf-steps-bar` / `.pcf-fill-*` 等）复用 `PcfPage.css`。
+ */
+
+/* ===================== 向导容器 ===================== */
+
+.model-wizard {
+  display: flex;
+  flex-direction: column;
+}
+
+.model-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0 0;
+  border-top: 1px solid var(--color-border-secondary);
+  margin-top: var(--space-md);
+}
+
+.model-wizard-tip {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.model-wizard-btns {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+/* ===================== 新增核算下拉菜单 ===================== */
+
+.model-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.model-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 208px;
+  padding: var(--space-xxs);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-base);
+}
+
+.model-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: none;
+  border-radius: var(--radius-base);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  text-align: left;
+  cursor: pointer;
+}
+
+.model-dropdown-item:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary-active);
+}
+
+.model-dropdown-icon {
+  display: inline-flex;
+  color: var(--color-text-secondary);
+}
+
+.model-dropdown-item:hover .model-dropdown-icon {
+  color: var(--color-primary);
+}
+
+.model-dropdown-text {
+  display: flex;
+  flex-direction: column;
+  line-height: var(--line-height-base);
+}
+
+.model-dropdown-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ===================== 模型库：左过滤 + 右卡片网格 ===================== */
+
+.model-lib-layout {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.model-lib-main {
+  flex: 1;
+  min-width: 0;
+  margin-top: var(--space-md);
+}
+
+.model-lib-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.model-lib-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 280px;
+}
+
+.model-lib-search-icon {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+}
+
+/* 左侧过滤面板（选模型弹窗内使用） */
+.model-filter {
+  flex: none;
+  width: 220px;
+  padding: var(--space-sm);
+  background: var(--color-bg-spotlight);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.model-filter-group + .model-filter-group {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.model-filter-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.model-filter-title::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.model-filter-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  max-height: 208px;
+  overflow-y: auto;
+}
+
+.model-filter-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.model-filter-empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ===================== 模型卡片 ===================== */
+
+.model-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
+  gap: var(--space-md);
+}
+
+.model-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.model-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-base);
+}
+
+.model-card-thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 封面区：固定高度 + 角标叠加（左上角状态 / 右上角标准代号，对齐竞品卡面） */
+.model-card-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 152px;
+  overflow: hidden;
+  background: var(--color-bg-spotlight);
+}
+
+.model-card-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.model-card-corner {
+  position: absolute;
+  top: var(--space-xs);
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  background: var(--color-mask);
+}
+
+.model-card-corner-left {
+  left: var(--space-xs);
+}
+
+.model-card-corner-left[data-tone='success'] {
+  background: var(--color-success);
+}
+
+.model-card-corner-left[data-tone='info'] {
+  background: var(--color-primary);
+}
+
+.model-card-corner-left[data-tone='warning'] {
+  background: var(--color-warning);
+}
+
+.model-card-corner-left[data-tone='error'] {
+  background: var(--color-error);
+}
+
+.model-card-corner-right {
+  right: var(--space-xs);
+  letter-spacing: 0.4px;
+}
+
+.model-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+}
+
+/* 标签行（行业 · 标准层级 · 边界）：对齐竞品卡片的浅底小标签 */
+.model-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.model-card-chip {
+  padding: 0 var(--space-xxs);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-layout);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+}
+
+/* 标准全称说明：最多 2 行，保证卡片等高时信息层级一致 */
+.model-card-desc {
+  margin: 0;
+  min-height: 36px;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.model-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.model-card-name {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  text-align: left;
+  line-height: var(--line-height-base);
+  cursor: pointer;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.model-card-name:hover {
+  color: var(--color-primary);
+}
+
+.model-card-tags {
+  flex: none;
+}
+
+.model-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.model-card-badge {
+  flex: none;
+  max-width: 60%;
+  padding: 0 var(--space-xs);
+  border-radius: 999px;
+  background: var(--color-primary-bg);
+  color: var(--color-primary-active);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-card-code {
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-card-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.model-card-dot {
+  color: var(--color-text-placeholder);
+}
+
+.model-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px dashed var(--color-border-secondary);
+}
+
+.model-card-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.model-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.model-grid-empty {
+  grid-column: 1 / -1;
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-spotlight);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ===================== 选模型弹窗（Tab + 左过滤 + 卡片网格） ===================== */
+
+.model-picker-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.model-picker-tab {
+  position: relative;
+  padding: var(--space-xs) 0;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.model-picker-tab.is-active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.model-picker-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+/* 选模型弹窗：顶部搜索条件卡片（替代原左侧筛选面板） */
+.model-picker-query {
+  margin-bottom: var(--space-md);
+}
+
+.model-picker-query .query-bar {
+  border-bottom: none;
+  padding: var(--space-md);
+}
+
+.model-picker-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  max-height: 456px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+/* ===================== 模型库 / 我的模型 列表版式 ===================== */
+
+/* 卡片区上方工具条：仅看已加入 + 统计 */
+.model-lib-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.model-lib-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+/* 我的模型列表：名称单元格（名称 + 编码两行） */
+.model-list-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.model-list-code {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.model-list-pagination {
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+/* ===================== 详情 / 预览 ===================== */
+
+.model-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.model-detail-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.model-detail-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-base);
+  background: var(--color-warning-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

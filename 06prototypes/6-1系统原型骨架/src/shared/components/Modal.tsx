@@ -5,9 +5,10 @@ import Icon from './Icon'
 
 interface ModalProps {
   open: boolean
-  title: string
-  /** 尺寸：sm 420 / default 560 / lg 720 */
-  size?: 'sm' | 'default' | 'lg'
+  /** 弹窗标题：文案或节点（如带批注锚点的标题） */
+  title: ReactNode
+  /** 尺寸：sm 420 / default 560 / lg 720 / xl 1080 */
+  size?: 'sm' | 'default' | 'lg' | 'xl'
   onClose: () => void
   footer?: ReactNode
   children: ReactNode
@@ -29,7 +30,8 @@ export default function Modal({ open, title, size = 'default', onClose, footer, 
 
   if (!open) return null
 
-  const sizeCls = size === 'sm' ? 'modal-sm' : size === 'lg' ? 'modal-lg' : ''
+  const sizeCls =
+    size === 'sm' ? 'modal-sm' : size === 'lg' ? 'modal-lg' : size === 'xl' ? 'modal-xl' : ''
 
   return createPortal(
     <div className="modal-mask" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

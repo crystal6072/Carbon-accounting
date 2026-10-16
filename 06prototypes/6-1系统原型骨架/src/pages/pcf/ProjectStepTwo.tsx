@@ -1,33 +1,46 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { Button, FormField, Icon, Input, Modal, Select, Table, Tag, useToast } from '@/shared/components'
+import type { ReactNode } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { Button, CascaderSelect, Icon, Input, Modal, Select, Table, useToast, VoucherModal } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
 import {
-  addPcfOperation,
-  addPcfProcess,
-  fetchCalcFormulas,
   fetchLifecycleStages,
-  fetchOperationTemplates,
-  fetchPcfActivityData,
+  fetchMyFactorLibraries,
+  fetchMyFactors,
   fetchPcfFactorOptions,
-  fetchPcfLifecycleBundle,
-  fetchProcessTemplates,
-  fetchUnitOptions,
-  removePcfOperation,
-  updatePcfActivityData,
-  updatePcfActivityFormula,
+  fetchPcfProcessNodes,
+  fetchPcfProject,
+  fetchPcfStageData,
+  fetchPublishedLibraries,
+  fetchPublishedLibraryDetail,
+  fetchUnitGroupOptions,
+  savePcfProcessNodes,
+  savePcfStageData,
 } from '@/mock'
 import type {
-  CalcFormula,
+  FactorCalibers,
+  FactorItem,
   LifecycleStageItem,
-  OperationTemplate,
-  PcfActivityData,
-  PcfActivityValue,
+  PcfDataItemDirection,
+  PcfDataItemType,
+  PcfEmissionType,
   PcfFactorOption,
-  PcfOperationConfig,
+  PcfProcessNode,
   PcfProject,
-  ProcessTemplate,
+  PcfVoucher,
+  TreeOption,
 } from '@/types'
-import { FLOW_TYPE_TEXT } from './pcfMeta'
+import { downloadCsv, parseCsvText, toCsv } from '@/shared/utils/csv'
+import FactorInfoPanel from '../factor/FactorInfoPanel'
+import PcfFlowCanvas from './PcfFlowCanvas'
+import {
+  ALL_TYPE_OPTIONS,
+  EMISSION_TYPE_OPTIONS,
+  PCF_EMISSION_BY_TEXT,
+  PCF_EMISSION_TYPE_TEXT,
+  PCF_ITEM_TYPE_TEXT,
+  PCF_TYPE_BY_TEXT,
+  pcfDirectionOf,
+} from './pcfItemMeta'
 import './PcfPage.css'
 
 export interface ProjectStepTwoHandle {
@@ -38,76 +51,156 @@ interface ProjectStepTwoProps {
   project: PcfProject
   editable: boolean
   onSaved: (project: PcfProject) => void
+  /** 保存成功后由工作台触发（「下一步」→ 进入步骤③） */
+  onNext?: () => void
 }
 
+/* 数据项字典（类型 / 排放物类型 / 方向推导）统一取自 `./pcfItemMeta`，与模型「产品建模」共用 */
+
+/** 本地编辑态（数量用字符串便于输入，保存时转数值） */
+interface EditItem {
+  id: string
+  stageId: string
+  stageName: string
+  /** 所属过程节点（空 = 挂在阶段下） */
+  nodeId: string | null
+  name: string
+  itemType: PcfDataItemType
+  emissionType: PcfEmissionType | null
+  quantity: string
+  unit: string
+  factorId: string
+  factorName: string
+  factorValue: number | null
+  /** 因子口径快照（选填；用于「含 / 不含生物碳」双口径核算） */
+  factorCalibers: FactorCalibers | null
+  /** 数据凭证附件（**选填、可多个**） */
+  vouchers: PcfVoucher[]
+}
+
+/** 导入解析结果 */
+interface ImportValidRow {
+  key: string
+  name: string
+  itemType: PcfDataItemType
+  emissionType: PcfEmissionType | null
+  quantity: string
+  unit: string
+}
+
+interface ImportErrorRow {
+  row: number
+  name: string
+  reason: string
+}
+
+let itemSeed = 0
+let nodeSeed = 0
+const nextItemId = () => `SD-${Date.now().toString().slice(-6)}-${itemSeed++}`
+const nextNodeId = () => `PN-${Date.now().toString().slice(-6)}-${nodeSeed++}`
+
+const blankItem = (stageId: string, stageName: string, nodeId: string | null): EditItem => ({
+  id: nextItemId(),
+  stageId,
+  stageName,
+  nodeId,
+  name: '',
+  itemType: 'material',
+  emissionType: null,
+  quantity: '',
+  unit: '',
+  factorId: '',
+  factorName: '',
+  factorValue: null,
+  factorCalibers: null,
+  vouchers: [],
+})
+
 /**
- * 工作台步骤②「工序与数据」内容区。
+ * 工作台步骤②「产品建模」内容区。
  *
- * - 工序由所选产品**引用即复制**带入，并按步骤①勾选纳入的**生命周期阶段**过滤对齐；
- * - 支持**新增工序**（从工序库选择，挂载到已有工艺流程）与**删除工序**；
- * - 对选中工序的投入 / 产出填报**活动量**（录入框 + 单位下拉）；
- * - **手动匹配排放来源（排放因子）**——需因子的投入项必选；多产出工序填写**分配比例**（合计 100%）。
+ * - 左侧：步骤①勾选的生命周期阶段 + 各阶段下的**过程节点**（「继续追溯」生成）；
+ * - 选中阶段 / 节点后，右侧为**统一的数据列表**（输入 / 输出合并在同一张表），默认保留一行空白行，支持新增 / 删除；
+ * - 列：名称、数据项类型（原辅料 / 自然资源 / 能源及能源介质 / 产品 / 中间产品 / 副产品 / 排放物）、数量、单位、上游过程名称、操作；
+ * - **上游过程名称**列：未追溯时提供「引用因子 / 继续追溯」；点击「继续追溯」按数据项名称生成**子节点**并在其中录入数据；
+ * - **导入**统一为「下载模板 → 上传 CSV → 校验 → 导入」，按当前作用域追加数据项。
  */
 const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
-  function ProjectStepTwo({ project, editable, onSaved }, ref) {
+  function ProjectStepTwo({ project, editable, onSaved, onNext }, ref) {
     const toast = useToast()
+    const importFileRef = useRef<HTMLInputElement>(null)
 
-    const [operations, setOperations] = useState<PcfOperationConfig[]>([])
-    const [rows, setRows] = useState<PcfActivityData[]>([])
-    const [draft, setDraft] = useState<Record<string, string>>({})
-    const [unitDraft, setUnitDraft] = useState<Record<string, string>>({})
-    const [ratioDraft, setRatioDraft] = useState<Record<string, string>>({})
-    const [factorDraft, setFactorDraft] = useState<Record<string, string>>({})
-    const [factorOptions, setFactorOptions] = useState<PcfFactorOption[]>([])
-    /* 排放因子选择弹窗：目标数据行 + 弹窗内单选项 + 搜索关键字 */
-    const [factorPickerRowId, setFactorPickerRowId] = useState('')
-    const [factorPickedId, setFactorPickedId] = useState('')
-    const [factorKeyword, setFactorKeyword] = useState('')
-    const [units, setUnits] = useState<string[]>([])
-    const [formulas, setFormulas] = useState<CalcFormula[]>([])
-    const [operationTemplates, setOperationTemplates] = useState<OperationTemplate[]>([])
-    const [processTemplates, setProcessTemplates] = useState<ProcessTemplate[]>([])
+    const [items, setItems] = useState<EditItem[]>([])
+    const [nodes, setNodes] = useState<PcfProcessNode[]>([])
+    /** 计量单位多级选项（按单位类型分组） */
+    const [unitTree, setUnitTree] = useState<TreeOption[]>([])
+    const [factors, setFactors] = useState<PcfFactorOption[]>([])
     const [allStages, setAllStages] = useState<LifecycleStageItem[]>([])
-    const [activeOpId, setActiveOpId] = useState('')
-    const [keyword, setKeyword] = useState('')
+    const [activeStageId, setActiveStageId] = useState('')
+    /** 当前过程节点（空 = 生命周期阶段根） */
+    const [activeNodeId, setActiveNodeId] = useState('')
     const [loading, setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
 
-    /* 新增 / 删除工序 / 工艺流程 */
-    const [addOpen, setAddOpen] = useState(false)
-    const [addForm, setAddForm] = useState<{ opCode: string; processCode: string; stage: string }>({
-      opCode: '',
-      processCode: '',
-      stage: '',
-    })
-    const [addProcessOpen, setAddProcessOpen] = useState(false)
-    const [addProcessCode, setAddProcessCode] = useState('')
-    const [addProcessStage, setAddProcessStage] = useState('')
-    const [deleteOpId, setDeleteOpId] = useState('')
-    const [opBusy, setOpBusy] = useState(false)
-    const [formulaBusy, setFormulaBusy] = useState(false)
+    /* 排放因子选择弹窗（「引用因子」） */
+    const [factorDraft, setFactorDraft] = useState<Record<string, string>>({})
+    const [factorPickerRowId, setFactorPickerRowId] = useState('')
+    const [factorPickedId, setFactorPickedId] = useState('')
+    const [factorKeyword, setFactorKeyword] = useState('')
+    const [pickerLibraries, setPickerLibraries] = useState<Array<{ id: string; name: string; group: string }>>([])
+    const [pickerLibId, setPickerLibId] = useState('')
+    const [pickerLibFactors, setPickerLibFactors] = useState<FactorItem[]>([])
+    const [pickerLoading, setPickerLoading] = useState(false)
+    const [pickerViewFactorId, setPickerViewFactorId] = useState('')
+
+    /* 数据凭证附件（操作列入口：上传 / 查看凭证，非必填） */
+    const [voucherRowId, setVoucherRowId] = useState('')
+
+    /* 导入（下载模板 → 上传 → 校验 → 导入） */
+    const [importOpen, setImportOpen] = useState(false)
+    const [importFileName, setImportFileName] = useState('')
+    const [importValid, setImportValid] = useState<ImportValidRow[]>([])
+    const [importErrors, setImportErrors] = useState<ImportErrorRow[]>([])
+    const [importParsed, setImportParsed] = useState(false)
+
+    /* 模型预览 · 流程画布 */
+    const [canvasOpen, setCanvasOpen] = useState(false)
+    /** 落库基线快照：用于判断「数据是否真的变更」（无变更时不再弹「数据变更」提示、不重复保存） */
+    const baselineRef = useRef('')
 
     const load = useCallback(async () => {
       setLoading(true)
       try {
-        const [bundle, activities, factors] = await Promise.all([
-          fetchPcfLifecycleBundle(project.id),
-          fetchPcfActivityData(project.id),
+        const [data, nodeList, unitTreeList, factorList, stageList] = await Promise.all([
+          fetchPcfStageData(project.id),
+          fetchPcfProcessNodes(project.id),
+          fetchUnitGroupOptions(),
           fetchPcfFactorOptions(),
+          fetchLifecycleStages(),
         ])
-        setOperations(bundle.operations)
-        setRows(activities)
-        setFactorOptions(factors)
-        setDraft({})
-        setUnitDraft({})
-        setRatioDraft({})
+        setUnitTree(unitTreeList)
+        setFactors(factorList)
+        setAllStages(stageList)
+        setNodes(nodeList)
+        const mapped = data.map((item) => ({
+          id: item.id,
+          stageId: item.stageId,
+          stageName: item.stageName,
+          nodeId: item.nodeId ?? null,
+          name: item.name,
+          itemType: item.itemType,
+          emissionType: item.emissionType ?? null,
+          quantity: item.quantity == null ? '' : String(item.quantity),
+          unit: item.unit,
+          factorId: item.factorId ?? '',
+          factorName: item.factorName,
+          factorValue: item.factorValue,
+          factorCalibers: item.factorCalibers ?? null,
+          vouchers: item.vouchers ?? [],
+        }))
+        setItems(mapped)
+        baselineRef.current = JSON.stringify({ items: mapped, nodes: nodeList })
         setFactorDraft({})
-        setFactorPickerRowId('')
-        setFactorPickedId('')
-        // 保持当前选中工序；若已被删除 / 过滤则回到首个
-        setActiveOpId((prev) =>
-          bundle.operations.some((op) => op.id === prev) ? prev : bundle.operations[0]?.id ?? '',
-        )
       } catch (error) {
         toast(error instanceof Error ? error.message : '加载失败', 'error')
       } finally {
@@ -117,153 +210,234 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
 
     useEffect(() => {
       void load()
-      // 重选产品后需按新产品重新复制工序与生成填报行
-    }, [load, project.refProductId])
+    }, [load])
 
-    /* 单位选项、公式库、工序库模板、工艺流程库模板与生命周期阶段库（静态，加载一次） */
-    useEffect(() => {
-      void (async () => {
-        const [unitList, formulaList, templates, processList, stageList] = await Promise.all([
-          fetchUnitOptions(),
-          fetchCalcFormulas(),
-          fetchOperationTemplates(),
-          fetchProcessTemplates(),
-          fetchLifecycleStages(),
-        ])
-        setUnits(unitList)
-        setFormulas(formulaList)
-        setOperationTemplates(templates)
-        setProcessTemplates(processList)
-        setAllStages(stageList)
-      })()
-    }, [])
-
-    /** 左树：工艺流程 → 工序（阶段随工艺带出，仅作标签展示） */
-    const processGroups = useMemo(() => {
-      const buckets: Array<{
-        processCode: string
-        processName: string
-        processStage: string
-        rows: PcfOperationConfig[]
-      }> = []
-      operations.forEach((op) => {
-        let group = buckets.find((item) => item.processCode === op.processCode)
-        if (!group) {
-          group = {
-            processCode: op.processCode,
-            processName: op.processName,
-            processStage: op.processStage,
-            rows: [],
-          }
-          buckets.push(group)
-        }
-        group.rows.push(op)
-      })
-      return buckets
-    }, [operations])
-
-    /** 左树按「生命周期阶段 → 工艺流程 → 工序」分组（仅含匹配到工序的阶段）；自定义工艺（CUSTOM-）不显示工艺层级 */
-    const stageGroups = useMemo(() => {
-      const buckets: Array<{
-        stage: string
-        processes: Array<{ processCode: string; processName: string; custom: boolean; rows: PcfOperationConfig[] }>
-      }> = []
-      operations.forEach((op) => {
-        let stage = buckets.find((item) => item.stage === op.processStage)
-        if (!stage) {
-          stage = { stage: op.processStage, processes: [] }
-          buckets.push(stage)
-        }
-        let proc = stage.processes.find((item) => item.processCode === op.processCode)
-        if (!proc) {
-          proc = {
-            processCode: op.processCode,
-            processName: op.processName,
-            custom: op.processCode.startsWith('CUSTOM-'),
-            rows: [],
-          }
-          stage.processes.push(proc)
-        }
-        proc.rows.push(op)
-      })
-      return buckets
-    }, [operations])
-
-    /** 步骤①勾选纳入的一级阶段：左树分组来源，**未匹配到工艺流程的阶段也显示（空分组）** */
-    const treeStages = useMemo(() => {
-      let included = (project.lifecycleStages ?? []).filter((s) => s.included && s.level === 1)
-      if (included.length === 0) {
-        // 项目未配置生命周期阶段（兼容旧数据 / 未保存步骤①）：按边界 + 行业带出默认阶段
-        const ruleOf = (s: LifecycleStageItem) => (project.boundary === 'gate' ? s.gateRule : s.graveRule)
-        included = allStages
-          .filter(
-            (s) =>
-              s.status === 'enabled' &&
-              ruleOf(s) !== 'excluded' &&
-              (s.industries.length === 0 || s.industries.includes(project.productIndustry ?? '')),
-          )
-          .sort((a, b) => a.order - b.order)
-          .map((s) => ({
-            id: s.id,
-            name: s.name,
-            level: s.level,
-            parentName: '',
-            custom: false,
-            rule: ruleOf(s),
-            included: true,
-          }))
+    /** 左侧阶段：默认取步骤①勾选纳入的生命周期阶段；未配置时按边界带出 */
+    const stages = useMemo(() => {
+      const included = (project.lifecycleStages ?? []).filter((s) => s.included)
+      if (included.length > 0) {
+        return included.map((s) => ({
+          id: s.id,
+          name: s.name,
+          level: s.level,
+          parentId: s.parentName ? included.find((p) => p.name === s.parentName)?.id ?? null : null,
+        }))
       }
-      return included.map((stage) => ({
-        id: stage.id,
-        name: stage.name,
-        processes: stageGroups.find((g) => g.stage === stage.name)?.processes ?? [],
-      }))
-    }, [project, allStages, stageGroups])
-
-    const activeOp = operations.find((item) => item.id === activeOpId) ?? null
-    const multiOutput = (activeOp?.outputs.length ?? 0) > 1
-
-    const opRows = useMemo(() => {
-      const list = rows.filter((item) => item.operationId === activeOpId)
-      const kw = keyword.trim()
-      if (!kw) return list
-      return list.filter((item) => item.flowName.includes(kw))
-    }, [rows, activeOpId, keyword])
-
-    /** 当前工序数据行中活动量变量的并集（按出现顺序）：每个变量一列，列名 = 变量名 */
-    const activityColumnNames = useMemo(() => {
-      const names: string[] = []
-      rows
-        .filter((row) => row.operationId === activeOpId)
-        .forEach((row) =>
-          row.activityValues.forEach((av) => {
-            if (!names.includes(av.factorName)) names.push(av.factorName)
-          }),
+      return allStages
+        .filter(
+          (s) => s.status === 'enabled' && (s.boundaries.length === 0 || s.boundaries.includes(project.boundary)),
         )
-      return names
-    }, [rows, activeOpId])
+        .sort((a, b) => a.order - b.order)
+        .map((s) => ({ id: s.id, name: s.name, level: s.level, parentId: s.parentId }))
+    }, [project.lifecycleStages, project.boundary, allStages])
 
-    const qtyValue = (rowId: string, av: PcfActivityValue) =>
-      draft[`${rowId}::${av.factorName}`] ?? (av.value == null ? '' : String(av.value))
+    /** 末级生命周期阶段：二级阶段恒为末级；一级阶段无下级阶段时才是末级（**仅末级可点击录入**） */
+    const leafStageIds = useMemo(() => {
+      const parents = new Set(stages.map((s) => s.parentId).filter(Boolean) as string[])
+      return new Set(stages.filter((s) => s.level === 2 || !parents.has(s.id)).map((s) => s.id))
+    }, [stages])
 
-    /** 活动量单位当前值：草稿优先，其次已保存值 */
-    const unitValueOf = (rowId: string, av: PcfActivityValue) =>
-      unitDraft[`${rowId}::${av.factorName}`] ?? av.unit
+    useEffect(() => {
+      const firstLeaf = stages.find((s) => leafStageIds.has(s.id))
+      if (!firstLeaf) {
+        setActiveStageId('')
+        return
+      }
+      setActiveStageId((prev) => (leafStageIds.has(prev) ? prev : firstLeaf.id))
+    }, [stages, leafStageIds])
 
-    const ratioValue = (row: PcfActivityData) =>
-      ratioDraft[row.id] ?? (row.allocateRatio == null ? '' : String(row.allocateRatio))
+    const activeStage = stages.find((s) => s.id === activeStageId) ?? null
+    const activeNode = nodes.find((n) => n.id === activeNodeId) ?? null
 
-    /** 排放来源（因子）当前值：草稿优先，其次已保存值 */
-    const factorValueOf = (row: PcfActivityData) => factorDraft[row.id] ?? (row.factorId ?? '')
+    /** 默认保留一行空白行（当前作用域） */
+    useEffect(() => {
+      if (!editable || !activeStage) return
+      setItems((prev) => {
+        const exists = prev.some(
+          (item) => item.stageId === activeStage.id && (item.nodeId ?? '') === activeNodeId,
+        )
+        return exists ? prev : [...prev, blankItem(activeStage.id, activeStage.name, activeNodeId || null)]
+      })
+    }, [editable, activeStage, activeNodeId])
 
-    /**
-     * 排放来源回显：优先取因子库候选项；因子已停用 / 已删除时回退到项目内保存的因子快照。
-     * 返回 null = 未匹配。
-     */
-    const factorDisplayOf = (row: PcfActivityData) => {
-      const id = factorValueOf(row)
+    const scopeItems = items.filter(
+      (item) => item.stageId === activeStageId && (item.nodeId ?? '') === activeNodeId,
+    )
+
+    const unitOptions = useMemo<TreeOption[]>(() => unitTree, [unitTree])
+
+    const updateItem = (id: string, patch: Partial<EditItem>) => {
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+      promptIfCompletedChanged()
+    }
+
+    const handleAdd = () => {
+      if (!activeStage) {
+        toast('请先选择生命周期阶段', 'error')
+        return
+      }
+      setItems((prev) => [...prev, blankItem(activeStage.id, activeStage.name, activeNodeId || null)])
+      promptIfCompletedChanged()
+    }
+
+    const handleDelete = (id: string) => {
+      setItems((prev) => prev.filter((item) => item.id !== id))
+      promptIfCompletedChanged()
+    }
+
+    /* ---------- 过程节点（继续追溯） ---------- */
+
+    const handleTrace = (item: EditItem) => {
+      if (!item.name.trim()) {
+        toast('请先填写数据项名称，再继续追溯', 'error')
+        return
+      }
+      const exists = nodes.find((node) => node.sourceItemId === item.id)
+      if (exists) {
+        setActiveNodeId(exists.id)
+        return
+      }
+      const node: PcfProcessNode = {
+        id: nextNodeId(),
+        projectId: project.id,
+        stageId: item.stageId,
+        parentId: item.nodeId ?? null,
+        name: item.name.trim(),
+        sourceItemId: item.id,
+      }
+      setNodes((prev) => [...prev, node])
+      setActiveNodeId(node.id)
+      toast(`已生成子节点「${node.name}」，请录入其数据`)
+      promptIfCompletedChanged()
+    }
+
+    const handleDeleteNode = (nodeId: string) => {
+      const collect = (id: string): string[] => [
+        id,
+        ...nodes.filter((n) => n.parentId === id).flatMap((n) => collect(n.id)),
+      ]
+      const ids = collect(nodeId)
+      setNodes((prev) => prev.filter((node) => !ids.includes(node.id)))
+      setItems((prev) => prev.filter((item) => !ids.includes(item.nodeId ?? '')))
+      setActiveNodeId((prev) => (ids.includes(prev) ? '' : prev))
+      toast('节点已删除')
+      promptIfCompletedChanged()
+    }
+
+    /* ---------- 导入：下载模板 → 上传 CSV → 校验 → 导入 ---------- */
+
+    const downloadTemplate = () => {
+      downloadCsv(
+        '产品建模数据导入模板.csv',
+        toCsv([
+          ['名称', '数据项类型', '数量', '单位', '排放物类型'],
+          ['竹板材', '原辅料', '0.1', 'kg', ''],
+          ['电力', '能源及能源介质', '1.5', 'kWh', ''],
+          ['废水', '排放物', '0.03', 'm³', '废水'],
+        ]),
+      )
+    }
+
+    const openImport = () => {
+      setImportFileName('')
+      setImportValid([])
+      setImportErrors([])
+      setImportParsed(false)
+      setImportOpen(true)
+    }
+
+    const handleImportFile = async (file: File) => {
+      setImportFileName(file.name)
+      setImportValid([])
+      setImportErrors([])
+      setImportParsed(false)
+      try {
+        const text = await file.text()
+        const rows = parseCsvText(text)
+        if (rows.length <= 1) {
+          toast('文件为空或缺少数据行', 'error')
+          setImportParsed(true)
+          return
+        }
+        const valid: ImportValidRow[] = []
+        const errors: ImportErrorRow[] = []
+        rows.slice(1).forEach((row, index) => {
+          const lineNo = index + 2
+          const name = (row[0] ?? '').trim()
+          const typeText = (row[1] ?? '').trim()
+          const qtyText = (row[2] ?? '').trim()
+          const unit = (row[3] ?? '').trim()
+          const emissionText = (row[4] ?? '').trim()
+
+          if (!name) {
+            errors.push({ row: lineNo, name: '（空）', reason: '名称不能为空' })
+            return
+          }
+          const itemType = PCF_TYPE_BY_TEXT[typeText]
+          if (!itemType) {
+            errors.push({ row: lineNo, name, reason: `数据项类型无效：${typeText || '（空）'}` })
+            return
+          }
+          const quantity = Number(qtyText)
+          if (qtyText === '' || !Number.isFinite(quantity)) {
+            errors.push({ row: lineNo, name, reason: '数量须为数值（可为负数，表示扣减 / 流出）' })
+            return
+          }
+          let emissionType: PcfEmissionType | null = null
+          if (itemType === 'emission') {
+            emissionType = PCF_EMISSION_BY_TEXT[emissionText] ?? null
+            if (!emissionType) {
+              errors.push({ row: lineNo, name, reason: `排放物类型无效：${emissionText || '（空）'}` })
+              return
+            }
+          }
+          valid.push({ key: `v-${lineNo}`, name, itemType, emissionType, quantity: String(quantity), unit })
+        })
+        setImportValid(valid)
+        setImportErrors(errors)
+        setImportParsed(true)
+      } catch (error) {
+        toast(error instanceof Error ? error.message : '文件解析失败', 'error')
+        setImportParsed(true)
+      }
+    }
+
+    const handleImportConfirm = () => {
+      if (!activeStage || importValid.length === 0) return
+      const nodeId = activeNodeId || null
+      const additions: EditItem[] = importValid.map((row) => ({
+        ...blankItem(activeStage.id, activeStage.name, nodeId),
+        name: row.name,
+        itemType: row.itemType,
+        emissionType: row.emissionType,
+        quantity: row.quantity,
+        unit: row.unit,
+      }))
+      // 导入前移除当前作用域下的空白行，避免与导入项混排
+      setItems((prev) => [
+        ...prev.filter(
+          (item) =>
+            !(
+              item.stageId === activeStage.id &&
+              (item.nodeId ?? '') === activeNodeId &&
+              item.name.trim() === ''
+            ),
+        ),
+        ...additions,
+      ])
+      setImportOpen(false)
+      toast(`已导入 ${additions.length} 条数据项`)
+      promptIfCompletedChanged()
+    }
+
+    /* ---------- 排放因子：弹窗选择（「引用因子」） ---------- */
+
+    const factorValueOf = (item: EditItem) => factorDraft[item.id] ?? item.factorId
+
+    const factorDisplayOf = (item: EditItem) => {
+      const id = factorValueOf(item)
       if (!id) return null
-      const option = factorOptions.find((item) => item.id === id)
+      const option = factors.find((x) => x.id === id)
       if (option) {
         return {
           name: option.name,
@@ -271,26 +445,66 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
           unit: `${option.numeratorUnit}/${option.denominatorUnit}`,
         }
       }
-      return { name: row.factorName || id, value: row.factorValue, unit: '' }
+      return { name: item.factorName || id, value: item.factorValue, unit: '' }
     }
 
-    /** 排放因子弹窗候选项：**全量启用态因子，不做自动推荐、不做预选**（本版手动匹配），支持按名称 / 编码过滤 */
+    const loadPickerFactors = useCallback(async (libKey: string) => {
+      if (!libKey) {
+        setPickerLibFactors([])
+        return
+      }
+      setPickerLoading(true)
+      try {
+        if (libKey.startsWith('MY:')) {
+          setPickerLibFactors(await fetchMyFactors(libKey.slice(3)))
+        } else {
+          const detail = await fetchPublishedLibraryDetail(libKey.slice(4))
+          setPickerLibFactors(detail.factors)
+        }
+      } catch {
+        setPickerLibFactors([])
+      } finally {
+        setPickerLoading(false)
+      }
+    }, [])
+
+    const selectPickerLib = async (libKey: string) => {
+      setPickerLibId(libKey)
+      await loadPickerFactors(libKey)
+    }
+
+    const openFactorPicker = async (item: EditItem) => {
+      setFactorPickedId(factorDisplayOf(item) ? factorValueOf(item) : '')
+      setFactorKeyword('')
+      setFactorPickerRowId(item.id)
+      setPickerLoading(true)
+      try {
+        const [published, mine] = await Promise.all([fetchPublishedLibraries(), fetchMyFactorLibraries()])
+        const libraries = [
+          ...published.map((lib) => ({ id: `LIB:${lib.id}`, name: lib.name, group: '背景数据库' })),
+          ...mine.map((lib) => ({ id: `MY:${lib.id}`, name: lib.name, group: '我的因子库' })),
+        ]
+        setPickerLibraries(libraries)
+        const first = libraries[0]?.id ?? ''
+        setPickerLibId(first)
+        await loadPickerFactors(first)
+      } catch (error) {
+        toast(error instanceof Error ? error.message : '因子库加载失败', 'error')
+      } finally {
+        setPickerLoading(false)
+      }
+    }
+
     const factorPickerRows = useMemo(() => {
       const kw = factorKeyword.trim().toLowerCase()
-      if (!kw) return factorOptions
-      return factorOptions.filter(
+      if (!kw) return pickerLibFactors
+      return pickerLibFactors.filter(
         (item) => item.name.toLowerCase().includes(kw) || item.code.toLowerCase().includes(kw),
       )
-    }, [factorOptions, factorKeyword])
+    }, [pickerLibFactors, factorKeyword])
 
-    /** 打开排放因子弹窗：带入该数据项当前已匹配的因子（未匹配 = 空选） */
-    const openFactorPicker = (row: PcfActivityData) => {
-      setFactorPickedId(factorDisplayOf(row) ? factorValueOf(row) : '')
-      setFactorKeyword('')
-      setFactorPickerRowId(row.id)
-    }
+    const pickerViewFactor = pickerLibFactors.find((item) => item.id === pickerViewFactorId) ?? null
 
-    /** 确认选择：写入草稿，因子名称与因子值即时回显到数据项列表（保存时随活动数据一并提交） */
     const handleFactorConfirm = () => {
       if (!factorPickerRowId) return
       if (!factorPickedId) {
@@ -300,201 +514,18 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
       setFactorDraft((prev) => ({ ...prev, [factorPickerRowId]: factorPickedId }))
       setFactorPickerRowId('')
       setFactorPickedId('')
-      toast('排放来源已匹配')
+      toast('排放因子已匹配')
+      promptIfCompletedChanged()
     }
 
-    const unitOptions = useMemo<SelectOption[]>(
-      () => units.map((item) => ({ label: item, value: item })),
-      [units],
-    )
+    /** 撤回因子选择：恢复为「引用因子 / 继续追溯」二选一 */
+    const handleCancelFactor = (itemId: string) => {
+      setFactorDraft((prev) => ({ ...prev, [itemId]: '' }))
+      updateItem(itemId, { factorId: '', factorName: '', factorValue: null })
+      toast('已撤回因子选择')
+    }
 
-    /** 活动量单位候选：计量单位库 + 当前数据行公式变量单位（保证默认单位一定可显示） */
-    const unitSelectOptions = useMemo<SelectOption[]>(() => {
-      const set = new Set<string>(units)
-      rows.forEach((row) => row.activityValues.forEach((av) => av.unit && set.add(av.unit)))
-      return [...set].map((item) => ({ label: item, value: item }))
-    }, [units, rows])
-
-    /** 公式候选（启用态）：数据项可修改绑定公式 */
-    const formulaOptions = useMemo<SelectOption[]>(
-      () =>
-        formulas
-          .filter((item) => item.status === 'enabled')
-          .map((item) => ({ label: `${item.name}（${item.code}）`, value: item.id })),
-      [formulas],
-    )
-
-    /** 某行是否已完成：每个活动量均已填 + **需因子的投入项已匹配排放来源** */
-    const rowDone = useCallback(
-      (row: PcfActivityData) => {
-        const allFilled = row.activityValues.every((av) => {
-          const raw = draft[`${row.id}::${av.factorName}`]
-          return raw !== undefined ? raw.trim() !== '' : av.value != null
-        })
-        const factorOk =
-          row.requiresFactor && row.direction === 'input' ? !!factorValueOf(row) : true
-        return allFilled && factorOk
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [draft, factorDraft],
-    )
-
-    /** 分配比例合计（多产出工序） */
-    const ratioTotal = useMemo(() => {
-      if (!activeOp || !multiOutput) return 100
-      return rows
-        .filter((row) => row.operationId === activeOpId && row.direction === 'output')
-        .reduce((sum, row) => {
-          const raw = ratioValue(row)
-          const num = Number(raw)
-          return sum + (raw.trim() === '' || Number.isNaN(num) ? 0 : num)
-        }, 0)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rows, activeOpId, multiOutput, ratioDraft])
-
-    /** 填报进度：`pending` 用于前置校验（数量必填 + 投入项排放来源必选，未填全不得保存） */
-    const progress = useMemo(() => {
-      const filled = rows.filter((row) => rowDone(row)).length
-      return { filled, total: rows.length, pending: rows.length - filled }
-    }, [rows, rowDone])
-
-    const opFilled = (operationId: string) =>
-      rows.some((row) => row.operationId === operationId && rowDone(row))
-
-    const columns = useMemo<Column<PcfActivityData>[]>(() => {
-      const base: Column<PcfActivityData>[] = [
-        { key: 'flowName', title: '数据项名称', width: 170 },
-        {
-          key: 'flowType',
-          title: '数据项类别',
-          width: 90,
-          render: (row) => <Tag tone="default">{FLOW_TYPE_TEXT[row.flowType] ?? row.flowType}</Tag>,
-        },
-        {
-          key: 'formula',
-          title: '绑定公式',
-          width: 200,
-          render: (row) => (
-            <Select
-              value={row.formulaId}
-              options={formulaOptions}
-              disabled={!editable || formulaBusy}
-              onChange={(e) => handleFormulaChange(row.id, e.target.value)}
-            />
-          ),
-        },
-        // 按绑定公式中的变量动态成列（如运输公式 = 运输重量 × 运输距离 × 运输因子 → 「运输重量」「运输距离」两列）
-        ...activityColumnNames.map((name) => ({
-          key: `activity-${name}`,
-          title: `${name} *`,
-          width: 190,
-          render: (row: PcfActivityData) => {
-            const av = row.activityValues.find((v) => v.factorName === name)
-            if (!av) return <span className="pcf-op-flow">-</span>
-            return (
-              <div className="pcf-activity-item">
-                <Input
-                  type="number"
-                  min={0}
-                  value={qtyValue(row.id, av)}
-                  placeholder="请输入"
-                  readOnly={!editable}
-                  invalid={editable && qtyValue(row.id, av).trim() === ''}
-                  onChange={(e) =>
-                    setDraft((prev) => ({ ...prev, [`${row.id}::${av.factorName}`]: e.target.value }))
-                  }
-                />
-                <Select
-                  className="pcf-unit-select"
-                  value={unitValueOf(row.id, av)}
-                  options={unitSelectOptions}
-                  disabled={!editable}
-                  onChange={(e) =>
-                    setUnitDraft((prev) => ({
-                      ...prev,
-                      [`${row.id}::${av.factorName}`]: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            )
-          },
-        })),
-        {
-          key: 'factorId',
-          title: '排放来源',
-          width: 240,
-          render: (row) => {
-            if (!row.requiresFactor) return <span className="pcf-op-flow">-</span>
-            const required = row.direction === 'input'
-            const display = factorDisplayOf(row)
-            const matched = display ? (
-              <>
-                <span className="pcf-factor-name">{display.name}</span>
-                {display.value != null && (
-                  <span className="pcf-factor-value">
-                    {`${display.value}${display.unit ? ` ${display.unit}` : ''}`}
-                  </span>
-                )}
-              </>
-            ) : null
-            if (!editable) {
-              return matched ? (
-                <span className="pcf-factor-cell">{matched}</span>
-              ) : (
-                <span className="pcf-op-flow">未匹配</span>
-              )
-            }
-            return (
-              <button
-                type="button"
-                className={[
-                  'pcf-factor-picker',
-                  display ? '' : 'is-empty',
-                  required && !display ? 'is-invalid' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                title="点击从排放因子库中选择"
-                onClick={() => openFactorPicker(row)}
-              >
-                {matched ?? (
-                  <span className="pcf-factor-name">{required ? '请选择排放因子' : '选填'}</span>
-                )}
-                <Icon name="chevronDown" size={14} />
-              </button>
-            )
-          },
-        },
-      ]
-
-      if (multiOutput) {
-        base.push({
-          key: 'allocateRatio',
-          title: '分配比例（%）',
-          width: 150,
-          render: (row) =>
-            row.direction === 'input' ? (
-              <span className="pcf-op-flow">-</span>
-            ) : (
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={ratioValue(row)}
-                placeholder="请输入比例"
-                readOnly={!editable}
-                onChange={(e) => setRatioDraft((prev) => ({ ...prev, [row.id]: e.target.value }))}
-              />
-            ),
-        })
-      }
-      return base
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editable, formulaBusy, activityColumnNames, draft, unitDraft, ratioDraft, factorDraft, factorOptions, formulaOptions, unitSelectOptions, multiOutput])
-
-    /** 排放因子弹窗表格：单选列 + 因子名称 / 因子值 / 因子单位（仅「启用」态因子） */
-    const factorPickerColumns: Column<PcfFactorOption>[] = [
+    const factorPickerColumns: Column<FactorItem>[] = [
       {
         key: 'pick',
         title: '',
@@ -502,7 +533,7 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
         render: (row) => (
           <input
             type="radio"
-            name="pcf-factor-pick"
+            name="pcf-stage-factor-pick"
             checked={factorPickedId === row.id}
             onChange={() => setFactorPickedId(row.id)}
           />
@@ -510,73 +541,125 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
       },
       { key: 'name', title: '因子名称', width: 240 },
       { key: 'value', title: '因子值', width: 120 },
+      { key: 'unit', title: '因子单位', render: (row) => `${row.numeratorUnit}/${row.denominatorUnit}` },
       {
-        key: 'unit',
-        title: '因子单位',
-        render: (row) => `${row.numeratorUnit}/${row.denominatorUnit}`,
+        key: 'view',
+        title: '操作',
+        width: 90,
+        render: (row) => (
+          <button
+            type="button"
+            className="link"
+            onClick={(e) => {
+              e.stopPropagation()
+              setPickerViewFactorId(row.id)
+            }}
+          >
+            查看
+          </button>
+        ),
       },
     ]
 
-    const handleSubmit = async () => {
-      if (!editable || saving) return
+    /* ---------- 保存 ---------- */
 
-      const missingQty = rows.filter((row) =>
-        row.activityValues.some((av) => {
-          const raw = draft[`${row.id}::${av.factorName}`]
-          return raw !== undefined ? raw.trim() === '' : av.value == null
-        }),
-      )
-      if (missingQty.length > 0) {
-        toast(`还有 ${missingQty.length} 条数据项存在未填写的活动量，活动数据为必填`, 'error')
-        return
-      }
-      const missingFactor = rows.filter(
-        (row) => row.requiresFactor && row.direction === 'input' && !factorValueOf(row),
-      )
-      if (missingFactor.length > 0) {
-        toast(`还有 ${missingFactor.length} 条投入项未匹配排放来源，请手动选择排放因子`, 'error')
-        return
-      }
-      if (multiOutput && Math.abs(ratioTotal - 100) > 0.01) {
-        toast(`工序「${activeOp?.opName ?? ''}」的分配比例合计须为 100%（当前 ${ratioTotal}%）`, 'error')
-        return
-      }
+    /** 已完成项目改数据：先弹「数据变更」提示，确认后再落库并回退重算 */
+    const [recalcConfirm, setRecalcConfirm] = useState(false)
 
+    /** 已完成/已核算项目：用户发起数据变更时立即弹出「需重新核算」确认 */
+    const promptIfCompletedChanged = useCallback(() => {
+      if ((project.status === 'done' || project.status === 'calculated') && !recalcConfirm) {
+        setRecalcConfirm(true)
+      }
+    }, [project.status, recalcConfirm])
+
+    /** 取消变更：回退到最近一次落库基线 */
+    const revertToBaseline = useCallback(() => {
+      if (baselineRef.current) {
+        try {
+          const { items: baseItems, nodes: baseNodes } = JSON.parse(baselineRef.current)
+          setItems(baseItems)
+          setNodes(baseNodes)
+          setFactorDraft({})
+        } catch {
+          // ignore parse error
+        }
+      }
+    }, [])
+
+    const performSave = async (fromChange = false) => {
+      // 空白行（未填名称）不落库，仅校验已填写的数据项
+      const meaningful = items.filter(
+        (item) => item.name.trim() !== '' && stages.some((s) => s.id === item.stageId),
+      )
       setSaving(true)
       try {
-        await updatePcfActivityData(
+        await savePcfStageData(
           project.id,
-          rows.map((row) => {
-            const rawRatio = ratioDraft[row.id]
-            const toNum = (raw: string | undefined, fallback: number | null) => {
-              if (raw === undefined) return fallback
-              const trimmed = raw.trim()
-              if (trimmed === '') return null
-              const num = Number(trimmed)
-              return Number.isNaN(num) ? null : num
-            }
+          meaningful.map((item) => {
+            const fid = factorDraft[item.id] !== undefined ? factorDraft[item.id] : item.factorId
+            const picked = factors.find((x) => x.id === fid)
             return {
-              id: row.id,
-              activityValues: row.activityValues.map((av) => ({
-                factorName: av.factorName,
-                value: toNum(draft[`${row.id}::${av.factorName}`], av.value),
-                unit: unitDraft[`${row.id}::${av.factorName}`] ?? av.unit,
-              })),
-              factorId:
-                factorDraft[row.id] !== undefined ? factorDraft[row.id] || null : row.factorId,
-              allocateRatio: toNum(rawRatio, row.allocateRatio),
+              id: item.id,
+              projectId: project.id,
+              stageId: item.stageId,
+              stageName: stages.find((s) => s.id === item.stageId)?.name ?? item.stageName,
+              nodeId: item.nodeId ?? null,
+              direction: pcfDirectionOf(item.itemType),
+              name: item.name.trim(),
+              itemType: item.itemType,
+              emissionType: item.itemType === 'emission' ? item.emissionType : null,
+              quantity: Number(item.quantity),
+              unit: item.unit,
+              factorId: fid ? fid : null,
+              factorName: picked ? picked.name : fid ? item.factorName : '',
+              factorValue: picked ? picked.value : fid ? item.factorValue : null,
+              factorCalibers: picked ? picked.calibers ?? null : fid ? item.factorCalibers : null,
+              vouchers: item.vouchers,
             }
           }),
         )
-
+        await savePcfProcessNodes(project.id, nodes)
         await load()
-        onSaved({ ...project, currentStep: Math.max(project.currentStep, 3) })
-        toast('保存成功')
+        // 保存后回读项目（服务端在回改数据后会回退「待检测」，需重走一键检测 → 核算）
+        onSaved(await fetchPcfProject(project.id))
+        if (!fromChange) {
+          onNext?.()
+        }
+        toast(fromChange ? '保存成功（请重新检测并核算）' : '保存成功')
       } catch (error) {
         toast(error instanceof Error ? error.message : '保存失败', 'error')
       } finally {
         setSaving(false)
       }
+    }
+
+    const handleSubmit = async () => {
+      if (!editable || saving) return
+
+      const meaningful = items.filter(
+        (item) => item.name.trim() !== '' && stages.some((s) => s.id === item.stageId),
+      )
+      const missingQty = meaningful.filter((item) => item.quantity.trim() === '')
+      if (missingQty.length > 0) {
+        toast(`还有 ${missingQty.length} 条数据项未填写数量`, 'error')
+        return
+      }
+
+      // 数据未变更：无需重复保存，直接推进（「下一步」由工作台跳转）
+      const current = JSON.stringify({ items, nodes })
+      if (baselineRef.current && current === baselineRef.current) {
+        onNext?.()
+        return
+      }
+
+      // 已完成（或历史已核算）项目修改数据：先提示「数据变更，请重新核算」，确认后再落库
+      if (project.status === 'done' || project.status === 'calculated') {
+        setRecalcConfirm(true)
+        return
+      }
+
+      await performSave()
     }
 
     useImperativeHandle(ref, () => ({
@@ -585,418 +668,421 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
       },
     }))
 
-    /* ---------- 新增 / 删除工序 ---------- */
+    /** 数据列表列：名称 / 数据项类型 / 数量 / 单位 / 上游过程名称 / 操作 */
+    const columns: Column<EditItem>[] = [
+      {
+        key: 'name',
+        title: '名称',
+        width: 170,
+        render: (row) => (
+          <Input
+            value={row.name}
+            placeholder="请输入"
+            readOnly={!editable}
+            onChange={(e) => updateItem(row.id, { name: e.target.value })}
+          />
+        ),
+      },
+      {
+        key: 'itemType',
+        title: '数据项类型',
+        width: 270,
+        render: (row) => (
+          <div className="pcf-inline">
+            <Select
+              value={row.itemType}
+              options={ALL_TYPE_OPTIONS}
+              disabled={!editable}
+              onChange={(e) =>
+                updateItem(row.id, {
+                  itemType: e.target.value as PcfDataItemType,
+                  emissionType: e.target.value === 'emission' ? row.emissionType : null,
+                })
+              }
+            />
+            {row.itemType === 'emission' && (
+              <Select
+                className="pcf-unit-select"
+                value={row.emissionType ?? ''}
+                placeholder="废水/废渣/废气"
+                options={EMISSION_TYPE_OPTIONS}
+                disabled={!editable}
+                onChange={(e) =>
+                  updateItem(row.id, { emissionType: (e.target.value || null) as PcfEmissionType | null })
+                }
+              />
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'quantity',
+        title: '数量',
+        width: 150,
+        render: (row) => (
+          <Input
+            value={row.quantity}
+            inputMode="decimal"
+            placeholder="请输入"
+            readOnly={!editable}
+            onChange={(e) => updateItem(row.id, { quantity: e.target.value })}
+          />
+        ),
+      },
+      {
+        key: 'unit',
+        title: '单位',
+        width: 110,
+        render: (row) => (
+          <CascaderSelect
+            value={row.unit}
+            placeholder="请选择"
+            options={unitOptions}
+            searchPlaceholder="搜索单位符号 / 名称"
+            disabled={!editable}
+            onChange={(value) => updateItem(row.id, { unit: value })}
+          />
+        ),
+      },
+      {
+        key: 'upstream',
+        title: '上游过程名称',
+        width: 240,
+        render: (row) => {
+          const node = nodes.find((n) => n.sourceItemId === row.id)
+          if (node) {
+            return (
+              <button
+                type="button"
+                className="link"
+                title="查看该上游过程节点数据"
+                onClick={() => setActiveNodeId(node.id)}
+              >
+                {node.name} ↗
+              </button>
+            )
+          }
+          const display = factorDisplayOf(row)
+          if (!editable) {
+            return display ? (
+              <span className="pcf-factor-cell">
+                <span className="pcf-factor-name">{display.name}</span>
+              </span>
+            ) : (
+              <span className="pcf-op-flow">-</span>
+            )
+          }
+          return (
+            <span className="pcf-inline">
+              {display ? (
+                /* 已引用因子：不再支持继续追溯，仅可更换因子或撤回 */
+                <>
+                  <button
+                    type="button"
+                    className="link"
+                    title={`已引用因子：${display.name}，点击更换`}
+                    onClick={() => void openFactorPicker(row)}
+                  >
+                    {display.name}
+                  </button>
+                  <button
+                    type="button"
+                    className="pcf-icon-btn"
+                    title="撤回因子选择（撤回后可重新选择因子或继续追溯）"
+                    aria-label="撤回因子选择"
+                    onClick={() => handleCancelFactor(row.id)}
+                  >
+                    <Icon name="close" size={13} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="link" data-ann-target="pcf.step2.factor" onClick={() => void openFactorPicker(row)}>
+                    引用因子
+                  </button>
+                  <button type="button" className="link" data-ann-target="pcf.step2.trace" onClick={() => handleTrace(row)}>
+                    继续追溯
+                  </button>
+                </>
+              )}
+            </span>
+          )
+        },
+      },
+      {
+        key: 'actions',
+        title: '操作',
+        width: 160,
+        render: (row) => (
+          <span className="pcf-inline">
+            <button type="button" className="link" data-ann-target="pcf.step2.voucher" onClick={() => setVoucherRowId(row.id)}>
+              数据凭证{row.vouchers.length > 0 ? `（${row.vouchers.length}）` : ''}
+            </button>
+            {editable && (
+              <button type="button" className="link link-danger" onClick={() => handleDelete(row.id)}>
+                删除
+              </button>
+            )}
+          </span>
+        ),
+      },
+    ]
 
-    const opTemplateOptions = useMemo<SelectOption[]>(
-      () => operationTemplates.map((item) => ({ label: `${item.name}（${item.code}）`, value: item.code })),
-      [operationTemplates],
-    )
+    /** 导入校验结果列 */
+    const importErrorColumns: Column<ImportErrorRow>[] = [
+      { key: 'row', title: '行号', width: 80, render: (row) => `第 ${row.row} 行` },
+      { key: 'name', title: '名称', width: 160 },
+      { key: 'reason', title: '失败原因' },
+    ]
 
-    const processOptions = useMemo<SelectOption[]>(
-      () => processGroups.map((group) => ({ label: group.processName, value: group.processCode })),
-      [processGroups],
-    )
+    const importValidColumns: Column<ImportValidRow>[] = [
+      { key: 'name', title: '名称', width: 160 },
+      { key: 'itemType', title: '数据项类型', width: 150, render: (row) => PCF_ITEM_TYPE_TEXT[row.itemType] },
+      { key: 'quantity', title: '数量', width: 120 },
+      { key: 'unit', title: '单位', width: 90 },
+      {
+        key: 'emissionType',
+        title: '排放物类型',
+        width: 100,
+        render: (row) => (row.emissionType ? PCF_EMISSION_TYPE_TEXT[row.emissionType] : '-'),
+      },
+    ]
 
-    const processTemplateOptions = useMemo<SelectOption[]>(
-      () =>
-        processTemplates.map((item) => ({
-          label: `${item.name}（${item.lifecycleStage}）`,
-          value: item.code,
-        })),
-      [processTemplates],
-    )
-
-    const stageOptions = useMemo<SelectOption[]>(
-      () => treeStages.map((stage) => ({ label: stage.name, value: stage.name })),
-      [treeStages],
-    )
-
-    const handleAddProcess = async () => {
-      if (opBusy) return
-      if (!addProcessStage) {
-        toast('请选择所属生命周期阶段', 'error')
-        return
-      }
-      if (!addProcessCode) {
-        toast('请选择工艺流程', 'error')
-        return
-      }
-      setOpBusy(true)
-      try {
-        await addPcfProcess(project.id, addProcessCode, addProcessStage)
-        setAddProcessOpen(false)
-        setAddProcessCode('')
-        setAddProcessStage('')
-        await load()
-        toast('工艺流程已新增')
-      } catch (error) {
-        toast(error instanceof Error ? error.message : '新增失败', 'error')
-      } finally {
-        setOpBusy(false)
-      }
+    /**
+     * 左树：**以「数据项」为层级**递归渲染「继续追溯」链路。
+     * 生命周期阶段（末级，可点）下展示**已追溯的数据项**，追溯生成的上游过程挂在**该数据项下**（可继续递归），
+     * 不再把追溯子节点直接挂在生命周期阶段下；未追溯的数据项不进入左树（右侧数据列表已展示，保持树简洁）。
+     */
+    const renderStageTrace = (stageId: string, parentNodeId: string | null, depth: number): ReactNode => {
+      const traced = items
+        .filter(
+          (item) =>
+            item.stageId === stageId && (item.nodeId ?? '') === (parentNodeId ?? '') && item.name.trim() !== '',
+        )
+        .map((item) => ({ item, node: nodes.find((n) => n.sourceItemId === item.id) }))
+        .filter((entry): entry is { item: EditItem; node: PcfProcessNode } => !!entry.node)
+      if (traced.length === 0) return null
+      return traced.map(({ item, node }) => (
+        <div key={node.id}>
+          <div
+            className={[
+              'pcf-tree-node',
+              depth <= 1 ? 'pcf-tree-level2' : 'pcf-tree-level3',
+              'is-clickable',
+              node.id === activeNodeId ? 'is-active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setActiveNodeId(node.id)}
+          >
+            <span className="pcf-inline">
+              <span className="nowrap">◈ {item.name}</span>
+              <span className="pcf-tree-tag">已追溯</span>
+            </span>
+            {editable && (
+              <button
+                type="button"
+                className="pcf-tree-remove"
+                title="取消追溯（同时移除该数据项上游过程内已录入的数据）"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteNode(node.id)
+                }}
+              >
+                取消追溯
+              </button>
+            )}
+          </div>
+          {renderStageTrace(stageId, node.id, depth + 1)}
+        </div>
+      ))
     }
-
-    /** 修改数据项绑定公式：重建变量列并重置默认因子（本地更新，不整页刷新） */
-    const handleFormulaChange = async (rowId: string, formulaId: string) => {
-      if (formulaBusy) return
-      setFormulaBusy(true)
-      try {
-        const updated = await updatePcfActivityFormula(project.id, rowId, formulaId)
-        setRows((prev) => prev.map((row) => (row.id === updated.id ? updated : row)))
-        toast('绑定公式已更新')
-      } catch (error) {
-        toast(error instanceof Error ? error.message : '修改失败', 'error')
-      } finally {
-        setFormulaBusy(false)
-      }
-    }
-
-    const handleAddOperation = async () => {
-      if (opBusy) return
-      if (!addForm.opCode) {
-        toast('请选择工序', 'error')
-        return
-      }
-      if (!addForm.processCode && !addForm.stage) {
-        toast('请选择所属工艺流程或生命周期阶段', 'error')
-        return
-      }
-      if (addForm.processCode && addForm.stage) {
-        toast('所属工艺流程与生命周期阶段只能二选一', 'error')
-        return
-      }
-      setOpBusy(true)
-      try {
-        await addPcfOperation(project.id, {
-          opCode: addForm.opCode,
-          processCode: addForm.processCode || undefined,
-          stage: addForm.stage || undefined,
-        })
-        setAddOpen(false)
-        setAddForm({ opCode: '', processCode: '', stage: '' })
-        await load()
-        toast('工序已新增')
-      } catch (error) {
-        toast(error instanceof Error ? error.message : '新增失败', 'error')
-      } finally {
-        setOpBusy(false)
-      }
-    }
-
-    const handleRemoveOperation = async () => {
-      if (!deleteOpId || opBusy) return
-      setOpBusy(true)
-      try {
-        await removePcfOperation(project.id, deleteOpId)
-        setDeleteOpId('')
-        await load()
-        toast('工序已删除')
-      } catch (error) {
-        toast(error instanceof Error ? error.message : '删除失败', 'error')
-      } finally {
-        setOpBusy(false)
-      }
-    }
-
-    const deleteTargetOp = operations.find((item) => item.id === deleteOpId) ?? null
 
     if (loading) {
       return <div className="pcf-placeholder">加载中…</div>
     }
 
+    const scopeTitle = activeStage
+      ? activeNode
+        ? `${activeStage.name} / ${activeNode.name}`
+        : `${activeStage.name} · 全部`
+      : '请选择生命周期阶段'
+
     return (
-      <div className="pcf-step-form">
+      <div className="pcf-step-form" data-ann-target="pcf.step2.page.global">
         <div className="pcf-fill-layout">
-          <aside className="pcf-fill-tree">
+            <aside className="pcf-fill-tree" data-ann-target="pcf.step2.tree">
             <div className="pcf-fill-tree-head">
-              生命周期阶段 / 工序
-              <span className={progress.pending > 0 ? 'pcf-ratio-warn' : 'pcf-panel-tip'}>
-                已填 {progress.filled}/{progress.total}
-                {progress.pending > 0 ? `（待填 ${progress.pending}）` : '（已填全）'}
-              </span>
-              {editable && (
-                <div className="pcf-inline" style={{ flexWrap: 'wrap' }}>
-                  <Button
-                    onClick={() => {
-                      setAddProcessCode('')
-                      setAddProcessStage('')
-                      setAddProcessOpen(true)
-                    }}
-                  >
-                    新增工艺流程
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setAddForm({ opCode: '', processCode: '', stage: '' })
-                      setAddOpen(true)
-                    }}
-                  >
-                    新增工序
-                  </Button>
-                </div>
-              )}
+              生命周期阶段 / 追溯链路
+              <span className="pcf-panel-tip">共 {stages.length} 个阶段</span>
             </div>
-            {treeStages.map((stage) => (
-              <div key={stage.id}>
-                <div className="pcf-tree-node pcf-tree-level1">
-                  <span className="nowrap">{stage.name}</span>
-                  {stage.processes.length === 0 && (
-                    <span className="pcf-tree-tag">未匹配</span>
-                  )}
-                </div>
-                {stage.processes.length === 0 ? (
-                  <div className="pcf-tree-empty">
-                    未匹配到该阶段的工艺流程，可点击上方「新增工艺流程 / 新增工序」补充
+            {stages.length === 0 && (
+              <div className="pcf-tree-empty">步骤①未勾选生命周期阶段，请先在「目标与范围」配置后再返回建模</div>
+            )}
+            {stages.map((stage) => {
+              const isLeaf = leafStageIds.has(stage.id)
+              const count = items.filter((item) => item.stageId === stage.id && item.name.trim() !== '').length
+              const isActiveStage = stage.id === activeStageId
+              return (
+                <div key={stage.id}>
+                  <div
+                    className={[
+                      'pcf-tree-node',
+                      stage.level === 2 ? 'pcf-tree-level2' : 'pcf-tree-level1',
+                      isLeaf ? 'is-clickable' : 'is-group',
+                      isActiveStage && !activeNodeId ? 'is-active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      if (!isLeaf) return
+                      setActiveStageId(stage.id)
+                      setActiveNodeId('')
+                    }}
+                  >
+                    <span className="nowrap">{stage.name}</span>
+                    {isLeaf && <span className="pcf-tree-tag">{count} 项</span>}
                   </div>
-                ) : (
-                  stage.processes.map((proc) =>
-                    proc.custom ? (
-                      /* 自定义工艺（按阶段新增）：不显示工艺层级，工序直接挂在阶段下 */
-                      proc.rows.map((op) => (
-                        <div
-                          key={op.id}
-                          className={[
-                            'pcf-tree-node',
-                            'pcf-tree-level2',
-                            'is-clickable',
-                            op.id === activeOpId ? 'is-active' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          onClick={() => {
-                            setActiveOpId(op.id)
-                            setKeyword('')
-                          }}
-                        >
-                          <span className="nowrap">{op.opName}</span>
-                          {opFilled(op.id) && <span className="pcf-tree-dot">已填</span>}
-                          {editable && (
-                            <button
-                              className="pcf-tree-remove"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteOpId(op.id)
-                              }}
-                            >
-                              删除
-                            </button>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div key={proc.processCode}>
-                        <div className="pcf-tree-node pcf-tree-level2">
-                          <span className="nowrap">{proc.processName}</span>
-                        </div>
-                        {proc.rows.map((op) => (
-                          <div
-                            key={op.id}
-                            className={[
-                              'pcf-tree-node',
-                              'pcf-tree-level3',
-                              op.id === activeOpId ? 'is-active' : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                            onClick={() => {
-                              setActiveOpId(op.id)
-                              setKeyword('')
-                            }}
-                          >
-                            <span className="nowrap">{op.opName}</span>
-                            {opFilled(op.id) && <span className="pcf-tree-dot">已填</span>}
-                            {editable && (
-                              <button
-                                className="pcf-tree-remove"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setDeleteOpId(op.id)
-                                }}
-                              >
-                                删除
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ),
-                  )
-                )}
-              </div>
-            ))}
+                  {isLeaf && isActiveStage && renderStageTrace(stage.id, null, 1)}
+                </div>
+              )
+            })}
           </aside>
 
           <section className="pcf-fill-main">
             <div className="pcf-fill-head">
               <div className="pcf-content-title">
-                {activeOp
-                  ? activeOp.processCode.startsWith('CUSTOM-')
-                    ? activeOp.opName
-                    : `${activeOp.processName} / ${activeOp.opName}`
-                  : '请选择核算工序'}
+                数据列表
+                <span className="pcf-panel-tip" style={{ marginLeft: 8 }}>
+                  {scopeTitle}
+                </span>
               </div>
-              <div className="pcf-inline" style={{ maxWidth: 240 }}>
-                <Input
-                  value={keyword}
-                  placeholder="输入数据项名称搜索"
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
-              </div>
+              {editable && (
+                <span className="pcf-inline">
+                  <Button disabled={!activeStage} data-ann-target="pcf.step2.import" onClick={openImport}>
+                    导入
+                  </Button>
+                  <Button variant="primary" disabled={!activeStage} onClick={handleAdd}>
+                    添加数据
+                  </Button>
+                  <Button disabled={!project.id} data-ann-target="pcf.step2.canvas" onClick={() => setCanvasOpen(true)} title="以流程画布形式预览已保存的建模数据">
+                    预览模型
+                  </Button>
+                </span>
+              )}
             </div>
 
-            {activeOp && (
-              <>
-                <div className="pcf-op-group">
-                  <div className="pcf-op-group-title">
-                    投入项（{opRows.filter((r) => r.direction === 'input').length}）
-                  </div>
-                  <div className="pcf-table-wrap">
-                    <Table
-                      columns={columns}
-                      data={opRows.filter((r) => r.direction === 'input')}
-                      rowKey={(row) => row.id}
-                      emptyText="暂无投入项"
-                    />
-                  </div>
-                </div>
-
-                <div className="pcf-op-group">
-                  <div className="pcf-op-group-title">
-                    产出项（{opRows.filter((r) => r.direction === 'output').length}）
-                    {multiOutput ? (
-                      <span className={ratioTotal === 100 ? 'pcf-panel-tip' : 'pcf-ratio-warn'}>
-                        分配比例合计 {ratioTotal}%（须为 100%）
-                      </span>
-                    ) : (
-                      <span className="pcf-panel-tip">单产出，分配比例固定 100%</span>
-                    )}
-                  </div>
-                  <div className="pcf-table-wrap">
-                    <Table
-                      columns={columns}
-                      data={opRows.filter((r) => r.direction === 'output')}
-                      rowKey={(row) => row.id}
-                      emptyText="暂无产出项"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            {!activeOp && (
-              <div className="pcf-placeholder">
-                当前没有与「步骤①勾选的生命周期阶段」匹配的工艺流程或工序：可点击左侧「新增工艺流程 / 新增工序」补充
+            {activeStage ? (
+              <div className="pcf-table-wrap" data-ann-target="pcf.step2.table">
+                <Table
+                  columns={columns}
+                  data={scopeItems}
+                  rowKey={(row) => row.id}
+                  emptyText="暂无数据项，点击右上角「添加数据」录入或「导入」批量导入"
+                />
               </div>
+            ) : (
+              <div className="pcf-placeholder">请先在左侧选择一个生命周期阶段</div>
             )}
           </section>
         </div>
 
         <div className="pcf-form-tip">
-          工序已按「引用即复制」从产品带入本项目；步骤①勾选的生命周期阶段全部展示，产品工艺未匹配到的阶段显示为空，
-          可通过「新增工艺流程 / 新增工序」补充。活动量为必填（单位可切换），需匹配排放来源的投入项须点击「排放来源」
-          单元格，在弹窗中从排放因子库单选匹配；多产出工序的分配比例合计须为 100%。
+          左侧为步骤①勾选的生命周期阶段（<b>仅末级阶段可点击</b>）及其<b>继续追溯链路</b>；选中阶段 / 数据项后，右侧为统一数据列表（输入、输出合并在同一张表），
+          默认保留一行空白行，支持添删。「上游过程名称」列<b>引用因子与继续追溯二选一</b>：点击继续追溯会按数据项名称生成一个上游过程，并挂在<b>该数据项下</b>（出现在左侧树，可继续递归），
+          可在其中录入其数据；已引用因子时点击<b>撤回</b>图标可清除因子，恢复为可重新选择因子或继续追溯。名称与<b>数量</b>为必填，
+          数量按<b>每 1 个声明单位</b>的消耗 / 产出计（如「0.062 kg / 双」，声明单位即步骤①选的单位）。「操作」列可上传<b>数据凭证</b>附件（非必填）；空白行不落库。
         </div>
 
+        {/* 导入：下载模板 → 上传 CSV → 校验 → 导入 */}
         <Modal
-          open={addProcessOpen}
-          title="新增工艺流程"
-          onClose={() => setAddProcessOpen(false)}
+          open={importOpen}
+          title="导入数据"
+          size="lg"
+          onClose={() => setImportOpen(false)}
           footer={
             <>
-              <Button onClick={() => setAddProcessOpen(false)}>取消</Button>
-              <Button variant="primary" disabled={opBusy} onClick={handleAddProcess}>
-                确认新增
+              <Button onClick={() => setImportOpen(false)}>取消</Button>
+              <Button
+                variant="primary"
+                disabled={!importParsed || importValid.length === 0}
+                onClick={handleImportConfirm}
+              >
+                {`确认导入（${importValid.length}）`}
               </Button>
             </>
           }
         >
-          <div className="pcf-step-form">
-            <FormField label="所属生命周期阶段" required hint="选择该工艺流程归属的生命周期阶段（默认取步骤①勾选的阶段）">
-              <Select
-                value={addProcessStage}
-                placeholder="请选择阶段"
-                options={stageOptions}
-                onChange={(e) => setAddProcessStage(e.target.value)}
-              />
-            </FormField>
-            <FormField label="选择工艺流程" required hint="仅工艺流程库中「启用」的工艺可选">
-              <Select
-                value={addProcessCode}
-                placeholder="请选择工艺流程"
-                options={processTemplateOptions}
-                onChange={(e) => setAddProcessCode(e.target.value)}
-              />
-            </FormField>
+          <div className="view-block">
+            <div className="view-block-title flex-between">
+              <span>第 1 步：下载模板并填写</span>
+              <Button size="small" onClick={downloadTemplate}>
+                下载 CSV 模板
+              </Button>
+            </div>
+            <ol className="pcf-import-steps">
+              <li>模板列：名称、数据项类型、数量、单位、排放物类型；</li>
+              <li>数据项类型填「原辅料 / 自然资源 / 能源及能源介质 / 产品 / 中间产品 / 副产品 / 排放物」；</li>
+              <li>类型为「排放物」时须填排放物类型「废水 / 废渣 / 废气」；</li>
+              <li>保存为 CSV 后在下方上传，校验通过即导入当前作用域「{scopeTitle}」。</li>
+            </ol>
           </div>
-        </Modal>
 
-        <Modal
-          open={addOpen}
-          title="新增工序"
-          onClose={() => setAddOpen(false)}
-          footer={
-            <>
-              <Button onClick={() => setAddOpen(false)}>取消</Button>
-              <Button variant="primary" disabled={opBusy} onClick={handleAddOperation}>
-                确认新增
-              </Button>
-            </>
-          }
-        >
-          <div className="pcf-step-form">
-            <FormField label="选择工序" required hint="仅工序库中「启用」的工序可选">
-              <Select
-                value={addForm.opCode}
-                placeholder="请选择工序"
-                options={opTemplateOptions}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, opCode: e.target.value }))}
-              />
-            </FormField>
-            <FormField
-              label="所属工艺流程"
-              hint="与「所属生命周期阶段」二选一：挂到已有工艺流程下"
-            >
-              <Select
-                value={addForm.processCode}
-                placeholder="可选：请选择工艺流程"
-                options={processOptions}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, processCode: e.target.value }))}
-              />
-            </FormField>
-            <FormField
-              label="所属生命周期阶段"
-              hint="与「所属工艺流程」二选一：直接归属到该阶段（自动创建自定义工艺）"
-            >
-              <Select
-                value={addForm.stage}
-                placeholder="可选：请选择生命周期阶段"
-                options={stageOptions}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, stage: e.target.value }))}
-              />
-            </FormField>
+          <div className="view-block">
+            <div className="view-block-title">第 2 步：上传文件</div>
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void handleImportFile(file)
+                e.target.value = ''
+              }}
+            />
+            <Button onClick={() => importFileRef.current?.click()}>选择文件</Button>
+            {importFileName && (
+              <span className="toolbar-tip" style={{ marginLeft: 8 }}>
+                {importFileName}
+              </span>
+            )}
           </div>
+
+          {importParsed && (
+            <div className="view-block">
+              <div className="view-block-title flex-between">
+                <span>第 3 步：校验结果</span>
+                <span className="toolbar-tip">
+                  可导入 {importValid.length} 条 · 失败 {importErrors.length} 条
+                </span>
+              </div>
+              {importErrors.length > 0 && (
+                <div className="pcf-table-wrap" style={{ marginBottom: 'var(--space-sm)' }}>
+                  <Table
+                    columns={importErrorColumns}
+                    data={importErrors}
+                    rowKey={(row) => String(row.row)}
+                    emptyText="无"
+                  />
+                </div>
+              )}
+              {importValid.length > 0 ? (
+                <div className="pcf-table-wrap">
+                  <Table columns={importValidColumns} data={importValid} rowKey={(row) => row.key} />
+                </div>
+              ) : (
+                <div className="empty">没有可导入的数据行</div>
+              )}
+            </div>
+          )}
         </Modal>
 
-        <Modal
-          open={!!deleteOpId}
-          title="确认删除工序"
-          size="sm"
-          onClose={() => setDeleteOpId('')}
-          footer={
-            <>
-              <Button onClick={() => setDeleteOpId('')}>取消</Button>
-              <Button variant="danger" disabled={opBusy} onClick={handleRemoveOperation}>
-                确认删除
-              </Button>
-            </>
-          }
-        >
-          删除后该工序及其活动数据填报行将一并移除，确认删除工序「{deleteTargetOp?.opName ?? ''}」？
-        </Modal>
-
+        {/* 排放因子选择（引用因子） */}
         <Modal
           open={!!factorPickerRowId}
-          title="选择排放因子"
-          size="lg"
+          title={<span data-ann-target="pcf.step2.factor.modal">选择排放因子</span>}
+          size="xl"
           onClose={() => setFactorPickerRowId('')}
           footer={
             <>
@@ -1007,27 +1093,115 @@ const ProjectStepTwo = forwardRef<ProjectStepTwoHandle, ProjectStepTwoProps>(
             </>
           }
         >
-          <div className="pcf-picker-query">
-            <Input
-              value={factorKeyword}
-              placeholder="输入因子名称 / 因子编码搜索"
-              onChange={(e) => setFactorKeyword(e.target.value)}
-            />
-          </div>
-          <div className="pcf-table-wrap pcf-factor-table">
-            <Table
-              columns={factorPickerColumns}
-              data={factorPickerRows}
-              rowKey={(row) => row.id}
-              emptyText="未找到匹配的排放因子"
-              onRowClick={(row) => setFactorPickedId(row.id)}
-              rowClassName={(row) => (factorPickedId === row.id ? 'is-picked' : '')}
-            />
+          <div className="pcf-factor-picker-layout">
+            <div className="pcf-lib-list">
+              {pickerLibraries.length === 0 && <div className="pcf-lib-group">暂无因子库</div>}
+              {['背景数据库', '我的因子库'].map((group) => {
+                const groupItems = pickerLibraries.filter((item) => item.group === group)
+                if (groupItems.length === 0) return null
+                return (
+                  <div key={group}>
+                    <div className="pcf-lib-group">{group}</div>
+                    {groupItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={['pcf-lib-item', pickerLibId === item.id ? 'is-active' : '']
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => void selectPickerLib(item.id)}
+                      >
+                        <span className="cell-ellipsis">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div>
+              <div className="pcf-picker-query">
+                <Input
+                  value={factorKeyword}
+                  placeholder="输入因子名称 / 因子编码搜索"
+                  onChange={(e) => setFactorKeyword(e.target.value)}
+                />
+              </div>
+              <div className="pcf-table-wrap pcf-factor-table">
+                <Table
+                  columns={factorPickerColumns}
+                  data={factorPickerRows}
+                  rowKey={(row) => row.id}
+                  loading={pickerLoading}
+                  emptyText="该库暂无因子"
+                  onRowClick={(row) => setFactorPickedId(row.id)}
+                  rowClassName={(row) => (factorPickedId === row.id ? 'is-picked' : '')}
+                />
+              </div>
+            </div>
           </div>
           <div className="pcf-factor-tip">
-            仅展示排放因子库中「启用」的因子，单选；确认后因子名称与因子值将回显到数据项列表。
+            左侧选择「背景数据库」或「我的因子库」，右侧单选因子；点击「查看」可查看因子详情。确认后因子将回显到「上游过程名称」列。
           </div>
         </Modal>
+
+        <Modal
+          open={!!pickerViewFactor}
+          title="因子详情"
+          size="lg"
+          onClose={() => setPickerViewFactorId('')}
+          footer={<Button onClick={() => setPickerViewFactorId('')}>关闭</Button>}
+        >
+          {pickerViewFactor && <FactorInfoPanel factor={pickerViewFactor} />}
+        </Modal>
+
+        {/* 数据凭证（操作列入口）：上传 / 查看凭证附件，非必填 */}
+        <VoucherModal
+          open={!!voucherRowId}
+          subject={items.find((item) => item.id === voucherRowId)?.name ?? ''}
+          value={items.find((item) => item.id === voucherRowId)?.vouchers ?? []}
+          readOnly={!editable}
+          onClose={() => setVoucherRowId('')}
+          onConfirm={(vouchers) => updateItem(voucherRowId, { vouchers })}
+        />
+
+        {/* 数据变更提示：已完成项目修改数据后需重新检测 → 核算 */}
+        <Modal
+          open={recalcConfirm}
+          title="数据变更提示"
+          size="sm"
+          onClose={() => {
+            setRecalcConfirm(false)
+            revertToBaseline()
+          }}
+          footer={
+            <>
+              <Button
+                onClick={() => {
+                  setRecalcConfirm(false)
+                  revertToBaseline()
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                variant="primary"
+                disabled={saving}
+                onClick={() => {
+                  setRecalcConfirm(false)
+                  void performSave(true)
+                }}
+              >
+                确认
+              </Button>
+            </>
+          }
+        >
+          数据发生变更，请重新进行核算。
+        </Modal>
+
+        {/* 模型预览 · 流程画布（输入 / 输出 + 追溯链路） */}
+        <PcfFlowCanvas open={canvasOpen} project={project} onClose={() => setCanvasOpen(false)} />
       </div>
     )
   },

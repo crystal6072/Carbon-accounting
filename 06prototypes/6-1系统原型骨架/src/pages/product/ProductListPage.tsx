@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { Button, CascaderSelect, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { collectTreeValues } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
-import { fetchCategories, fetchProducts, updateProductUseStatus } from '@/mock'
-import type { CategoryItem, ProductItem, ProductUseStatus } from '@/types'
+import { deleteProduct, fetchCategories, fetchCategoryTreeOptions, fetchProducts, updateProductUseStatus } from '@/mock'
+import type { CategoryItem, ProductItem, ProductUseStatus, TreeOption } from '@/types'
 import ProductConfirmModal from './ProductConfirmModal'
-import { useStatusText, useStatusTone } from './productMeta'
+import ProductDeleteModal from './ProductDeleteModal'
+import { filterEnabledCategories, useStatusText, useStatusTone } from './productMeta'
 import './ProductPage.css'
 
 const PAGE_SIZE = 20
@@ -24,18 +26,26 @@ export default function ProductListPage() {
   const toast = useToast()
   const [list, setList] = useState<ProductItem[]>([])
   const [categories, setCategories] = useState<CategoryItem[]>([])
+  /** 产品分类多级选项（一级 / 二级 / 三级），供筛选使用 */
+  const [categoryTree, setCategoryTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState<QueryState>(EMPTY_QUERY)
   const [page, setPage] = useState(1)
 
   const [confirm, setConfirm] = useState<{ product: ProductItem; target: ProductUseStatus } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ProductItem | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [products, categoryList] = await Promise.all([fetchProducts(), fetchCategories()])
+      const [products, categoryList, categoryTreeList] = await Promise.all([
+        fetchProducts(),
+        fetchCategories(),
+        fetchCategoryTreeOptions(),
+      ])
       setList(products)
       setCategories(categoryList)
+      setCategoryTree(categoryTreeList)
     } finally {
       setLoading(false)
     }
@@ -51,17 +61,7 @@ export default function ProductListPage() {
     return map
   }, [categories])
 
-  const categoryOptions = useMemo<SelectOption[]>(
-    () =>
-      categories
-        .slice()
-        .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-        .map((item) => ({
-          label: `${'　'.repeat(item.level - 1)}${item.name}${item.status === 'disabled' ? '（已禁用）' : ''}`,
-          value: item.id,
-        })),
-    [categories],
-  )
+  const categoryOptions = useMemo<TreeOption[]>(() => filterEnabledCategories(categoryTree), [categoryTree])
 
   const rows = useMemo(() => {
     let data = list
@@ -73,13 +73,15 @@ export default function ProductListPage() {
       data = data.filter((item) => item.name.includes(query.name.trim()))
     }
     if (query.categoryId) {
-      data = data.filter((item) => item.categoryId === query.categoryId)
+      /** 选中父级分类时，命中其下所有子级分类 */
+      const matched = new Set(collectTreeValues(categoryOptions, query.categoryId))
+      data = data.filter((item) => matched.has(item.categoryId))
     }
     if (query.useStatus) {
       data = data.filter((item) => item.useStatus === query.useStatus)
     }
     return data
-  }, [list, query])
+  }, [list, query, categoryOptions])
 
   useEffect(() => {
     setPage(1)
@@ -99,10 +101,22 @@ export default function ProductListPage() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteProduct(deleteTarget.id)
+      toast('删除成功')
+      setDeleteTarget(null)
+      await load()
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '操作失败', 'error')
+    }
+  }
+
   const columns: Column<ProductItem>[] = [
     {
       key: 'code',
-      title: '产品编码',
+      title: <span data-ann-target="product.col.code">产品编码</span>,
       width: 120,
       render: (row) => (
         <button className="link mono nowrap" onClick={() => navigate(`/basic/product/${row.id}`)}>
@@ -112,7 +126,7 @@ export default function ProductListPage() {
     },
     {
       key: 'name',
-      title: '产品名称',
+      title: <span data-ann-target="product.col.name">产品名称</span>,
       width: 150,
       render: (row) => (
         <span className="cell-ellipsis" title={row.name}>
@@ -122,7 +136,7 @@ export default function ProductListPage() {
     },
     {
       key: 'categoryId',
-      title: '产品分类',
+      title: <span data-ann-target="product.col.category">产品分类</span>,
       width: 116,
       render: (row) => {
         const category = categoryName.get(row.categoryId)
@@ -137,16 +151,16 @@ export default function ProductListPage() {
         )
       },
     },
-    { key: 'unit', title: '单位', width: 60 },
+    { key: 'unit', title: <span data-ann-target="product.col.unit">单位</span>, width: 60 },
     {
       key: 'useStatus',
-      title: '使用状态',
+      title: <span data-ann-target="product.col.status">使用状态</span>,
       width: 80,
       render: (row) => <Tag tone={useStatusTone[row.useStatus]}>{useStatusText[row.useStatus]}</Tag>,
     },
     {
       key: 'createdAt',
-      title: '创建时间',
+      title: <span data-ann-target="product.col.time">创建时间</span>,
       width: 148,
       render: (row) => <span className="nowrap">{row.createdAt}</span>,
     },
@@ -162,19 +176,24 @@ export default function ProductListPage() {
       width: 160,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => navigate(`/basic/product/${row.id}`)}>
+          <button className="link" data-ann-target="product.row.view" onClick={() => navigate(`/basic/product/${row.id}`)}>
             查看
           </button>
-          <button className="link" onClick={() => navigate(`/basic/product/${row.id}/edit`)}>
+          <button className="link" data-ann-target="product.row.edit" onClick={() => navigate(`/basic/product/${row.id}/edit`)}>
             编辑
           </button>
           {row.useStatus === 'off' ? (
-            <button className="link" onClick={() => setConfirm({ product: row, target: 'on' })}>
+            <button className="link" data-ann-target="product.row.onoff" onClick={() => setConfirm({ product: row, target: 'on' })}>
               上架
             </button>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ product: row, target: 'off' })}>
+            <button className="link link-danger" data-ann-target="product.row.onoff" onClick={() => setConfirm({ product: row, target: 'off' })}>
               下架
+            </button>
+          )}
+          {row.useStatus === 'off' && (
+            <button className="link link-danger" data-ann-target="product.row.delete" onClick={() => setDeleteTarget(row)}>
+              删除
             </button>
           )}
         </span>
@@ -185,18 +204,18 @@ export default function ProductListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '产品库', '产品信息库']}
-        title="产品信息库"
+        breadcrumb={['系统管理', '产品库', '产品信息库']}
+        title={<span data-ann-target="product.page.global">产品信息库</span>}
         description="产品 = 基本信息 + 工艺 + 工序；产品级上架 / 下架，不做版本化"
         actions={
-          <Button variant="primary" onClick={() => navigate('/basic/product/new')}>
+          <Button variant="primary" data-ann-target="product.add" onClick={() => navigate('/basic/product/new')}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="product.query.bar">
           <div className="query-item">
             <span className="query-label">产品编码</span>
             <Input
@@ -215,11 +234,13 @@ export default function ProductListPage() {
           </div>
           <div className="query-item">
             <span className="query-label">产品分类</span>
-            <Select
+            <CascaderSelect
               value={query.categoryId}
               placeholder="全部"
               options={categoryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, categoryId: e.target.value }))}
+              allowParent
+              searchPlaceholder="搜索分类名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, categoryId: value }))}
             />
           </div>
           <div className="query-item">
@@ -252,7 +273,7 @@ export default function ProductListPage() {
           <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>
         </div>
 
-        <div className="product-table-wrap">
+        <div className="product-table-wrap" data-ann-target="product.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
         </div>
 
@@ -265,6 +286,12 @@ export default function ProductListPage() {
         target={confirm?.target ?? 'on'}
         onClose={() => setConfirm(null)}
         onConfirm={handleConfirm}
+      />
+      <ProductDeleteModal
+        open={!!deleteTarget}
+        product={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
       />
     </>
   )

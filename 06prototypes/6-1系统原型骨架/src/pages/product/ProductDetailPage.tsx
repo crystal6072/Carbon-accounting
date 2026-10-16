@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Icon, PageHeader, Pagination, Table, Tag, useToast } from '@/shared/components'
 import type { Column } from '@/shared/components'
 import { buildFormulaLines } from '@/shared/formulaMeta'
-import { fetchCategories, fetchOperations, fetchProduct, fetchProductLogs, updateProductUseStatus } from '@/mock'
+import { deleteProduct, fetchCategories, fetchOperations, fetchProduct, fetchProductLogs, updateProductUseStatus } from '@/mock'
 import type {
   CategoryItem,
   OperationItem,
@@ -13,6 +13,7 @@ import type {
   ProductUseStatus,
 } from '@/types'
 import ProductConfirmModal from './ProductConfirmModal'
+import ProductDeleteModal from './ProductDeleteModal'
 import ProductProcessCanvas from './ProductProcessCanvas'
 import { flowTypeText, useStatusText, useStatusTone } from './productMeta'
 import './ProductPage.css'
@@ -33,6 +34,7 @@ export default function ProductDetailPage() {
   const [logOpen, setLogOpen] = useState(false)
   const [logPage, setLogPage] = useState(1)
   const [confirm, setConfirm] = useState<ProductUseStatus | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   /** 工艺与工序展示模式：流程画布 / 列表 */
   const [viewMode, setViewMode] = useState<'canvas' | 'list'>('canvas')
 
@@ -74,6 +76,18 @@ export default function ProductDetailPage() {
       toast(confirm === 'on' ? '上架成功' : '下架成功')
       setConfirm(null)
       await load()
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '操作失败', 'error')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!product) return
+    try {
+      await deleteProduct(product.id)
+      toast('删除成功')
+      setDeleteOpen(false)
+      navigate('/basic/product')
     } catch (error) {
       toast(error instanceof Error ? error.message : '操作失败', 'error')
     }
@@ -182,7 +196,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '产品库', '产品信息库']} title="产品详情" />
+        <PageHeader breadcrumb={['系统管理', '产品库', '产品信息库']} title="产品详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '产品不存在或已被删除'}</div>
         </div>
@@ -193,18 +207,23 @@ export default function ProductDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '产品库', '产品信息库', product.name]}
+        breadcrumb={['系统管理', '产品库', '产品信息库', product.name]}
         title={product.name}
         description={`产品编码 ${product.code} · ${useStatusText[product.useStatus]}`}
         actions={
           <>
             <Button onClick={() => navigate('/basic/product')}>返回列表</Button>
             {product.useStatus === 'off' ? (
-              <Button onClick={() => setConfirm('on')}>上架</Button>
+              <Button data-ann-target="product.detail.onoff" onClick={() => setConfirm('on')}>上架</Button>
             ) : (
-              <Button onClick={() => setConfirm('off')}>下架</Button>
+              <Button data-ann-target="product.detail.onoff" onClick={() => setConfirm('off')}>下架</Button>
             )}
-            <Button variant="primary" onClick={() => navigate(`/basic/product/${product.id}/edit`)}>
+            {product.useStatus === 'off' && (
+              <Button variant="danger" data-ann-target="product.detail.delete" onClick={() => setDeleteOpen(true)}>
+                删除
+              </Button>
+            )}
+            <Button variant="primary" data-ann-target="product.detail.edit" onClick={() => navigate(`/basic/product/${product.id}/edit`)}>
               编辑
             </Button>
           </>
@@ -214,7 +233,7 @@ export default function ProductDetailPage() {
       <div className="stack">
         <section className="card">
           <div className="section-header">
-            <span className="section-title">基本信息</span>
+            <span className="section-title" data-ann-target="product.detail">基本信息</span>
           </div>
           <div className="section-body">
             <div className="detail-list">
@@ -231,12 +250,20 @@ export default function ProductDetailPage() {
                 <span className="detail-value">{categoryName}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">型号</span>
-                <span className="detail-value">{product.model || '-'}</span>
-              </div>
-              <div className="detail-item">
                 <span className="detail-label">规格</span>
                 <span className="detail-value">{product.spec || '-'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">产品批次号</span>
+                <span className="detail-value">{product.batchNo || '-'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">生产地点</span>
+                <span className="detail-value">{product.productionSite || '-'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">生产功能</span>
+                <span className="detail-value">{product.productionFunction || '-'}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">单位</span>
@@ -263,11 +290,11 @@ export default function ProductDetailPage() {
                 </span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">归属组织</span>
+                <span className="detail-label" data-ann-target="product.detail.org">归属组织</span>
                 <span className="detail-value">{product.org}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">创建人</span>
+                <span className="detail-label" data-ann-target="product.detail.createdby">创建人</span>
                 <span className="detail-value">{product.createdBy}</span>
               </div>
               <div className="detail-item">
@@ -288,7 +315,7 @@ export default function ProductDetailPage() {
 
         <section className="card">
           <div className="section-header">
-            <span className="section-title">产品工艺与工序</span>
+            <span className="section-title" data-ann-target="product.detail.process">产品工艺与工序</span>
             <span className="section-extra">
               <span className="toolbar-tip">
                 工序为模板复制副本，基础库变更不回写；投入产出流维护归属「工序管理」（C3b / C7）
@@ -341,7 +368,7 @@ export default function ProductDetailPage() {
 
         <section className="card">
           <div className="section-header">
-            <button className="collapse-trigger" onClick={() => setLogOpen((prev) => !prev)}>
+            <button className="collapse-trigger" data-ann-target="product.detail.log" onClick={() => setLogOpen((prev) => !prev)}>
               <span className={['collapse-caret', logOpen ? 'expanded' : ''].filter(Boolean).join(' ')}>
                 <Icon name="chevronRight" size={16} />
               </span>
@@ -370,6 +397,12 @@ export default function ProductDetailPage() {
         target={confirm ?? 'on'}
         onClose={() => setConfirm(null)}
         onConfirm={handleConfirm}
+      />
+      <ProductDeleteModal
+        open={deleteOpen}
+        product={product}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
       />
     </>
   )

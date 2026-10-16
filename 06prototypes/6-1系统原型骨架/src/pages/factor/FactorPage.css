@@ -218,3 +218,93 @@
   border-color: var(--color-border);
   color: var(--color-text);
 }
+
+/* ============ 多库模型（V0.2）：库列表卡片 / 库详情左树 ============ */
+
+.factor-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.factor-lib-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  transition: box-shadow 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.factor-lib-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.22);
+  transform: translateY(-2px);
+}
+
+.factor-lib-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.factor-lib-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+}
+.factor-lib-code {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+.factor-lib-desc {
+  min-height: 40px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-lg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.factor-lib-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.factor-lib-sub {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+.factor-lib-actions {
+  display: flex;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-secondary);
+  margin-top: var(--space-xs);
+}
+
+/* 库详情：左侧分类树 + 右侧因子表 */
+.factor-lib-layout {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  align-items: start;
+}
+.factor-lib-tree {
+  padding: 0;
+}
+/** 自建库无分类树：右侧因子表占满整行 */
+.factor-lib-layout-full {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 960px) {
+  .factor-lib-layout {
+    grid-template-columns: 1fr;
+  }
+}

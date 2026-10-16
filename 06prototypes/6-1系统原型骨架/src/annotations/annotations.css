@@ -45,7 +45,9 @@
   position: fixed;
   z-index: 1600;
   width: 360px;
+  max-width: 92vw;
   max-height: 60vh;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border-secondary, #e2e8f0);
@@ -75,8 +77,11 @@
 }
 
 .ann-popover-body {
+  flex: 1;
+  min-height: 0;
   padding: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -101,8 +106,30 @@
 }
 
 .ann-card-title {
-  font-size: var(--font-size-sm, 13px);
+  min-width: 0;
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #0f172a);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ann-card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 批注编号：作为辅助信息，弱化展示，不与业务主题争视觉权重 */
+.ann-card-code {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--color-text-tertiary, #94a3b8);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .ann-priority {
@@ -128,9 +155,9 @@
 }
 
 .ann-card-content {
-  padding: 8px 10px;
-  font-size: var(--font-size-sm, 13px);
-  line-height: 1.6;
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--color-text-secondary, #334155);
   white-space: normal;
   overflow-wrap: anywhere;
@@ -142,6 +169,112 @@
   border-radius: 3px;
   background: #f1f5f9;
   font-size: 12px;
+}
+
+/* ===================== 结构化内容块（小标题 + 分条说明） ===================== */
+.ann-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 小标题：独占一行，与正文之间保留间距，用左侧竖条强调层级 */
+.ann-block-heading {
+  margin: 4px 0 0;
+  padding-left: 9px;
+  border-left: 3px solid var(--color-primary, #2563eb);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.ann-blocks > .ann-block-heading:first-child {
+  margin-top: 0;
+}
+
+/* 正文段落：优先结论，再补充条件；仅关键处加粗 */
+.ann-block-para {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.ann-block-para strong,
+.ann-block-list strong,
+.ann-block-steps strong,
+.ann-block-table strong,
+.ann-block-callout strong {
+  color: var(--color-text-primary, #0f172a);
+  font-weight: 600;
+}
+
+/* 分条列表：每条独立换行，组间留白 */
+.ann-block-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ann-block-list li {
+  line-height: 1.65;
+}
+
+/* 纵向编号步骤：每一步单独一行，序号自动生成 */
+.ann-block-steps {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: decimal;
+}
+
+.ann-block-steps li {
+  line-height: 1.65;
+  padding-left: 2px;
+}
+
+/* 简短表格：用于状态对比 / 字段对照 */
+.ann-block-table {
+  margin: 0;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ann-block-table th,
+.ann-block-table td {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ann-block-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: var(--color-text-primary, #0f172a);
+  white-space: normal;
+}
+
+.ann-block-table code {
+  overflow-wrap: anywhere;
+}
+
+/* 辅助信息：待确认 / 提示 / 备注，弱化底色，默认可见 */
+.ann-block-callout {
+  padding: 8px 10px;
+  border-radius: var(--radius-base, 6px);
+  background: #f8fafc;
+  border: 1px dashed var(--color-border-secondary, #e2e8f0);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #64748b);
 }
 
 .ann-card-meta {
@@ -321,6 +454,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 全局抽屉中的批注编号（辅助信息） */
+.ann-drawer-item-code {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--color-text-tertiary, #94a3b8);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .ann-drawer-item-caret {

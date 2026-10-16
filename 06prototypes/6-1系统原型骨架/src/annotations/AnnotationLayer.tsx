@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { ANNOTATION_SCOPE_PREFIX, useAnnotationContext } from './AnnotationContext'
+import { useAnnotationContext } from './AnnotationContext'
 import { ANNOTATION_TARGET_ATTR } from './types'
-import type { Annotation } from './types'
+import type { Annotation, AnnotationBlock } from './types'
 import './annotations.css'
 
 const PRIORITY_TEXT: Record<NonNullable<Annotation['priority']>, string> = {
@@ -30,7 +30,26 @@ interface PopoverState {
   left: number
 }
 
-/** 文本中的 `反引号` 片段渲染为行内代码 */
+/**
+ * 行内文本渲染：支持 `反引号` 行内代码与 **加粗** 关键词。
+ * 返回值可直接作为 React 子节点；保留原有遗留文本的兼容渲染。
+ */
+function renderInline(text: string): React.ReactNode[] {
+  return text
+    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    .filter((part) => part !== '')
+    .map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+        return <code key={index}>{part.slice(1, -1)}</code>
+      }
+      return <span key={index}>{part}</span>
+    })
+}
+
+/** 遗留纯文本渲染（无 blocks 时兜底；兼容 `反引号` 行内代码） */
 function renderContent(content: string) {
   return content.split(/(`[^`]+`)/g).map((part, index) =>
     part.startsWith('`') && part.endsWith('`') && part.length > 2 ? (
@@ -41,16 +60,98 @@ function renderContent(content: string) {
   )
 }
 
-function AnnotationCard({ item }: { item: Annotation }) {
+/** 结构化内容块渲染：标题 / 正文 / 列表 / 步骤 / 表格 / 辅助提示 */
+function renderBlocks(blocks: AnnotationBlock[]) {
+  return (
+    <div className="ann-blocks">
+      {blocks.map((block, index) => {
+        switch (block.type) {
+          case 'heading':
+            return (
+              <div className="ann-block-heading" key={index}>
+                {renderInline(block.text)}
+              </div>
+            )
+          case 'paragraph':
+            return (
+              <p className="ann-block-para" key={index}>
+                {renderInline(block.text)}
+              </p>
+            )
+          case 'list':
+            return block.ordered ? (
+              <ol className="ann-block-list ann-block-list-ordered" key={index}>
+                {block.items.map((item, i) => (
+                  <li key={i}>{renderInline(item)}</li>
+                ))}
+              </ol>
+            ) : (
+              <ul className="ann-block-list" key={index}>
+                {block.items.map((item, i) => (
+                  <li key={i}>{renderInline(item)}</li>
+                ))}
+              </ul>
+            )
+          case 'steps':
+            return (
+              <ol className="ann-block-steps" key={index}>
+                {block.items.map((item, i) => (
+                  <li key={i}>{renderInline(item)}</li>
+                ))}
+              </ol>
+            )
+          case 'table':
+            return (
+              <table className="ann-block-table" key={index}>
+                <thead>
+                  <tr>
+                    {block.columns.map((col, i) => (
+                      <th key={i}>{renderInline(col)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((cell, c) => (
+                        <td key={c}>{renderInline(cell)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          case 'callout':
+            return (
+              <div className="ann-block-callout" key={index}>
+                {renderInline(block.text)}
+              </div>
+            )
+          default:
+            return null
+        }
+      })}
+    </div>
+  )
+}
+
+function AnnotationCard({ item, compact = false }: { item: Annotation; compact?: boolean }) {
   return (
     <div className="ann-card">
-      <div className="ann-card-head">
-        <span className="ann-card-title">{item.title}</span>
-        {item.priority && (
-          <span className={`ann-priority ann-priority-${item.priority}`}>{PRIORITY_TEXT[item.priority]}</span>
-        )}
+      {!compact && (
+        <div className="ann-card-head">
+          <span className="ann-card-title">{item.title}</span>
+          <span className="ann-card-head-right">
+            {item.code && <span className="ann-card-code">{item.code}</span>}
+            {item.priority && (
+              <span className={`ann-priority ann-priority-${item.priority}`}>{PRIORITY_TEXT[item.priority]}</span>
+            )}
+          </span>
+        </div>
+      )}
+      <div className="ann-card-content">
+        {item.blocks ? renderBlocks(item.blocks) : renderContent(item.content ?? '')}
       </div>
-      <div className="ann-card-content">{renderContent(item.content)}</div>
       <dl className="ann-card-meta">
         {item.source && (
           <div>
@@ -111,7 +212,7 @@ function AnnotationCard({ item }: { item: Annotation }) {
 }
 
 /**
- * 批注展示层（仅核算引擎 / 计算公式路由生效）：
+ * 批注展示层（按已登记的路由作用域生效：计算公式 / 产品分类 / 后续模块）：
  * - 扫描 [data-ann-target] 锚点，在操作按钮旁渲染批注标记；
  * - 点击标记弹Popover查看批注详情；
  * - 右下角固定入口：统一开关（显示/隐藏批注）+ 全局批注抽屉（未匹配/文档级批注）；
@@ -119,8 +220,8 @@ function AnnotationCard({ item }: { item: Annotation }) {
  */
 export default function AnnotationLayer() {
   const location = useLocation()
-  const { visible, toggleVisible, targetMap, globalAnnotations } = useAnnotationContext()
-  const inScope = location.pathname.startsWith(ANNOTATION_SCOPE_PREFIX)
+  const { visible, toggleVisible, scope, targetMap, globalAnnotations } = useAnnotationContext()
+  const inScope = !!scope
 
   const [badges, setBadges] = useState<BadgeInstance[]>([])
   const [popover, setPopover] = useState<PopoverState | null>(null)
@@ -311,9 +412,15 @@ export default function AnnotationLayer() {
                     aria-expanded={open}
                   >
                     <span className="ann-drawer-item-title">{item.title}</span>
+                    {item.code && <span className="ann-drawer-item-code">{item.code}</span>}
+                    {item.priority && (
+                      <span className={`ann-priority ann-priority-${item.priority}`}>
+                        {PRIORITY_TEXT[item.priority]}
+                      </span>
+                    )}
                     <span className="ann-drawer-item-caret">{open ? '▾' : '▸'}</span>
                   </button>
-                  {open && <AnnotationCard item={item} />}
+                  {open && <AnnotationCard item={item} compact />}
                 </div>
               )
             })}

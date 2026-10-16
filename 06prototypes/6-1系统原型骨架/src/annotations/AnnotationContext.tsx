@@ -1,19 +1,26 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { Annotation } from './types'
-import { buildTargetMap, calcFormulaAnnotations, globalAnnotationList } from './calcFormulaAnnotations'
+import { isRdVisible } from './types'
+import { buildTargetMap, resolveAnnotationScope, type AnnotationScope } from './registry'
 
-const STORAGE_KEY = 'pcf.calcEngine.annotation.visible'
+const STORAGE_KEY = 'pcf.annotation.visible'
+
+/** 无批注作用域时的空映射（保持引用稳定，避免无谓重渲染） */
+const EMPTY_TARGET_MAP: Map<string, Annotation[]> = new Map()
 
 interface AnnotationContextValue {
   /** 批注总开关（持久化 localStorage） */
   visible: boolean
   setVisible: (visible: boolean) => void
   toggleVisible: () => void
-  /** 全部批注 */
+  /** 当前路由命中的批注作用域；未登记的路由为 null（不展示批注） */
+  scope: AnnotationScope | null
+  /** 当前作用域的全部批注 */
   annotations: Annotation[]
   /** 锚点 → 批注列表 */
   targetMap: Map<string, Annotation[]>
-  /** 全局标注（未匹配 / 文档级） */
+  /** 全局批注（未匹配 / 文档级） */
   globalAnnotations: Annotation[]
 }
 
@@ -31,6 +38,10 @@ function readStoredVisible(): boolean {
 
 export function AnnotationProvider({ children }: { children: ReactNode }) {
   const [visible, setVisibleState] = useState<boolean>(readStoredVisible)
+  const location = useLocation()
+
+  /** 按路由前缀解析当前批注作用域（计算公式 / 产品分类 / 后续模块） */
+  const scope = useMemo(() => resolveAnnotationScope(location.pathname), [location.pathname])
 
   const setVisible = useCallback((next: boolean) => {
     setVisibleState(next)
@@ -53,18 +64,28 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const targetMap = useMemo(() => buildTargetMap(), [])
+  /** 研发视图过滤：隐藏「能力 / 待确认事项 / 演示数据」类别，研发不关心 */
+  const rdVisibleAnnotations = useMemo(
+    () => (scope ? scope.annotations.filter(isRdVisible) : []),
+    [scope],
+  )
+
+  const targetMap = useMemo(
+    () => (scope ? buildTargetMap(rdVisibleAnnotations) : EMPTY_TARGET_MAP),
+    [rdVisibleAnnotations],
+  )
 
   const value = useMemo<AnnotationContextValue>(
     () => ({
       visible,
       setVisible,
       toggleVisible,
-      annotations: calcFormulaAnnotations,
+      scope,
+      annotations: rdVisibleAnnotations,
       targetMap,
-      globalAnnotations: globalAnnotationList,
+      globalAnnotations: scope ? scope.globalAnnotations.filter(isRdVisible) : [],
     }),
-    [visible, setVisible, toggleVisible, targetMap],
+    [visible, setVisible, toggleVisible, scope, rdVisibleAnnotations, targetMap],
   )
 
   return <AnnotationContext.Provider value={value}>{children}</AnnotationContext.Provider>
@@ -75,7 +96,3 @@ export function useAnnotationContext(): AnnotationContextValue {
   if (!ctx) throw new Error('useAnnotationContext 必须在 AnnotationProvider 内使用')
   return ctx
 }
-
-/** 批注作用域前缀：仅核算引擎（计算公式）路由下展示 */
-export const ANNOTATION_SCOPE_PREFIX = '/model/calc-engine'
-

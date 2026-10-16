@@ -3,33 +3,53 @@ import type {
   CategoryItem,
   CategoryLevel,
   DataOwnerType,
+  DictItem,
+  DictType,
   EmissionCategory,
   EnableStatus,
   EnergyItem,
   EnergyOption,
   EnergyType,
+  FactorCalibers,
   FactorCategory,
   FactorDetail,
+  FactorExchange,
+  FactorExt,
   FactorItem,
+  FactorLibrary,
+  FactorLibraryType,
+  FactorLibraryVersion,
   FactorReferenceItem,
   FactorSource,
+  MyFactor,
+  MyFactorLibrary,
   FlowFormulaDisposal,
   FlowItemType,
   FormulaFactor,
   FormulaType,
   IndustryItem,
   IndustryLevel,
-  LifecycleInclusion,
   LifecycleLevel,
   LifecycleStageItem,
   MaterialFlowType,
   MaterialItem,
   MaterialOption,
   MaterialSubCategory,
+  CarbonModel,
+  ModelDataItem,
+  ModelProcessNode,
+  ModelStatus,
+  MyModel,
+  PcfModelOption,
   MyProductBatchFailure,
   MyProductBatchResult,
   MyProductItem,
   MyProductSource,
+  MyProcessBatchFailure,
+  MyProcessBatchResult,
+  MyProcessDetail,
+  MyProcessItem,
+  MyProcessSource,
   OperationFlowItem,
   OperationItem,
   OperationLogItem,
@@ -43,14 +63,17 @@ import type {
   ProductFlowItem,
   ProductItem,
   ProductProcessItem,
+  ProductScenario,
   ProductUseStatus,
   PcfBoundary,
   PcfActivityData,
   PcfActivityValue,
   PcfCalcResult,
-  PcfCalcSourceType,
+  PcfCaliberKey,
+  PcfCaliberValues,
   PcfCheckIssue,
   PcfCheckResult,
+  PcfDataItemType,
   PcfFactorOption,
   PcfOperationConfig,
   PcfLifecycleStage,
@@ -63,39 +86,67 @@ import type {
   PcfReportCover,
   PcfReportDraft,
   PcfReportTemplate,
+  PcfProcessNode,
   PcfResultDetail,
+  PcfStageDataItem,
+  PcfStageImportPreset,
+  PcfStageImportRow,
   PcfStandardOption,
+  StandardAttachment,
+  StandardItem,
+  StandardStatus,
+  TreeOption,
   UnitDetail,
   UnitItem,
+  PcfUnitEmission,
   UnitReferenceItem,
   UnitType,
 } from '@/types'
+import { DICT_TYPE_SYSTEM_BOUNDARY, PCF_CALIBERS } from '@/types'
 import { parseCsvText, toCsv } from '@/shared/utils/csv'
+import {
+  ROW_ACTIVITY_VAR,
+  ROW_CONV_VAR,
+  ROW_FACTOR_VAR,
+  STAGE_ROWS_VAR,
+  defaultFormulas,
+  evaluateExpression,
+} from '@/pages/formula/formulaMeta'
+import { unitTypeOrder, unitTypeText } from '@/pages/unit/unitMeta'
 import {
   calcFormulaSeed,
   categorySeed,
+  dictItemSeed,
+  dictTypeSeed,
   energyOptions,
   energySeed,
+  externalFactorSeed,
+  factorLibrarySeed,
+  factorLibraryVersionSeed,
   factorReferenceSeed,
   factorSeed,
+  myFactorLibrarySeed,
+  myFactorSeed,
   industryOptions,
   industrySeed,
   lifecycleOptions,
   lifecycleSeed,
   materialOptions,
   materialSeed,
+  modelSeed,
+  myModelSeed,
   operationSeed,
   operationTemplates,
   pcfActivitySeed,
   pcfCalcResultSeed,
-  pcfDemoOperationSeed,
   pcfOperationSeed,
   pcfOrgOptionSeed,
   pcfProjectSeed,
-  pcfStandardOptionSeed,
+  pcfStageDataSeed,
   pcfWeightUnitOptions,
   processSeed,
   processTemplates,
+  standardSeed,
   productSeed,
   unitOptions,
   unitReferenceSeed,
@@ -104,6 +155,28 @@ import {
 
 /** 我的产品库（前台 P27）类型转发：页面从 `@/mock` 一处取数 */
 export type { MyProductBatchFailure, MyProductBatchResult, MyProductItem, MyProductSource } from '@/types'
+
+/** 我的工艺库（前台 B3）类型转发：页面从 `@/mock` 一处取数 */
+export type {
+  MyProcessBatchFailure,
+  MyProcessBatchResult,
+  MyProcessDetail,
+  MyProcessItem,
+  MyProcessSource,
+} from '@/types'
+
+/** 模型管理（前后台）类型转发：页面从 `@/mock` 一处取数 */
+export type {
+  CarbonModel,
+  ModelContent,
+  ModelDataItem,
+  ModelProcessNode,
+  ModelScope,
+  ModelStatus,
+  MyModel,
+  MyModelOrigin,
+  PcfModelOption,
+} from '@/types'
 
 /** 内存态数据源，模拟后端持久化 */
 let categoryStore: CategoryItem[] = clone(categorySeed)
@@ -115,21 +188,33 @@ let energyStore: EnergyItem[] = clone(energySeed)
 let unitStore: UnitItem[] = clone(unitSeed)
 /** 生命周期阶段：轻量基础数据，不设数据来源与引用状态（与物料库 / 能源库口径一致） */
 let lifecycleStore: LifecycleStageItem[] = clone(lifecycleSeed)
-/** 行业库：轻量行业字典（两级分类，启用 ↔ 禁用双向可达） */
+/** 数据字典：字典类型 + 字典项（平台支撑维护；系统边界字典供前台核算引用） */
+let dictTypeStore: DictType[] = clone(dictTypeSeed)
+let dictItemStore: DictItem[] = clone(dictItemSeed)
+/** 行业库：内置《国民经济行业分类》GB/T 4754 四级字典（门类 / 大类 / 中类 / 小类，启用 ↔ 禁用双向可达） */
 let industryStore: IndustryItem[] = clone(industrySeed)
-/** 排放因子库：核算模型域对象，**有版本化 + 有效期**（与基础库「无版本化」口径不同） */
-let factorStore: FactorItem[] = clone(factorSeed)
+/** 因子库（多库模型）：库 / 库版本 / 我的因子库 内存态 */
+let factorLibraryStore: FactorLibrary[] = clone(factorLibrarySeed)
+let factorLibraryVersionStore: FactorLibraryVersion[] = clone(factorLibraryVersionSeed)
+let myFactorLibraryStore: MyFactorLibrary[] = clone(myFactorLibrarySeed)
+let myFactorStore: MyFactor[] = clone(myFactorSeed)
+
+/** 库内因子（自建库 V1.0 草稿 + 商业数据库因子）：归属「库 + 库版本」 */
+let factorStore: FactorItem[] = clone([
+  ...factorSeed.map((item) => ({ ...item, libraryId: 'FLIB01', libraryVersionId: 'FLV01' })),
+  ...externalFactorSeed,
+])
 /** 计算引擎配置 · 计算公式：轻量配置对象（不做审核与版本化，启用 / 禁用走行操作） */
 let calcFormulaStore: CalcFormula[] = clone(calcFormulaSeed)
+/** 标准文件库：轻量基础数据，一个标准号 = 一条记录（无版本化 / 无审核流） */
+let standardStore: StandardItem[] = clone(standardSeed)
 
 /** 「排放项 → 标准公式」系统默认带出规则（按流名称关键词匹配，自上而下首个命中生效） */
 const FLOW_FORMULA_RULES: Array<{ pattern: RegExp; formulaCode: string; basis: string }> = [
   { pattern: /运输|货运|物流/, formulaCode: 'FM-002', basis: '流名称含「运输」→ 运输 t·km 法' },
-  { pattern: /蒸汽|热力|热水|采暖/, formulaCode: 'FM-004', basis: '含「蒸汽 / 热力」→ 净外购热力法' },
-  { pattern: /天然气|柴油|汽油|燃煤|燃料|燃气|液化气/, formulaCode: 'FM-003', basis: '含「燃料」→ 燃料燃烧（碳平衡）法' },
-  { pattern: /制冷剂|冷媒|R\d{3}/i, formulaCode: 'FM-005', basis: '含「制冷剂」→ 制冷剂泄漏法' },
-  { pattern: /回收|再生|回用/, formulaCode: 'FM-007', basis: '含「回收」→ 回收信用法（负项）' },
-  { pattern: /末期|废弃|填埋|焚烧|处置/, formulaCode: 'FM-006', basis: '含「末期处理 / 废弃」→ 末期处理法' },
+  { pattern: /电力|用电/, formulaCode: 'FM-003', basis: '含「电力 / 用电」→ 因子法（电力口径）' },
+  { pattern: /废水|污水|废液/, formulaCode: 'FM-004', basis: '含「废水 / 污水」→ 因子法（废水口径）' },
+  { pattern: /回收|再生|回用/, formulaCode: 'FM-005', basis: '含「回收」→ 回收信用法（负项）' },
 ]
 
 /**
@@ -183,11 +268,6 @@ function resolveFlowFormula(
   }
 }
 
-/** 工序库投入产出项：按流类型 + 名称带出默认公式（保留用户覆盖） */
-function decorateOperationFlow(flow: OperationFlowItem): OperationFlowItem {
-  return { ...flow, ...resolveFlowFormula(flow.flowType, flow.refName, flow.formulaId, flow.disposal) }
-}
-
 /** 产品 / 项目工序副本的投入产出项：按流类型 + 名称带出默认公式（保留用户覆盖） */
 function decorateProductFlow(flow: ProductFlowItem): ProductFlowItem {
   return { ...flow, ...resolveFlowFormula(flow.type, flow.name, flow.formulaId, flow.disposal) }
@@ -214,12 +294,48 @@ export interface CategoryPayload {
   remark: string
 }
 
-/** 由上级分类推导分类层级（【待确认 Q01】联动口径） */
+/** 产品分类层级上限：**六级**（与前端 tree 工具同口径，D03） */
+const CATEGORY_MAX_LEVEL = 6
+
+/** 由上级分类推导分类层级：无上级 = 1，否则 = 上级层级 + 1；上限六级（Q01 已裁决） */
 export function deriveLevel(parentId: string | null): CategoryLevel {
   if (!parentId) return 1
   const parent = categoryStore.find((c) => c.id === parentId)
   if (!parent) return 1
-  return Math.min(parent.level + 1, 3) as CategoryLevel
+  return Math.min(parent.level + 1, CATEGORY_MAX_LEVEL) as CategoryLevel
+}
+
+/** 某分类的全部后代 id（不含自身）：用于禁止把上级选到自身或后代（D02） */
+function collectCategoryDescendantIds(id: string): string[] {
+  const ids: string[] = []
+  const walk = (parentId: string) => {
+    categoryStore
+      .filter((c) => c.parentId === parentId)
+      .forEach((child) => {
+        ids.push(child.id)
+        walk(child.id)
+      })
+  }
+  walk(id)
+  return ids
+}
+
+/** 同一级内排序号不允许重复（留空不参与判断；已裁决 Q03） */
+function assertSortNoUnique(parentId: string | null, sortNo: number | null, excludeId?: string): void {
+  if (sortNo == null) return
+  const duplicated = categoryStore.some(
+    (item) => (item.parentId ?? null) === parentId && item.sortNo === sortNo && item.id !== excludeId,
+  )
+  if (duplicated) throw new Error('同级内排序号已存在，请修改后重试')
+}
+
+/** 预演「某分类 + 其全部后代」在新位置下的层级结果，用于移动分类前的上限校验 */
+function previewLevels(id: string, level: number, out: { id: string; level: number }[] = []) {
+  out.push({ id, level })
+  categoryStore
+    .filter((c) => c.parentId === id)
+    .forEach((child) => previewLevels(child.id, level + 1, out))
+  return out
 }
 
 export function fetchCategories(): Promise<CategoryItem[]> {
@@ -230,6 +346,13 @@ export async function createCategory(payload: CategoryPayload): Promise<Category
   if (categoryStore.some((c) => c.code === payload.code)) {
     throw new Error('分类编码已存在，请修改后重试')
   }
+  if (payload.parentId) {
+    const parent = categoryStore.find((c) => c.id === payload.parentId)
+    if (parent && parent.level >= CATEGORY_MAX_LEVEL) {
+      throw new Error('已达六级上限，无法在该分类下新增下级分类')
+    }
+  }
+  assertSortNoUnique(payload.parentId, payload.sortNo)
   const item: CategoryItem = {
     id: `C${Date.now().toString().slice(-6)}`,
     ...payload,
@@ -249,13 +372,27 @@ export async function updateCategory(id: string, payload: CategoryPayload): Prom
   if (categoryStore.some((c) => c.code === payload.code && c.id !== id)) {
     throw new Error('分类编码已存在，请修改后重试')
   }
+  if (payload.parentId && collectCategoryDescendantIds(id).includes(payload.parentId)) {
+    throw new Error('上级分类不能选择该分类自身或其下级')
+  }
+  assertSortNoUnique(payload.parentId, payload.sortNo, id)
+
+  /* 移动分类：该分类与其全部下级层级级联重算，重算后超过六级则阻断保存（已裁决 Q05） */
+  const levels = previewLevels(id, deriveLevel(payload.parentId))
+  if (levels.some((item) => item.level > CATEGORY_MAX_LEVEL)) {
+    throw new Error('移动后分类层级将超过六级上限，请调整上级分类')
+  }
+
   target.code = payload.code
   target.name = payload.name
   target.parentId = payload.parentId
-  target.level = deriveLevel(payload.parentId)
   target.sortNo = payload.sortNo
   target.remark = payload.remark
   target.updatedAt = NOW
+  levels.forEach(({ id: nodeId, level }) => {
+    const node = categoryStore.find((c) => c.id === nodeId)
+    if (node) node.level = level as CategoryLevel
+  })
   return request(target)
 }
 
@@ -278,9 +415,17 @@ export interface ProductPayload {
   unit: string
   /** 所属行业（引用行业库 A1-4） */
   industry: string
-  /** 产品图片（选填，data URL） */
+  /** 产品图片（**必填**，data URL） */
   imageUrl: string
   description: string
+  /** 产品场景应用（选填；场景说明 + 多张场景图片） */
+  scenarios?: ProductScenario[]
+  /** 产品批次号（选填） */
+  batchNo?: string
+  /** 生产地点（选填） */
+  productionSite?: string
+  /** 生产功能（选填） */
+  productionFunction?: string
   processes: ProductProcessItem[]
 }
 
@@ -289,9 +434,183 @@ export function fetchUnitOptions(): Promise<string[]> {
   return request(unitOptions, 120)
 }
 
-/** 行业选项（Mock 引用行业库 A1-4） */
+/** 行业选项（Mock 引用行业库 A1-4；取**末级行业**名称，所属行业落到最细口径） */
 export function fetchIndustryOptions(): Promise<string[]> {
   return request(industryOptions, 120)
+}
+
+/* ===================== 多级分类下拉选项（行业 / 产品分类 / 计量单位） ===================== */
+
+/**
+ * 由「扁平字典（id + parentId）」递归构建多级下拉选项树：
+ * 排序号优先、其次按编码；**停用项保留层级但标记 disabled**，保证既有引用可回显且不可再选。
+ * 注：三个接口均**动态派生自基础库 Store**，后台新增 / 停用的数据即时反映到下游下拉（修复走查 F-02 的静态常量口径）。
+ */
+function buildIndustryTree(parentId: string | null): TreeOption[] {
+  return industryStore
+    .filter((item) => (item.parentId ?? null) === parentId)
+    .sort((a, b) => (a.sortNo ?? 9999) - (b.sortNo ?? 9999) || a.code.localeCompare(b.code))
+    .map((item) => {
+      const children = buildIndustryTree(item.id)
+      return {
+        /** 引用方以「行业名称」落库（与既有口径一致），故 value 取名称 */
+        value: item.name,
+        label: item.name,
+        extra: item.code,
+        disabled: item.status === 'disabled',
+        children: children.length > 0 ? children : undefined,
+      }
+    })
+}
+
+function buildCategoryTree(parentId: string | null, valueMode: 'id' | 'name'): TreeOption[] {
+  return categoryStore
+    .filter((item) => (item.parentId ?? null) === parentId)
+    .sort((a, b) => (a.sortNo ?? 9999) - (b.sortNo ?? 9999) || a.code.localeCompare(b.code))
+    .map((item) => {
+      const children = buildCategoryTree(item.id, valueMode)
+      return {
+        /** 默认以「分类 id」落库；PCF 项目等以「分类名称」落库的引用方传 'name' */
+        value: valueMode === 'id' ? item.id : item.name,
+        label: item.name,
+        extra: item.code,
+        disabled: item.status === 'disabled',
+        children: children.length > 0 ? children : undefined,
+      }
+    })
+}
+
+/**
+ * 库外口径补充单位（**计量单位库不维护**，见走查报告 S-03）：
+ * 数量类单位、复合单位与部分常用非基准单位，仅存在于填报字典中。
+ */
+const UNIT_EXTRA_OPTIONS: Record<UnitType, string[]> = {
+  weight: ['g'],
+  energy: [],
+  distance: ['m'],
+  volume: [],
+  area: ['m²'],
+  time: [],
+  quantity: ['双', '件', '个', '包', '套', '盒'],
+  carbon: [],
+}
+
+/** 复合单位（库外口径：如运输周转量 `t·km`），独立成组避免与单单位混淆 */
+const UNIT_COMPOSITE_OPTIONS: string[] = ['t·km']
+
+/** 行业多级选项：门类 → 大类 → 中类 → 小类（GB/T 4754 四级），下游「所属行业 / 适用行业」统一引用 */
+export function fetchIndustryTreeOptions(): Promise<TreeOption[]> {
+  return request(buildIndustryTree(null), 120)
+}
+
+/**
+ * 产品分类多级选项：一级 → 二级 → 三级，下游「产品分类」统一引用。
+ * @param valueMode 取值口径：`id`（产品信息库，默认）/ `name`（PCF 项目等按名称落库的引用方）
+ */
+export function fetchCategoryTreeOptions(valueMode: 'id' | 'name' = 'id'): Promise<TreeOption[]> {
+  return request(buildCategoryTree(null, valueMode), 120)
+}
+
+/**
+ * 计量单位分组选项：**按单位类型分组**（系统内置 8 类，另加「复合单位」组），组内为启用中的单位符号。
+ * 引用方以「单位符号」落库，故 value 取 symbol；单位名称作为次要信息展示。
+ * @param types 限定的单位类型；为空表示全部类型
+ * @param includeComposite 是否附带「复合单位」组（如运输周转量 `t·km`）
+ */
+function buildUnitGroups(types: UnitType[] | null, includeComposite: boolean): TreeOption[] {
+  const buckets = new Map<UnitType, { symbol: string; name: string }[]>()
+  unitTypeOrder.forEach((type) => {
+    buckets.set(
+      type,
+      UNIT_EXTRA_OPTIONS[type].map((symbol) => ({ symbol, name: symbol })),
+    )
+  })
+  unitStore
+    .filter((item) => item.status === 'enabled')
+    .forEach((item) => {
+      const list = buckets.get(item.unitType)
+      if (!list) return
+      if (!list.some((unit) => unit.symbol === item.symbol)) list.push({ symbol: item.symbol, name: item.name })
+    })
+
+  const groups: TreeOption[] = unitTypeOrder
+    .filter((type) => !types || types.includes(type))
+    .map((type) => ({
+      value: `unit-type-${type}`,
+      label: unitTypeText[type],
+      children: (buckets.get(type) ?? []).map((unit) => ({
+        value: unit.symbol,
+        label: unit.symbol,
+        extra: unit.name,
+      })),
+    }))
+    .filter((group) => !!group.children && group.children.length > 0)
+
+  if (includeComposite && UNIT_COMPOSITE_OPTIONS.length > 0) {
+    groups.push({
+      value: 'unit-type-composite',
+      label: '复合单位',
+      children: UNIT_COMPOSITE_OPTIONS.map((symbol) => ({ value: symbol, label: symbol, extra: '复合单位' })),
+    })
+  }
+  return groups
+}
+
+/** 全部计量单位分组选项（表单「单位」通用） */
+export function fetchUnitGroupOptions(): Promise<TreeOption[]> {
+  return request(buildUnitGroups(null, true), 120)
+}
+
+/** 碳排放量类单位分组选项：排放因子「分子」（如 `kgCO₂e`） */
+export function fetchCarbonUnitGroupOptions(): Promise<TreeOption[]> {
+  return request(buildUnitGroups(['carbon'], false), 120)
+}
+
+/** 活动数据单位分组选项：排放因子「分母」（碳排放量 / 数量类以外的单位 + 复合单位 `t·km`） */
+export function fetchActivityUnitGroupOptions(): Promise<TreeOption[]> {
+  return request(buildUnitGroups(['weight', 'energy', 'distance', 'volume', 'area'], true), 120)
+}
+
+/**
+ * 因子单位（**复合单位**）选项：新增 / 编辑因子时直接选择「带分母」的单位。
+ * 一级 = 活动数据口径（质量 / 能量 / 体积 / 距离 / 运输周转量），二级 = `分子/分母` 复合单位，
+ * 如 `kgCO₂e/kg`、`kgCO₂e/kWh`、`kgCO₂e/t·km`；分子取自计量单位库碳排放量类单位。
+ */
+export function fetchFactorUnitOptions(): Promise<TreeOption[]> {
+  const denominatorsByType = new Map<string, string[]>()
+  unitSeed
+    .filter((item) => item.unitType !== 'carbon' && item.status === 'enabled')
+    .forEach((item) => {
+      const list = denominatorsByType.get(item.unitType) ?? []
+      list.push(item.symbol)
+      denominatorsByType.set(item.unitType, list)
+    })
+
+  const buildChildren = (denominators: string[]) =>
+    FACTOR_CARBON_UNITS.flatMap((numerator) =>
+      denominators.map((denominator) => ({
+        value: `${numerator}/${denominator}`,
+        label: `${numerator}/${denominator}`,
+        extra: `每 ${denominator}`,
+      })),
+    )
+
+  const groups: TreeOption[] = [...denominatorsByType.entries()].map(([type, denominators]) => ({
+    value: `factor-denominator-${type}`,
+    label: unitTypeText[type as UnitType] ?? type,
+    children: buildChildren(denominators),
+  }))
+
+  // 运输周转量 `t·km` 为复合口径，不在计量单位库（库只维护单单位），单独成组
+  if (FACTOR_ACTIVITY_UNITS.includes('t·km')) {
+    groups.push({
+      value: 'factor-denominator-composite',
+      label: '运输周转量（复合）',
+      children: buildChildren(['t·km']),
+    })
+  }
+
+  return request(groups, 120)
 }
 
 /**
@@ -357,9 +676,8 @@ export function fetchOperationTemplates(): Promise<OperationTemplate[]> {
 
 /** 组合完整性校验（C1～C6 / D05～D07 / R-004 / R-005；同一生命周期阶段仅允许绑定一个工艺流程，2026-09-29） */
 function assertComposition(processes: ProductProcessItem[]): void {
-  if (processes.length === 0) {
-    throw new Error('组合校验未通过：产品至少需要 1 个工艺流程（D05）')
-  }
+  // 工艺流程为选填：可不关联工艺，未关联时跳过组合校验（2026-10-09）
+  if (processes.length === 0) return
   const stageOwner = new Map<string, string>()
   processes.forEach((process) => {
     if (process.operations.length === 0) {
@@ -468,6 +786,10 @@ export async function createProduct(payload: ProductPayload): Promise<ProductIte
     industry: payload.industry,
     imageUrl: payload.imageUrl,
     description: payload.description,
+    scenarios: clone(payload.scenarios ?? []),
+    batchNo: payload.batchNo ?? '',
+    productionSite: payload.productionSite ?? '',
+    productionFunction: payload.productionFunction ?? '',
     useStatus: 'off',
     processes: remapProcesses(payload.processes),
     org: '平台级',
@@ -496,6 +818,10 @@ export async function updateProduct(id: string, payload: ProductPayload): Promis
   target.industry = payload.industry
   target.imageUrl = payload.imageUrl
   target.description = payload.description
+  target.scenarios = clone(payload.scenarios ?? [])
+  target.batchNo = payload.batchNo ?? ''
+  target.productionSite = payload.productionSite ?? ''
+  target.productionFunction = payload.productionFunction ?? ''
   target.processes = remapProcesses(payload.processes)
   target.updatedAt = NOW
 
@@ -511,7 +837,16 @@ export async function updateProductUseStatus(id: string, useStatus: ProductUseSt
   return request(target)
 }
 
-/* ===================== 我的产品库（前台业务平台 · P27，组织自建） ===================== */
+/** 删除产品（K-02：仅下架状态允许删除；产品不版本化，删除为产品级整体删除） */
+export async function deleteProduct(id: string): Promise<void> {
+  const target = productStore.find((p) => p.id === id)
+  if (!target) throw new Error('产品不存在或已被删除')
+  if (target.useStatus === 'on') throw new Error('上架状态的产品不可删除，请先下架')
+  productStore = productStore.filter((p) => p.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 260))
+}
+
+/* ===================== 我的产品库（产品碳足迹 · P27，组织自建） ===================== */
 
 /** 当前登录用户所属组织（原型固定值；归属组织自动带出、不可改，D03） */
 export const MY_PRODUCT_ORG = '福建竹业集团 · 工厂A1'
@@ -525,7 +860,7 @@ const myProductSeed: MyProductItem[] = [
     id: 'MP01',
     code: 'ORG-P-202609-001',
     name: '240mm 定制印花竹筷',
-    categoryId: 'C01',
+    categoryId: 'PC200903',
     model: 'ZKM-240-DY',
     spec: '240mm 单支印花',
     unit: '双',
@@ -539,13 +874,13 @@ const myProductSeed: MyProductItem[] = [
     createdBy: '组织管理员',
     createdAt: '2026-09-02 09:00',
     updatedAt: '2026-09-22 16:40',
-    /* 同一生命周期阶段只绑定一个工艺流程（2026-09-29）：包装工序并入「竹筷成型工艺 / 生产制造」 */
+    /* 同一生命周期阶段只绑定一个工艺流程（2026-09-29）：包装工序并入「竹筷成型工艺 / 生产」 */
     processes: [
       {
         id: 'MP01-PR1',
         processCode: 'GY-01',
         processName: '竹筷成型工艺',
-        lifecycleStage: '生产制造',
+        lifecycleStage: '生产',
         seq: 1,
         operations: [
           {
@@ -597,13 +932,32 @@ const myProductSeed: MyProductItem[] = [
 ]
 
 /** 组织自建产品库（内存态） */
-let myProductStore: MyProductItem[] = clone(myProductSeed)
-/** 已引用的平台级产品 id（引用 = 只读指向，**不落库**，PRD Q02 建议口径；演示数据引用 P-2026-001） */
+/**
+ * 我的产品库（前台 P27）：组织自建产品 + 引用平台产品的**复制副本**。
+ * 业务裁定（V1.1）：引用 = 从平台级产品信息库**复制一份**到本组织，成为可编辑副本；
+ * 平台产品更新不回写本副本，副本与自建产品同等可编辑 / 上下架 / 删除。
+ */
+let myProductStore: MyProductItem[] = [
+  ...clone(myProductSeed),
+  // 演示数据：已引用平台级产品 P01 的复制副本（保留平台 id，贯通核算项目引用关系）
+  copyBackendToMine(productStore.find((p) => p.id === 'P01')!),
+]
+/** 已复制的平台级产品 id（引用 = 复制一份到本组织，不重复复制） */
 let myProductRefIds: string[] = ['P01']
 
-/** 引用标准产品投影：平台级产品 + 来源二态只读包装（上下架随后台） */
-function projectReferenced(product: ProductItem): MyProductItem {
-  return { ...product, source: 'referenced', sourceProductId: product.id }
+/** 引用标准产品 = 从平台级复制一份为本组织可编辑副本（保留平台来源溯源） */
+function copyBackendToMine(platform: ProductItem): MyProductItem {
+  return {
+    ...platform,
+    id: platform.id, // 保留平台 id，避免与自建 MP- 前缀冲突，且贯通核算项目引用关系
+    useStatus: 'off',
+    source: 'referenced',
+    sourceProductId: platform.id,
+    org: MY_PRODUCT_ORG,
+    createdBy: '组织管理员',
+    createdAt: NOW,
+    updatedAt: NOW,
+  }
 }
 
 /** 投入产出流公式默认带出（与后台产品信息库同规则） */
@@ -612,37 +966,33 @@ function decorateMyProduct(item: MyProductItem): MyProductItem {
 }
 
 export function fetchMyProducts(): Promise<MyProductItem[]> {
-  const custom = myProductStore.map(decorateMyProduct).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-  const referenced = myProductRefIds
-    .map((id) => productStore.find((p) => p.id === id))
-    .filter((p): p is ProductItem => !!p)
-    .map((p) => decorateMyProduct(projectReferenced(p)))
-  return request([...custom, ...referenced])
+  // 自建与引用副本统一混排，按更新时间倒序（最新在前）
+  const all = myProductStore
+    .map(decorateMyProduct)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  return request(all)
 }
 
 export async function fetchMyProduct(id: string): Promise<MyProductItem> {
-  const custom = myProductStore.find((p) => p.id === id)
-  if (custom) return request(decorateMyProduct(custom))
-  if (myProductRefIds.includes(id)) {
-    const platform = productStore.find((p) => p.id === id)
-    if (platform) return request(decorateMyProduct(projectReferenced(platform)))
-  }
-  throw new Error('产品不存在或已被删除')
+  const target = myProductStore.find((p) => p.id === id)
+  if (!target) throw new Error('产品不存在或已被删除')
+  return request(decorateMyProduct(target))
 }
 
 /**
- * 操作日志：组织自建产品返回日志；**引用标准产品为只读项，无本组织操作日志**（业务 PRD C4）。
+ * 操作日志：自建与引用副本均返回本组织操作日志（引用副本为可编辑副本，同样产生操作记录）。
  */
 export async function fetchMyProductLogs(id: string): Promise<OperationLogItem[]> {
   const target = myProductStore.find((p) => p.id === id)
   if (!target) return request([])
+  const isRef = target.source === 'referenced'
   const logs: OperationLogItem[] = [
     {
       id: `${id}-created`,
       time: target.createdAt,
       operator: target.createdBy,
-      action: '新建产品',
-      detail: `产品来源 = 自己新增；产品编码 ${target.code}；工艺 ${target.processes.length} 个`,
+      action: isRef ? '引用复制产品' : '新建产品',
+      detail: `产品来源 = ${isRef ? '引用标准产品（复制副本）' : '自己新增'}；产品编码 ${target.code}；工艺 ${target.processes.length} 个`,
     },
     {
       id: `${id}-updated`,
@@ -696,6 +1046,8 @@ export async function referenceBackendProducts(ids: string[]): Promise<MyProduct
       failed.push({ id, code: target.code, name: target.name, reason: '该产品已引用，请勿重复引用' })
       return
     }
+    const copy = copyBackendToMine(target)
+    myProductStore = [copy, ...myProductStore]
     myProductRefIds = [...myProductRefIds, id]
     success += 1
   })
@@ -727,7 +1079,7 @@ export async function createMyProduct(payload: ProductPayload): Promise<MyProduc
 
 export async function updateMyProduct(id: string, payload: ProductPayload): Promise<MyProductItem> {
   const target = myProductStore.find((p) => p.id === id)
-  if (!target) throw new Error('仅「自己新增」的组织自建产品可编辑（引用标准产品只读）')
+  if (!target) throw new Error('产品不存在或已被删除')
   if (
     myProductStore.some((p) => p.code === payload.code && p.id !== id) ||
     productStore.some((p) => p.code === payload.code)
@@ -740,25 +1092,28 @@ export async function updateMyProduct(id: string, payload: ProductPayload): Prom
   return request(target)
 }
 
-/** 上架 / 下架（**仅组织自建产品**；引用标准产品上下架随后台，本模块只读） */
+/** 上架 / 下架（自建与引用副本同等，均可在本模块控制） */
 export async function updateMyProductUseStatus(id: string, useStatus: ProductUseStatus): Promise<MyProductItem> {
   const target = myProductStore.find((p) => p.id === id)
-  if (!target) throw new Error('引用标准产品的上下架由后台产品信息库控制，本模块只读')
+  if (!target) throw new Error('产品不存在或已被删除')
   target.useStatus = useStatus
   target.updatedAt = NOW
   return request(target)
 }
 
-/** 删除（仅「自己新增 且 未被核算项目引用」；引用标准产品为只读项，不可删除） */
+/** 删除（仅「未被核算项目引用」的产品可删除；自建与引用副本同等） */
 export async function deleteMyProduct(id: string): Promise<void> {
   const target = myProductStore.find((p) => p.id === id)
-  if (!target) throw new Error('引用标准产品为只读项，不可删除')
-  const refCount = pcfProjectSeed.filter((project) => project.refProductId === id).length
+  if (!target) throw new Error('产品不存在或已被删除')
+  const refCount = pcfProjectStore.filter((project) => project.refProductId === id).length
   if (refCount > 0) {
     throw new Error(`该产品已被 ${refCount} 个核算项目引用，不可删除（项目侧快照保护）`)
   }
+  if (target.source === 'referenced' && target.sourceProductId) {
+    myProductRefIds = myProductRefIds.filter((rid) => rid !== target.sourceProductId)
+  }
   myProductStore = myProductStore.filter((p) => p.id !== id)
-  return request(undefined)
+  await new Promise((resolve) => setTimeout(resolve, 260))
 }
 
 /* ===================== 工序（工艺库 A1-8） ===================== */
@@ -774,10 +1129,6 @@ export interface OperationFlowPayload {
   /** 仅产出项、且流类型 = 排放物：排放物类别（废气 / 废水 / 废渣） */
   emissionCategory?: EmissionCategory
   remark: string
-  /** 排放项公式（**公式下沉到工序投入产出项**）：空 = 系统默认带出 */
-  formulaId: string
-  /** 是否参与计算 */
-  disposal: FlowFormulaDisposal
 }
 
 export interface OperationPayload {
@@ -801,23 +1152,13 @@ export function fetchEnergyOptions(): Promise<EnergyOption[]> {
 }
 
 export function fetchOperations(): Promise<OperationItem[]> {
-  return request(
-    operationStore.map((op) => ({
-      ...op,
-      inputs: op.inputs.map(decorateOperationFlow),
-      outputs: op.outputs.map(decorateOperationFlow),
-    })),
-  )
+  return request(operationStore)
 }
 
 export async function fetchOperation(id: string): Promise<OperationItem> {
   const target = operationStore.find((o) => o.id === id)
   if (!target) throw new Error('工序不存在或已被删除')
-  return request({
-    ...target,
-    inputs: target.inputs.map(decorateOperationFlow),
-    outputs: target.outputs.map(decorateOperationFlow),
-  })
+  return request(target)
 }
 
 export async function fetchOperationLogs(operationId: string): Promise<OperationLogItem[]> {
@@ -898,11 +1239,6 @@ function remapFlows(rows: OperationFlowPayload[], prefix: string, stamp: string)
     unit: row.unit,
     emissionCategory: row.emissionCategory,
     remark: row.remark,
-    formulaId: row.formulaId ?? '',
-    formulaCode: '',
-    formulaName: '',
-    formulaExpression: '',
-    disposal: row.disposal ?? 'formula',
   }))
 }
 
@@ -993,8 +1329,6 @@ export interface ProcessPayload {
   /** 所属生命周期阶段（引用生命周期阶段库，必填） */
   lifecycleStage: string
   description: string
-  baseQty: number | null
-  baseUnit: string
   operations: ProcessOperationPayload[]
 }
 
@@ -1121,8 +1455,6 @@ export async function createProcess(payload: ProcessPayload): Promise<ProcessIte
     industry: payload.industry,
     lifecycleStage: payload.lifecycleStage,
     description: payload.description,
-    baseQty: payload.baseQty,
-    baseUnit: payload.baseUnit,
     // 新增默认启用（唯一状态维度；仅启用可被产品引用）
     useStatus: 'enabled',
     org: '平台级',
@@ -1148,8 +1480,6 @@ export async function updateProcess(id: string, payload: ProcessPayload): Promis
   target.industry = payload.industry
   target.lifecycleStage = payload.lifecycleStage
   target.description = payload.description
-  target.baseQty = payload.baseQty
-  target.baseUnit = payload.baseUnit
   target.hasDisposal = payload.operations.some((row) => processOpType(row.opCode) === 'disposal')
   target.operations = remapProcessOps(payload.operations, Date.now().toString().slice(-6))
   target.updatedAt = NOW
@@ -1177,6 +1507,196 @@ export async function deleteProcess(id: string): Promise<void> {
   }
   processStore = processStore.filter((item) => item.id !== id)
   await new Promise((resolve) => setTimeout(resolve, 260))
+}
+
+/* ===================== 我的工艺库（产品碳足迹 · B3，组织自建工艺） ===================== */
+
+/** 当前登录用户所属组织（原型固定值；归属组织自动带出、不可改） */
+export const MY_PROCESS_ORG = '福建竹业集团 · 工厂A1'
+
+/**
+ * 组织自建工艺种子（自己新增，`ORG`）。
+ * 与后台「工艺流程」（平台级 `PUBLIC`）按数据归属分离：此处仅本组织可见 / 可维护。
+ */
+const myProcessSeed: MyProcessItem[] = [
+  {
+    id: 'MGY01',
+    code: 'ORG-GY-202609-001',
+    name: '定制印花竹筷成型工艺',
+    categoryId: 'PC200903',
+    industry: '竹制品制造',
+    lifecycleStage: '生产',
+    description: '组织自建：在标准竹筷成型工艺基础上增加印花与独立包装',
+    useStatus: 'enabled',
+    org: MY_PROCESS_ORG,
+    visibility: 'ORG',
+    hasDisposal: false,
+    operations: [
+      { id: 'MGY01-PO1', seq: 1, order: 1, opCode: 'GX-01', opName: '断料', remark: '' },
+      { id: 'MGY01-PO2', seq: 2, order: 2, opCode: 'GX-03', opName: '打磨成型', remark: '' },
+      { id: 'MGY01-PO3', seq: 3, order: 3, opCode: 'GX-04', opName: '包装', remark: '' },
+    ],
+    source: 'custom',
+    sourceProcessId: null,
+    createdBy: '组织管理员',
+    createdAt: '2026-09-05 09:20',
+    updatedAt: '2026-09-23 15:10',
+  },
+]
+
+/** 组织自建工艺库（内存态） */
+let myProcessStore: MyProcessItem[] = clone(myProcessSeed)
+/** 已引用的后台工艺 id（引用 = 只读指向，**不落库**；演示数据引用 GY-00） */
+let myProcessRefIds: string[] = ['GY01']
+
+/** 引用后台工艺投影：平台级工艺 + 来源二态只读包装（使用状态随后台） */
+function projectReferencedProcess(item: ProcessItem): MyProcessItem {
+  return { ...item, source: 'referenced', sourceProcessId: item.id }
+}
+
+function toMyProcessDetail(item: MyProcessItem): MyProcessDetail {
+  const products = applicableProducts(item.code)
+  return { ...item, applicableProducts: products, copiedProductCount: products.length }
+}
+
+export function fetchMyProcesses(): Promise<MyProcessItem[]> {
+  const custom = myProcessStore.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const referenced = myProcessRefIds
+    .map((id) => processStore.find((p) => p.id === id))
+    .filter((p): p is ProcessItem => !!p)
+    .map(projectReferencedProcess)
+  return request([...custom, ...referenced])
+}
+
+export async function fetchMyProcess(id: string): Promise<MyProcessDetail> {
+  const custom = myProcessStore.find((p) => p.id === id)
+  if (custom) return request(toMyProcessDetail(custom))
+  if (myProcessRefIds.includes(id)) {
+    const platform = processStore.find((p) => p.id === id)
+    if (platform) return request(toMyProcessDetail(projectReferencedProcess(platform)))
+  }
+  throw new Error('工艺流程不存在或已被删除')
+}
+
+/** 操作日志：组织自建工艺返回日志；引用后台工艺为只读项，无本组织操作日志 */
+export async function fetchMyProcessLogs(id: string): Promise<OperationLogItem[]> {
+  const target = myProcessStore.find((p) => p.id === id)
+  if (!target) return request([])
+  const logs: OperationLogItem[] = [
+    {
+      id: `${id}-created`,
+      time: target.createdAt,
+      operator: target.createdBy,
+      action: '新建工艺流程',
+      detail: `来源 = 自己新增；工艺流程编码 ${target.code}；工序 ${target.operations.length} 道`,
+    },
+    {
+      id: `${id}-updated`,
+      time: target.updatedAt,
+      operator: target.createdBy,
+      action: '最近修改',
+      detail: `「${target.name}」当前${target.useStatus === 'enabled' ? '已启用' : '已禁用'}；组织自建（ORG）`,
+    },
+  ]
+  return request(logs)
+}
+
+/** 后台平台级工艺（`PUBLIC`，「引用后台工艺」的来源）：仅返回启用中的工艺 */
+export function fetchBackendProcesses(): Promise<ProcessItem[]> {
+  return request(processStore.filter((p) => p.org === '平台级' && p.useStatus === 'enabled'))
+}
+
+/** 批量引用后台工艺流程（**引用即只读指向，不落库**；重复引用跳过） */
+export async function referenceBackendProcesses(ids: string[]): Promise<MyProcessBatchResult> {
+  const failed: MyProcessBatchFailure[] = []
+  let success = 0
+
+  ids.forEach((id) => {
+    const target = processStore.find((p) => p.id === id)
+    if (!target) {
+      failed.push({ id, code: '-', name: '-', reason: '工艺流程不存在或已被删除' })
+      return
+    }
+    if (myProcessRefIds.includes(id)) {
+      failed.push({ id, code: target.code, name: target.name, reason: '该工艺流程已引用，请勿重复引用' })
+      return
+    }
+    myProcessRefIds = [...myProcessRefIds, id]
+    success += 1
+  })
+
+  return request({ success, failed })
+}
+
+/** 新增组织自建工艺（来源 = 自己新增；操作口径与后台「新增工艺流程」一致） */
+export async function createMyProcess(payload: ProcessPayload): Promise<MyProcessItem> {
+  if (myProcessStore.some((p) => p.code === payload.code) || processStore.some((p) => p.code === payload.code)) {
+    throw new Error('工艺流程编码已存在（含后台工艺流程库），请修改后重试')
+  }
+  assertProcess(payload, false)
+
+  const stamp = Date.now().toString().slice(-6)
+  const item: MyProcessItem = {
+    id: `MG${stamp}`,
+    code: payload.code,
+    name: payload.name,
+    categoryId: payload.categoryId,
+    industry: payload.industry,
+    lifecycleStage: payload.lifecycleStage,
+    description: payload.description,
+    useStatus: 'enabled',
+    org: MY_PROCESS_ORG,
+    visibility: 'ORG',
+    hasDisposal: payload.operations.some((row) => processOpType(row.opCode) === 'disposal'),
+    operations: remapProcessOps(payload.operations, stamp),
+    source: 'custom',
+    sourceProcessId: null,
+    createdBy: '组织管理员',
+    createdAt: NOW,
+    updatedAt: NOW,
+  }
+  myProcessStore = [item, ...myProcessStore]
+  return request(item)
+}
+
+/** 编辑（**仅「自己新增」的组织自建工艺**；引用后台工艺只读，不可编辑） */
+export async function updateMyProcess(id: string, payload: ProcessPayload): Promise<MyProcessItem> {
+  const target = myProcessStore.find((p) => p.id === id)
+  if (!target) throw new Error('仅「自己新增」的组织自建工艺可编辑（引用后台工艺只读）')
+  if (
+    myProcessStore.some((p) => p.code === payload.code && p.id !== id) ||
+    processStore.some((p) => p.code === payload.code)
+  ) {
+    throw new Error('工艺流程编码已存在（含后台工艺流程库），请修改后重试')
+  }
+  assertProcess(payload, false)
+
+  target.name = payload.name
+  target.categoryId = payload.categoryId
+  target.industry = payload.industry
+  target.lifecycleStage = payload.lifecycleStage
+  target.description = payload.description
+  target.hasDisposal = payload.operations.some((row) => processOpType(row.opCode) === 'disposal')
+  target.operations = remapProcessOps(payload.operations, Date.now().toString().slice(-6))
+  target.updatedAt = NOW
+  return request(target)
+}
+
+/** 启用 / 禁用（**仅组织自建工艺**；引用后台工艺的使用状态由后台控制，本模块只读） */
+export async function updateMyProcessUseStatus(id: string, useStatus: EnableStatus): Promise<MyProcessItem> {
+  const target = myProcessStore.find((p) => p.id === id)
+  if (!target) throw new Error('引用后台工艺的使用状态由后台控制，本模块只读')
+  target.useStatus = useStatus
+  target.updatedAt = NOW
+  return request(target)
+}
+
+/** 删除（仅「自己新增」；引用后台工艺为只读项，不可删除） */
+export async function deleteMyProcess(id: string): Promise<void> {
+  const target = myProcessStore.find((p) => p.id === id)
+  if (!target) throw new Error('引用后台工艺为只读项，不可删除')
+  myProcessStore = myProcessStore.filter((p) => p.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 200))
 }
 
 /* ===================== 物料库（基础库 A1-1，轻量基础数据） ===================== */
@@ -1681,6 +2201,134 @@ export async function batchDeleteUnits(ids: string[]): Promise<UnitBatchResult> 
   return request({ success, failed })
 }
 
+/* ===================== 数据字典（平台支撑） ===================== */
+
+export interface DictItemPayload {
+  /** 所属字典类型 id */
+  typeId: string
+  code: string
+  label: string
+  sort: number
+  remark: string
+}
+
+/** 字典类型列表（平台支撑 → 数据字典） */
+export function fetchDictTypes(): Promise<DictType[]> {
+  return request(dictTypeStore.slice().sort((a, b) => a.code.localeCompare(b.code)))
+}
+
+/** 某字典类型下的全部字典项（按排序号升序） */
+export function fetchDictItems(typeId: string): Promise<DictItem[]> {
+  return request(
+    dictItemStore
+      .filter((item) => item.typeId === typeId)
+      .slice()
+      .sort((a, b) => a.sort - b.sort || a.code.localeCompare(b.code)),
+  )
+}
+
+/** 按字典类型编码取「启用」字典项（业务下拉取值来源，如系统边界） */
+export function fetchDictOptionsByTypeCode(typeCode: string): Promise<DictItem[]> {
+  const type = dictTypeStore.find((item) => item.code === typeCode)
+  if (!type) return request([])
+  return request(
+    dictItemStore
+      .filter((item) => item.typeId === type.id && item.status === 'enabled')
+      .slice()
+      .sort((a, b) => a.sort - b.sort),
+  )
+}
+
+/** 系统边界字典项（同步，仅启用项，按排序号）：前台「核算边界」下拉与阶段「适用系统边界」复选取值来源 */
+export function systemBoundaryItems(): DictItem[] {
+  const type = dictTypeStore.find((item) => item.code === DICT_TYPE_SYSTEM_BOUNDARY)
+  if (!type) return []
+  return dictItemStore
+    .filter((item) => item.typeId === type.id && item.status === 'enabled')
+    .slice()
+    .sort((a, b) => a.sort - b.sort)
+}
+
+/** 系统边界标签（同步：「字典项编码 → 名称」，用于列表 / 报告的边界展示） */
+export function boundaryLabelOf(code: string): string {
+  const item = dictItemStore.find(
+    (entry) =>
+      entry.code === code &&
+      dictTypeStore.find((type) => type.id === entry.typeId)?.code === DICT_TYPE_SYSTEM_BOUNDARY,
+  )
+  return item?.label ?? code
+}
+
+function assertDictItem(payload: DictItemPayload, id: string | null): void {
+  if (!payload.typeId) throw new Error('保存失败：所属字典类型必填')
+  if (!payload.code.trim()) throw new Error('保存失败：字典项编码必填')
+  if (!payload.label.trim()) throw new Error('保存失败：字典项名称必填')
+  if (!Number.isInteger(payload.sort) || payload.sort < 0) throw new Error('保存失败：排序号需为不小于 0 的整数')
+  if (
+    dictItemStore.some(
+      (item) => item.id !== id && item.typeId === payload.typeId && item.code.trim() === payload.code.trim(),
+    )
+  ) {
+    throw new Error('保存失败：字典项编码在同一字典类型下已存在')
+  }
+}
+
+/** 新增字典项：默认启用 */
+export async function createDictItem(payload: DictItemPayload): Promise<DictItem> {
+  assertDictItem(payload, null)
+  const item: DictItem = {
+    id: `DI${Date.now().toString().slice(-6)}`,
+    typeId: payload.typeId,
+    code: payload.code.trim(),
+    label: payload.label.trim(),
+    sort: payload.sort,
+    remark: payload.remark.trim(),
+    status: 'enabled',
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+  dictItemStore = [item, ...dictItemStore]
+  return request(item)
+}
+
+/** 编辑字典项 */
+export async function updateDictItem(id: string, payload: DictItemPayload): Promise<DictItem> {
+  const target = dictItemStore.find((item) => item.id === id)
+  if (!target) throw new Error('字典项不存在或已被删除')
+  assertDictItem(payload, id)
+  target.typeId = payload.typeId
+  target.code = payload.code.trim()
+  target.label = payload.label.trim()
+  target.sort = payload.sort
+  target.remark = payload.remark.trim()
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(target)
+}
+
+/** 启用 / 禁用字典项（禁用后不再出现在业务下拉中） */
+export async function updateDictItemStatus(id: string, status: EnableStatus): Promise<DictItem> {
+  const target = dictItemStore.find((item) => item.id === id)
+  if (!target) throw new Error('字典项不存在或已被删除')
+  target.status = status
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(target)
+}
+
+/** 删除字典项：被生命周期阶段「适用系统边界」引用时阻断删除 */
+export async function deleteDictItem(id: string): Promise<void> {
+  const target = dictItemStore.find((item) => item.id === id)
+  if (!target) throw new Error('字典项不存在或已被删除')
+  if (lifecycleStore.some((stage) => stage.boundaries.includes(target.code))) {
+    throw new Error('该字典项已被生命周期阶段的「适用系统边界」引用，请先解除引用再删除')
+  }
+  dictItemStore = dictItemStore.filter((item) => item.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 200))
+}
+
 /* ===================== 生命周期阶段（基础库 A1-10，轻量基础数据） ===================== */
 
 /** 阶段描述长度上限：前端字数统计与服务端校验共用同一口径 */
@@ -1698,10 +2346,8 @@ export interface LifecycleStagePayload {
   parentId: string | null
   order: number
   description: string
-  /** 适用行业（多选，引用行业库 A1-4）；为空 = 全行业通用（D06） */
-  industries: string[]
-  gateRule: LifecycleInclusion
-  graveRule: LifecycleInclusion
+  /** 适用系统边界（多选，引用「数据字典 · 系统边界」字典项编码）；为空 = 全边界通用 */
+  boundaries: string[]
 }
 
 /**
@@ -1710,7 +2356,7 @@ export interface LifecycleStagePayload {
  * - 名称必填且**同级内唯一**（R-002 / D04）；
  * - 层级仅一级 / 二级，**二级必选上级阶段且上级必须为一级阶段**（R-003 / D02 / D03）；
  * - 阶段顺序为 1～99 整数，**同级内不重复**（R-004 / D05）；
- * - 两个边界的纳入规则必须取三态之一，不允许留空（R-006 / D10）。
+ * - 适用系统边界为多选（引用「数据字典 · 系统边界」），允许为空 = 全边界通用。
  */
 function assertLifecycle(payload: LifecycleStagePayload, id: string | null): void {
   const code = payload.code.trim()
@@ -1718,8 +2364,6 @@ function assertLifecycle(payload: LifecycleStagePayload, id: string | null): voi
 
   if (!code) throw new Error('保存失败：阶段编码必填（R-001 / D01）')
   if (!name) throw new Error('保存失败：阶段名称必填')
-  if (!payload.gateRule) throw new Error('保存失败：「摇篮到大门纳入规则」必填（R-006 / D10）')
-  if (!payload.graveRule) throw new Error('保存失败：「摇篮到坟墓纳入规则」必填（R-006 / D10）')
 
   const parentId = payload.level === 2 ? payload.parentId : null
 
@@ -1779,9 +2423,7 @@ export async function createLifecycleStage(payload: LifecycleStagePayload): Prom
     parentId: payload.level === 2 ? payload.parentId : null,
     order: payload.order,
     description: payload.description.trim(),
-    industries: [...payload.industries],
-    gateRule: payload.gateRule,
-    graveRule: payload.graveRule,
+    boundaries: [...payload.boundaries],
     status: 'enabled',
     createdBy: '当前用户',
     createdAt: NOW,
@@ -1808,21 +2450,30 @@ export async function updateLifecycleStage(id: string, payload: LifecycleStagePa
   target.parentId = payload.level === 2 ? payload.parentId : null
   target.order = payload.order
   target.description = payload.description.trim()
-  target.industries = [...payload.industries]
-  target.gateRule = payload.gateRule
-  target.graveRule = payload.graveRule
+  target.boundaries = [...payload.boundaries]
   target.updatedBy = '当前用户'
   target.updatedAt = NOW
   return request(target)
 }
 
-/** 启用 / 禁用：**双向可达、无前置约束**（不设数据来源与引用状态，与物料库 / 能源库一致） */
+/** 启用 / 禁用：**双向可达、无前置约束**（不设数据来源与引用状态，与物料库 / 能源库一致）；
+ * **级联禁用**：禁用一级阶段时，其下全部二级阶段同步禁用（子阶段不应在父级禁用后仍可新项目选用）；
+ * 启用**不级联**：子阶段保持各自状态，由业务按需单独启用 */
 export async function updateLifecycleStageStatus(id: string, status: EnableStatus): Promise<LifecycleStageItem> {
   const target = lifecycleStore.find((item) => item.id === id)
   if (!target) throw new Error('生命周期阶段不存在或已被删除')
   target.status = status
   target.updatedBy = '当前用户'
   target.updatedAt = NOW
+  if (status === 'disabled' && target.level === 1) {
+    lifecycleStore.forEach((item) => {
+      if (item.parentId === id && item.status !== 'disabled') {
+        item.status = 'disabled'
+        item.updatedBy = '当前用户'
+        item.updatedAt = NOW
+      }
+    })
+  }
   return request(target)
 }
 
@@ -1844,6 +2495,134 @@ export async function deleteLifecycleStage(id: string): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 260))
 }
 
+/* ===================== 标准文件库（基础库 A1-3 / P05，轻量基础数据 · 无版本化） ===================== */
+
+export interface StandardPayload {
+  /** 标准号（含年份），唯一 */
+  code: string
+  nameZh: string
+  nameEn: string
+  status: StandardStatus
+  publishDate: string
+  implementDate: string
+  publisher: string
+  /** 来源链接（与「附件」二选一） */
+  sourceUrl: string
+  competentDept: string
+  responsibleDept: string
+  attachments: StandardAttachment[]
+}
+
+/**
+ * 标准文件主数据校验（业务 PRD §5）：
+ * - 标准号 / 中文标准名称 / 标准状态 / 发布日期 / 实施日期 / 发布单位必填（R-002）；
+ * - 「标准号」唯一（R-001 / D01 / D02）；
+ * - 实施日期 ≥ 发布日期（R-003 / D04）；
+ * - 「来源链接」与「附件」二选一，至少填一个（R-004 / D03）；
+ * - 「来源链接」非空时须为合法 URL（R-006 / D05）。
+ */
+function assertStandard(payload: StandardPayload, id: string | null): void {
+  const code = payload.code.trim()
+  const nameZh = payload.nameZh.trim()
+  const sourceUrl = payload.sourceUrl.trim()
+
+  if (!code) throw new Error('保存失败：标准号必填')
+  if (!nameZh) throw new Error('保存失败：中文标准名称必填')
+  if (!payload.status.trim()) throw new Error('保存失败：标准状态必填')
+  if (!payload.publishDate) throw new Error('保存失败：发布日期必填')
+  if (!payload.implementDate) throw new Error('保存失败：实施日期必填')
+  if (!payload.publisher.trim()) throw new Error('保存失败：发布单位必填')
+
+  if (payload.implementDate < payload.publishDate) {
+    throw new Error('保存失败：实施日期不得早于发布日期（D04）')
+  }
+
+  if (!sourceUrl && payload.attachments.length === 0) {
+    throw new Error('保存失败：「来源链接」与「附件」二选一，请至少填写一个（D03）')
+  }
+  if (sourceUrl && !/^https?:\/\/.+/i.test(sourceUrl)) {
+    throw new Error('保存失败：来源链接须为合法 URL（http:// 或 https://，D05）')
+  }
+
+  if (standardStore.some((item) => item.id !== id && item.code === code)) {
+    throw new Error(`保存失败：标准号「${code}」已存在，标准号唯一（R-001 / D01）`)
+  }
+}
+
+/** 列表：标准文件字典（按标准号升序） */
+export function fetchStandards(): Promise<StandardItem[]> {
+  return request([...standardStore].sort((a, b) => a.code.localeCompare(b.code)))
+}
+
+/** 单条：标准信息（查看 / 编辑用） */
+export async function fetchStandard(id: string): Promise<StandardItem> {
+  const target = standardStore.find((item) => item.id === id)
+  if (!target) throw new Error('标准文件不存在或已被删除')
+  return request(target)
+}
+
+/**
+ * 新增标准文件（S01 / S02）：
+ * - 新建默认「现行」，可被核算模型绑定；
+ * - 「来源链接」与「附件」二选一，由校验保证至少填一个。
+ */
+export async function createStandard(payload: StandardPayload): Promise<StandardItem> {
+  assertStandard(payload, null)
+
+  const item: StandardItem = {
+    id: `STD${Date.now().toString().slice(-6)}`,
+    code: payload.code.trim(),
+    nameZh: payload.nameZh.trim(),
+    nameEn: payload.nameEn.trim(),
+    status: payload.status.trim() || '现行',
+    publishDate: payload.publishDate,
+    implementDate: payload.implementDate,
+    publisher: payload.publisher.trim(),
+    sourceUrl: payload.sourceUrl.trim(),
+    competentDept: payload.competentDept.trim(),
+    responsibleDept: payload.responsibleDept.trim(),
+    attachments: payload.attachments.map((att) => ({ ...att })),
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+  standardStore = [item, ...standardStore]
+  return request(item)
+}
+
+/** 编辑标准文件：随时可编辑（无引用限制） */
+export async function updateStandard(id: string, payload: StandardPayload): Promise<StandardItem> {
+  const target = standardStore.find((item) => item.id === id)
+  if (!target) throw new Error('标准文件不存在或已被删除')
+
+  assertStandard(payload, id)
+
+  target.code = payload.code.trim()
+  target.nameZh = payload.nameZh.trim()
+  target.nameEn = payload.nameEn.trim()
+  target.status = payload.status.trim()
+  target.publishDate = payload.publishDate
+  target.implementDate = payload.implementDate
+  target.publisher = payload.publisher.trim()
+  target.sourceUrl = payload.sourceUrl.trim()
+  target.competentDept = payload.competentDept.trim()
+  target.responsibleDept = payload.responsibleDept.trim()
+  target.attachments = payload.attachments.map((att) => ({ ...att }))
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(target)
+}
+
+/** 删除标准文件：随时可删除（无引用限制） */
+export async function deleteStandard(id: string): Promise<void> {
+  const target = standardStore.find((item) => item.id === id)
+  if (!target) throw new Error('标准文件不存在或已被删除')
+
+  standardStore = standardStore.filter((item) => item.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 260))
+}
+
 /* ===================== 行业库（基础库 A1-4，轻量行业字典） ===================== */
 
 /** 行业描述长度上限（对齐竞品 500 字符） */
@@ -1857,24 +2636,28 @@ export interface IndustryPayload {
   /** 行业编码：必填、唯一 */
   code: string
   name: string
-  /** 上级行业 id：**只能指向一级行业**；为空 = 一级行业 */
+  /** 上级行业 id：**只能指向非末级行业**；为空 = 门类 */
   parentId: string | null
   sortNo: number | null
   description: string
 }
 
-/** 由「上级行业」推导行业层级（与产品分类 `deriveLevel` 同口径） */
+/** 行业最大层级：门类 / 大类 / 中类 / 小类（GB/T 4754 四级） */
+export const INDUSTRY_MAX_LEVEL: IndustryLevel = 4
+
+/** 由「上级行业」推导行业层级：无上级 = 门类（1），有上级 = 上级层级 + 1（与产品分类 `deriveLevel` 同口径） */
 export function deriveIndustryLevel(parentId: string | null): IndustryLevel {
   if (!parentId) return 1
   const parent = industryStore.find((item) => item.id === parentId)
-  return parent && parent.level === 1 ? 2 : 1
+  if (!parent) return 1
+  return Math.min(parent.level + 1, INDUSTRY_MAX_LEVEL) as IndustryLevel
 }
 
 /**
  * 行业主数据校验：
  * - 名称必填且**同级内唯一**；
  * - 编码必填且**唯一**；
- * - 层级仅两级：上级必须为一级行业、不得自引用；
+ * - 层级四级：上级不得为末级（小类）、不得自引用；
  * - 排序号选填，取值为 1～99 整数；
  * - 描述 ≤ 500 字符。
  */
@@ -1889,7 +2672,7 @@ function assertIndustry(payload: IndustryPayload, id: string | null): void {
     if (parentId === id) throw new Error('保存失败：上级行业不能选择自身')
     const parent = industryStore.find((item) => item.id === parentId)
     if (!parent) throw new Error('保存失败：上级行业不存在或已被删除')
-    if (parent.level !== 1) throw new Error('保存失败：上级行业必须为一级行业，本模块仅支持两级')
+    if (parent.level >= INDUSTRY_MAX_LEVEL) throw new Error('保存失败：上级行业不能是末级行业（小类），已达最大层级')
   }
 
   if (industryStore.some((item) => item.id !== id && item.code === code)) {
@@ -1985,7 +2768,7 @@ export async function updateIndustryStatus(id: string, status: EnableStatus): Pr
 /** 因子描述长度上限（前端字数统计与服务端校验共用同一口径，D12） */
 export const FACTOR_DESCRIPTION_MAX = 500
 
-/** 适用行业选项（引用行业库 A1-4；取启用状态的行业名称） */
+/** 适用行业选项（引用行业库 A1-4；取启用状态的末级行业名称） */
 export const FACTOR_INDUSTRY_OPTIONS: string[] = [...industryOptions]
 
 /** 发布国家 / 组织选项 */
@@ -2039,20 +2822,23 @@ export function fetchFactorFormOptions(): Promise<FactorFormOptions> {
 export interface FactorPayload {
   name: string
   alias: string
-  category: FactorCategory
-  industries: string[]
+  /** 英文名称（选填，后台因子库 / 前台我的因子库通用） */
+  englishName?: string
   scenario: string
   value: number
+  /** GWP 分项口径（选填；提供后可分「含 / 不含生物碳」双口径输出） */
+  calibers?: FactorCalibers
   numeratorUnit: string
   denominatorUnit: string
-  sourceCategory: string
-  publishYear: string
-  publishDate: string
-  publisherRegion: string
-  publisherFullName: string
-  publisherShortName: string
-  dataSourceFile: string
   description: string
+  /** 单位类别（选填） */
+  unitCategory?: string
+  /** 地域（选填） */
+  region?: string
+  /** 扩展信息「数据基本信息」（选填） */
+  ext?: FactorExt
+  /** 输入输出信息（选填） */
+  exchanges?: FactorExchange[]
   /** 仅新增时使用：来源档位（后端新增 = preset；前台「我的因子库」新增 = custom） */
   source?: FactorSource
 }
@@ -2080,34 +2866,58 @@ function nextFactorCode(): string {
 }
 
 /**
- * 因子主数据校验（对齐竞品必填项 + 业务 PRD §6）：
- * - 因子名称 / 适用行业 / 适用场景 / 因子值 / 活动数据单位 必填；
- * - 来源类别 / 发布年份 / 发布国家组织 / 发布机构全称 必填；
- * - 分类 = 生物碳因子时数值可为负，其余必须为正；
+ * 因子主数据校验：
+ * - 因子名称 / 适用场景 / 因子值 / 活动数据单位 必填；
+ * - 因子值不能为 0（生物碳吸收因子可为负）；
  * - 描述 ≤ 500 字符。
  */
 function assertFactor(payload: FactorPayload): void {
   if (!payload.name.trim()) throw new Error('保存失败：因子名称必填')
-  if (!payload.category) throw new Error('保存失败：因子分类必填')
-  if (payload.industries.length === 0) throw new Error('保存失败：适用行业必填（至少选择 1 项）')
   if (!payload.scenario.trim()) throw new Error('保存失败：适用场景不能为空')
   if (!payload.numeratorUnit) throw new Error('保存失败：单位必填')
   if (!payload.denominatorUnit) throw new Error('保存失败：请选择活动数据单位')
-
-  if (payload.category === 'biocarbon') {
-    if (Number.isNaN(payload.value) || payload.value === 0) throw new Error('保存失败：因子值不能为空')
-  } else if (!(payload.value > 0)) {
-    throw new Error('保存失败：因子值不能为空，且非生物碳因子必须为正数')
-  }
-
-  if (!payload.sourceCategory) throw new Error('保存失败：来源类别必填')
-  if (!payload.publishYear) throw new Error('保存失败：发布年份必填')
-  if (!payload.publisherRegion) throw new Error('保存失败：发布国家/组织必填')
-  if (!payload.publisherFullName.trim()) throw new Error('保存失败：发布机构或出版者（全称）必填')
-
+  if (Number.isNaN(payload.value) || payload.value === 0) throw new Error('保存失败：因子值不能为空且不能为 0')
   if (payload.description.length > FACTOR_DESCRIPTION_MAX) {
     throw new Error(`保存失败：描述最长 ${FACTOR_DESCRIPTION_MAX} 字符`)
   }
+  // 口径闭合校验：总量应 ≈ 化石 + 生物碳 + 土地利用（容差 1%）
+  const cal = payload.calibers
+  if (cal) {
+    const parts = [cal.gwpFossil, cal.gwpBiogenic, cal.gwpLuluc].filter(
+      (value): value is number => value != null && Number.isFinite(value),
+    )
+    if (parts.length > 0 && cal.gwpTotal != null && Number.isFinite(cal.gwpTotal)) {
+      const sum = parts.reduce((acc, value) => acc + value, 0)
+      const tolerance = Math.max(0.001, Math.abs(cal.gwpTotal) * 0.01)
+      if (Math.abs(sum - cal.gwpTotal) > tolerance) {
+        throw new Error('保存失败：口径不闭合，GWP 总量应约等于 化石 + 生物碳 + 土地利用')
+      }
+    }
+  }
+}
+
+/** 解析可选数值：空串返回 null（区别于 0） */
+function parseOptionalNumber(raw: string): number | null {
+  if (raw == null || raw.trim() === '') return null
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : null
+}
+
+/** 口径归一化：全部为空 → 返回 undefined（视为单一口径）；否则仅保留有限数值项 */
+function normalizeCalibers(calibers?: FactorCalibers | null): FactorCalibers | undefined {
+  if (!calibers) return undefined
+  const pick = (value?: number | null) =>
+    value != null && Number.isFinite(value) ? value : null
+  const next: FactorCalibers = {
+    gwpTotal: pick(calibers.gwpTotal),
+    gwpFossil: pick(calibers.gwpFossil),
+    gwpBiogenic: pick(calibers.gwpBiogenic),
+    gwpLuluc: pick(calibers.gwpLuluc),
+  }
+  const hasAny = [next.gwpTotal, next.gwpFossil, next.gwpBiogenic, next.gwpLuluc].some(
+    (value) => value != null,
+  )
+  return hasAny ? next : undefined
 }
 
 /** 列表：因子字典 */
@@ -2135,21 +2945,13 @@ function buildFactorItem(payload: FactorPayload): FactorItem {
     code: nextFactorCode(),
     name: payload.name.trim(),
     alias: payload.alias.trim(),
-    category: payload.category,
-    industries: payload.industries,
+    englishName: payload.englishName?.trim() || undefined,
     scenario: payload.scenario.trim(),
     value: payload.value,
+    calibers: normalizeCalibers(payload.calibers),
     numeratorUnit: payload.numeratorUnit,
     denominatorUnit: payload.denominatorUnit,
-    sourceCategory: payload.sourceCategory,
-    publishYear: payload.publishYear,
-    publishDate: payload.publishDate,
-    publisherRegion: payload.publisherRegion,
-    publisherFullName: payload.publisherFullName.trim(),
-    publisherShortName: payload.publisherShortName.trim(),
-    dataSourceFile: payload.dataSourceFile,
     source: payload.source ?? 'custom',
-    status: 'enabled',
     description: payload.description.trim(),
     createdBy: '当前用户',
     createdAt: NOW,
@@ -2174,33 +2976,12 @@ export async function updateFactor(id: string, payload: FactorPayload): Promise<
 
   target.name = payload.name.trim()
   target.alias = payload.alias.trim()
-  target.category = payload.category
-  target.industries = payload.industries
   target.scenario = payload.scenario.trim()
   target.value = payload.value
+  target.calibers = normalizeCalibers(payload.calibers)
   target.numeratorUnit = payload.numeratorUnit
   target.denominatorUnit = payload.denominatorUnit
-  target.sourceCategory = payload.sourceCategory
-  target.publishYear = payload.publishYear
-  target.publishDate = payload.publishDate
-  target.publisherRegion = payload.publisherRegion
-  target.publisherFullName = payload.publisherFullName.trim()
-  target.publisherShortName = payload.publisherShortName.trim()
-  target.dataSourceFile = payload.dataSourceFile
   target.description = payload.description.trim()
-  target.updatedBy = '当前用户'
-  target.updatedAt = NOW
-  return request(target)
-}
-
-/** 启用 / 禁用：双向可达；系统预置因子（environment 库）只读，不可禁用 */
-export async function updateFactorStatus(id: string, status: EnableStatus): Promise<FactorItem> {
-  const target = factorStore.find((item) => item.id === id)
-  if (!target) throw new Error('因子不存在或已被删除')
-  if (status === 'disabled' && target.source === 'preset') {
-    throw new Error('系统预置因子（environment 库）不可禁用')
-  }
-  target.status = status
   target.updatedBy = '当前用户'
   target.updatedAt = NOW
   return request(target)
@@ -2219,108 +3000,6 @@ export interface FactorBatchResult {
   failed: FactorBatchFailure[]
 }
 
-/** 批量启用 / 禁用：逐条执行，返回「成功 N 条 + 跳过清单与原因」 */
-export async function batchUpdateFactorStatus(ids: string[], status: EnableStatus): Promise<FactorBatchResult> {
-  const failed: FactorBatchFailure[] = []
-  let success = 0
-
-  ids.forEach((id) => {
-    const target = factorStore.find((item) => item.id === id)
-    if (!target) {
-      failed.push({ id, code: '-', name: '-', reason: '因子不存在或已被删除' })
-      return
-    }
-    if (status === 'disabled' && target.source === 'preset') {
-      failed.push({ id, code: target.code, name: target.name, reason: '系统预置因子不可禁用' })
-      return
-    }
-    target.status = status
-    target.updatedBy = '当前用户'
-    target.updatedAt = NOW
-    success += 1
-  })
-
-  return request({ success, failed })
-}
-
-/** 删除：**仅「已禁用」的因子可删除**；系统预置因子一律不可删除（对齐物料库 / 能源库口径） */
-export async function deleteFactor(id: string): Promise<void> {
-  const target = factorStore.find((item) => item.id === id)
-  if (!target) throw new Error('因子不存在或已被删除')
-  if (target.source === 'preset') throw new Error('系统预置因子（environment 库）不可删除')
-  if (target.status === 'enabled') throw new Error('请先禁用该因子，再执行删除（启用中的因子不可删除）')
-  factorStore = factorStore.filter((item) => item.id !== id)
-  await new Promise((resolve) => setTimeout(resolve, 260))
-}
-
-/** 批量删除：逐条执行，仅「已禁用」的组织自建因子可删除 */
-export async function batchDeleteFactors(ids: string[]): Promise<FactorBatchResult> {
-  const failed: FactorBatchFailure[] = []
-  let success = 0
-
-  ids.forEach((id) => {
-    const target = factorStore.find((item) => item.id === id)
-    if (!target) {
-      failed.push({ id, code: '-', name: '-', reason: '因子不存在或已被删除' })
-      return
-    }
-    let reason = ''
-    if (target.source === 'preset') reason = '系统预置因子不可删除'
-    else if (target.status === 'enabled') reason = '启用中的因子不可删除，请先禁用'
-
-    if (reason) {
-      failed.push({ id, code: target.code, name: target.name, reason })
-      return
-    }
-    factorStore = factorStore.filter((item) => item.id !== id)
-    success += 1
-  })
-
-  return request({ success, failed })
-}
-
-/* ============ 前台「我的因子库」：引用因子库（引用，不复制） ============ */
-
-/**
- * 可引用的后台维护因子：后台「排放因子库」中**启用中**的因子（`source = 'preset'`）。
- * 前台仅能引用、不能改写；引用后在本组织可见且**只读**。
- */
-export function fetchBackendFactors(): Promise<FactorItem[]> {
-  return request(factorStore.filter((item) => item.source === 'preset' && item.status === 'enabled'))
-}
-
-/**
- * 批量引用后台维护因子到「我的因子库」（「全部引用」与勾选引用共用本方法）。
- * 跳过规则：非后台维护因子 / 已禁用 / 已引用（重复引用）。
- */
-export async function referenceBackendFactors(ids: string[]): Promise<FactorBatchResult> {
-  const failed: FactorBatchFailure[] = []
-  let success = 0
-
-  ids.forEach((id) => {
-    const target = factorStore.find((item) => item.id === id)
-    if (!target) {
-      failed.push({ id, code: '-', name: '-', reason: '因子不存在或已被删除' })
-      return
-    }
-    let reason = ''
-    if (target.source !== 'preset') reason = '仅后台维护因子可被引用'
-    else if (target.status !== 'enabled') reason = '已禁用的因子不可引用'
-    else if (target.referenced) reason = '该因子已引用，请勿重复引用'
-
-    if (reason) {
-      failed.push({ id: target.id, code: target.code, name: target.name, reason })
-      return
-    }
-    target.referenced = true
-    target.updatedBy = '当前用户'
-    target.updatedAt = NOW
-    success += 1
-  })
-
-  return request({ success, failed })
-}
-
 /* ============ Excel 导入（后台排放因子库 / 前台我的因子库通用） ============ */
 
 /** 单次导入的数据行上限 */
@@ -2337,36 +3016,15 @@ export interface FactorImportColumn {
 export const FACTOR_IMPORT_COLUMNS: FactorImportColumn[] = [
   { key: 'name', label: '因子名称', required: true, hint: '必填，文本，≤100 字符' },
   { key: 'alias', label: '因子别名', required: false, hint: '选填' },
-  {
-    key: 'category',
-    label: '因子分类',
-    required: true,
-    hint: '必填，取值：材料因子 / 能源因子 / 运输因子 / 废弃物处理因子 / 末期处理因子 / 生物碳因子',
-  },
-  { key: 'industries', label: '适用行业', required: true, hint: '必填，至少 1 项；多个行业用「、」分隔（取值见行业库）' },
+  { key: 'englishName', label: '英文名称', required: false, hint: '选填，如 Electricity' },
   { key: 'scenario', label: '适用场景', required: true, hint: '必填，如「外购电力消耗」' },
-  { key: 'value', label: '碳排放因子值', required: true, hint: '必填，数字；生物碳因子可为负（表达固碳），其余必须为正' },
-  { key: 'numeratorUnit', label: '单位（分子）', required: false, hint: '碳排放量类单位，默认 kgCO₂e' },
-  { key: 'denominatorUnit', label: '活动数据单位（分母）', required: true, hint: '必填，须取自计量单位库，且与活动数据可换算' },
-  { key: 'sourceCategory', label: '来源类别', required: true, hint: '必填，如「官方机构发布」「企业自建」' },
-  { key: 'publishYear', label: '发布年份', required: true, hint: '必填，4 位年份，如 2024' },
-  { key: 'publishDate', label: '发布日期', required: false, hint: '选填，格式 YYYY-MM-DD' },
-  { key: 'publisherRegion', label: '发布国家/组织', required: true, hint: '必填，取值：中国 / 国际组织 / 欧盟 / 美国 / 英国 / 日本 / 其他' },
-  { key: 'publisherFullName', label: '发布机构（全称）', required: true, hint: '必填' },
-  { key: 'publisherShortName', label: '发布机构（简称）', required: false, hint: '选填' },
-  { key: 'dataSourceFile', label: '数据来源', required: false, hint: '选填，来源文件名称' },
+  { key: 'value', label: '碳排放因子值', required: true, hint: '必填，数字；生物碳吸收因子可为负（表达固碳）' },
+  { key: 'unit', label: '因子单位', required: true, hint: '必填，复合单位「分子/分母」，如 kgCO₂e/kg、kgCO₂e/kWh' },
   { key: 'description', label: '描述', required: false, hint: `选填，≤${FACTOR_DESCRIPTION_MAX} 字符` },
+  { key: 'gwpFossil', label: 'GWP-化石（选填）', required: false, hint: '选填；对应「不含生物碳」口径' },
+  { key: 'gwpBiogenic', label: 'GWP-生物碳（选填）', required: false, hint: '选填；吸收为负、释放为正' },
+  { key: 'gwpLuluc', label: 'GWP-土地利用（选填）', required: false, hint: '选填' },
 ]
-
-/** 因子分类：中文标签 → 枚举（模板枚举取值，同时接受英文枚举值） */
-const FACTOR_CATEGORY_BY_LABEL: Record<string, FactorCategory> = {
-  材料因子: 'material',
-  能源因子: 'energy',
-  运输因子: 'transport',
-  废弃物处理因子: 'waste',
-  末期处理因子: 'eol',
-  生物碳因子: 'biocarbon',
-}
 
 /** 导入模板：仅表头行（必填列以 `*` 标记） */
 export function buildFactorImportTemplate(): string {
@@ -2422,76 +3080,54 @@ export function validateFactorImportText(text: string): FactorImportPreview {
     const name = importCell(cells, 'name')
     const reasons: string[] = []
 
-    const categoryRaw = importCell(cells, 'category')
-    const category =
-      FACTOR_CATEGORY_BY_LABEL[categoryRaw] ??
-      (Object.values(FACTOR_CATEGORY_BY_LABEL).includes(categoryRaw as FactorCategory)
-        ? (categoryRaw as FactorCategory)
-        : null)
-    const industries = importCell(cells, 'industries')
-      .split(/[、,，;；]/)
-      .map((item) => item.trim())
-      .filter(Boolean)
     const valueRaw = importCell(cells, 'value')
     const value = Number(valueRaw)
-    const numeratorUnit = importCell(cells, 'numeratorUnit') || 'kgCO₂e'
-    const denominatorUnit = importCell(cells, 'denominatorUnit')
-    const publishYear = importCell(cells, 'publishYear')
-    const publisherRegion = importCell(cells, 'publisherRegion')
+    const unitRaw = importCell(cells, 'unit')
+    const [numeratorUnit, denominatorUnit] = unitRaw.split('/').map((part) => part.trim())
     const description = importCell(cells, 'description')
 
     if (!name) reasons.push('因子名称必填')
-    if (!categoryRaw) reasons.push('因子分类必填')
-    else if (!category) reasons.push(`因子分类「${categoryRaw}」不在枚举范围内`)
-    if (industries.length === 0) reasons.push('适用行业必填（至少 1 项）')
-    else {
-      const unknown = industries.filter((item) => !FACTOR_INDUSTRY_OPTIONS.includes(item))
-      if (unknown.length > 0) reasons.push(`适用行业「${unknown.join('、')}」不在行业库中`)
-    }
     if (!importCell(cells, 'scenario')) reasons.push('适用场景必填')
     if (!valueRaw || Number.isNaN(value)) reasons.push('碳排放因子值必填且必须为数字')
-    else if (category && category !== 'biocarbon' && value <= 0) reasons.push('非生物碳因子的因子值必须为正数')
-    else if (category === 'biocarbon' && value === 0) reasons.push('因子值不能为 0')
-    if (!FACTOR_CARBON_UNITS.includes(numeratorUnit)) {
-      reasons.push(`单位（分子）「${numeratorUnit}」不在计量单位库（碳排放量类）中`)
+    else if (value === 0) reasons.push('因子值不能为 0')
+    if (!unitRaw) reasons.push('因子单位必填（复合单位，如 kgCO₂e/kg）')
+    else {
+      if (!numeratorUnit || !denominatorUnit) {
+        reasons.push(`因子单位「${unitRaw}」格式应为「分子/分母」，如 kgCO₂e/kg`)
+      }
+      if (numeratorUnit && !FACTOR_CARBON_UNITS.includes(numeratorUnit)) {
+        reasons.push(`因子单位分子「${numeratorUnit}」不在计量单位库（碳排放量类）中`)
+      }
+      if (denominatorUnit && !FACTOR_ACTIVITY_UNITS.includes(denominatorUnit)) {
+        reasons.push(`因子单位分母「${denominatorUnit}」不在计量单位库中`)
+      }
     }
-    if (!denominatorUnit) reasons.push('活动数据单位必填')
-    else if (!FACTOR_ACTIVITY_UNITS.includes(denominatorUnit)) {
-      reasons.push(`活动数据单位「${denominatorUnit}」不在计量单位库中`)
-    }
-    if (!importCell(cells, 'sourceCategory')) reasons.push('来源类别必填')
-    if (!/^\d{4}$/.test(publishYear)) reasons.push('发布年份必填，且为 4 位年份')
-    if (!publisherRegion) reasons.push('发布国家/组织必填')
-    else if (!FACTOR_PUBLISHER_REGION_OPTIONS.includes(publisherRegion)) {
-      reasons.push(`发布国家/组织「${publisherRegion}」不在枚举范围内`)
-    }
-    if (!importCell(cells, 'publisherFullName')) reasons.push('发布机构（全称）必填')
     if (description.length > FACTOR_DESCRIPTION_MAX) {
       reasons.push(`描述超过 ${FACTOR_DESCRIPTION_MAX} 字符`)
     }
 
-    if (reasons.length > 0 || !category) {
-      errors.push({ row, name: name || '（空）', reason: reasons.join('；') || '因子分类取值有误' })
+    if (reasons.length > 0) {
+      errors.push({ row, name: name || '（空）', reason: reasons.join('；') })
       return
     }
+
+    const gwpFossil = parseOptionalNumber(importCell(cells, 'gwpFossil'))
+    const gwpBiogenic = parseOptionalNumber(importCell(cells, 'gwpBiogenic'))
+    const gwpLuluc = parseOptionalNumber(importCell(cells, 'gwpLuluc'))
+    const hasCaliber = [gwpFossil, gwpBiogenic, gwpLuluc].some((item) => item != null)
 
     valid.push({
       name,
       alias: importCell(cells, 'alias'),
-      category,
-      industries,
+      englishName: importCell(cells, 'englishName') || undefined,
       scenario: importCell(cells, 'scenario'),
       value,
       numeratorUnit,
       denominatorUnit,
-      sourceCategory: importCell(cells, 'sourceCategory'),
-      publishYear,
-      publishDate: importCell(cells, 'publishDate'),
-      publisherRegion,
-      publisherFullName: importCell(cells, 'publisherFullName'),
-      publisherShortName: importCell(cells, 'publisherShortName'),
-      dataSourceFile: importCell(cells, 'dataSourceFile'),
       description,
+      calibers: hasCaliber
+        ? normalizeCalibers({ gwpTotal: value, gwpFossil, gwpBiogenic, gwpLuluc })
+        : undefined,
     })
   })
 
@@ -2523,6 +3159,720 @@ export async function importFactors(payloads: FactorPayload[], source: FactorSou
     }
   })
 
+  return request({ success, failed })
+}
+
+/* ===================== 因子库（多库模型） ===================== */
+
+/** 同步库 / 库版本 / 我的因子库的统计字段（因子数 / 版本数） */
+function syncLibraryStats(): void {
+  factorLibraryVersionStore.forEach((version) => {
+    version.factorCount = factorStore.filter((item) => item.libraryVersionId === version.id).length
+  })
+  factorLibraryStore.forEach((library) => {
+    const versions = factorLibraryVersionStore.filter((item) => item.libraryId === library.id)
+    library.versionCount = versions.length
+    const current = library.currentVersionId
+      ? versions.find((item) => item.id === library.currentVersionId)
+      : undefined
+    const display = current ?? versions.find((item) => item.status === 'draft') ?? versions[0]
+    library.factorCount = display ? display.factorCount : 0
+    library.currentVersionNo = current ? current.versionNo : (display?.versionNo ?? '')
+  })
+  myFactorLibraryStore.forEach((library) => {
+    library.factorCount = myFactorStore.filter((item) => item.libraryId === library.id).length
+  })
+}
+
+let librarySeq = 0
+let versionSeq = 0
+let myFactorSeq = 0
+
+function nextLibraryId(): string {
+  librarySeq += 1
+  return `FLIB${String(Date.now()).slice(-6)}${String(librarySeq).padStart(2, '0')}`
+}
+function nextVersionId(): string {
+  versionSeq += 1
+  return `FLV${String(Date.now()).slice(-6)}${String(versionSeq).padStart(2, '0')}`
+}
+function nextMyFactorId(): string {
+  myFactorSeq += 1
+  return `MYF${String(Date.now()).slice(-6)}${String(myFactorSeq).padStart(2, '0')}`
+}
+/** 生成「我的因子」编码：MF-{序号}，按当前组织因子库范围自增 */
+function nextMyFactorCode(): string {
+  const used = myFactorStore
+    .map((item) => Number((/^MF-(\d+)$/.exec(item.code) ?? [])[1] ?? 0))
+    .filter((num) => num > 0)
+  const max = used.length > 0 ? Math.max(...used) : 0
+  return `MF-${String(max + 1).padStart(3, '0')}`
+}
+
+/* ---------- 后台：因子库 CRUD ---------- */
+
+export function fetchFactorLibraries(): Promise<FactorLibrary[]> {
+  syncLibraryStats()
+  return request(clone(factorLibraryStore))
+}
+
+export async function fetchFactorLibrary(id: string): Promise<FactorLibrary> {
+  syncLibraryStats()
+  const target = factorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子库不存在或已被删除')
+  return request(clone(target))
+}
+
+export interface FactorLibraryPayload {
+  name: string
+  type: FactorLibraryType
+  description: string
+  maintainer: string
+}
+
+/** 新建因子库：自动创建一个草稿版本 V1.0（自建库可维护；外部库整库导入） */
+export async function createFactorLibrary(payload: FactorLibraryPayload): Promise<FactorLibrary> {
+  if (!payload.name.trim()) throw new Error('保存失败：库名称必填')
+  const code = `LB-${String(factorLibraryStore.length + 1).padStart(3, '0')}`
+  const library: FactorLibrary = {
+    id: nextLibraryId(),
+    code,
+    name: payload.name.trim(),
+    type: payload.type,
+    description: payload.description.trim(),
+    maintainer: payload.maintainer.trim() || '平台运营',
+    offline: false,
+    currentVersionId: null,
+    versionCount: 0,
+    factorCount: 0,
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+  const version: FactorLibraryVersion = {
+    id: nextVersionId(),
+    libraryId: library.id,
+    versionNo: 'V1.0',
+    year: String(new Date(NOW).getFullYear() || 2025),
+    status: 'draft',
+    changeNote: '初始版本',
+    factorCount: 0,
+    createdBy: '当前用户',
+    createdAt: NOW,
+  }
+  factorLibraryStore = [library, ...factorLibraryStore]
+  factorLibraryVersionStore = [version, ...factorLibraryVersionStore]
+  syncLibraryStats()
+  return request(clone(library))
+}
+
+export async function updateFactorLibrary(id: string, patch: Partial<FactorLibraryPayload>): Promise<FactorLibrary> {
+  const target = factorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子库不存在或已被删除')
+  if (patch.name !== undefined) {
+    if (!patch.name.trim()) throw new Error('保存失败：库名称必填')
+    target.name = patch.name.trim()
+  }
+  if (patch.description !== undefined) target.description = patch.description.trim()
+  if (patch.maintainer !== undefined) target.maintainer = patch.maintainer.trim() || target.maintainer
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(clone(target))
+}
+
+/**
+ * 删除因子库：**已发布过的库须先「整库下架」才可删除**（防止误删线上库；
+ * 下架后库已不在前台可见、不参与匹配，历史结果与收藏副本仍可追溯）。
+ * 从未发布过的库（无生效中 / 历史版本）可直接删除。
+ */
+export async function deleteFactorLibrary(id: string): Promise<void> {
+  const target = factorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子库不存在或已被删除')
+  const versions = factorLibraryVersionStore.filter((item) => item.libraryId === id)
+  const everPublished = !!target.currentVersionId || versions.some((item) => item.status !== 'draft')
+  if (everPublished && !target.offline) {
+    throw new Error('该库已发布过版本，须先「下架」整库后才可删除')
+  }
+  const versionIds = new Set(versions.map((item) => item.id))
+  factorStore = factorStore.filter((item) => !(item.libraryVersionId && versionIds.has(item.libraryVersionId)))
+  factorLibraryVersionStore = factorLibraryVersionStore.filter((item) => item.libraryId !== id)
+  factorLibraryStore = factorLibraryStore.filter((item) => item.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 240))
+}
+
+/* ---------- 后台：库版本 ---------- */
+
+export function fetchLibraryVersions(libraryId: string): Promise<FactorLibraryVersion[]> {
+  syncLibraryStats()
+  const list = factorLibraryVersionStore
+    .filter((item) => item.libraryId === libraryId)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  return request(clone(list))
+}
+
+/** 新建库版本：以当前最新版本因子为快照，复制为可编辑草稿 */
+export async function createLibraryVersion(
+  libraryId: string,
+  payload: { versionNo: string; year: string; changeNote: string },
+): Promise<FactorLibraryVersion> {
+  const library = factorLibraryStore.find((item) => item.id === libraryId)
+  if (!library) throw new Error('因子库不存在或已被删除')
+  if (!payload.versionNo.trim()) throw new Error('保存失败：版本号必填')
+  const duplicated = factorLibraryVersionStore.find(
+    (item) => item.libraryId === libraryId && item.versionNo.trim() === payload.versionNo.trim(),
+  )
+  if (duplicated) throw new Error(`保存失败：版本号「${payload.versionNo.trim()}」已存在，请使用其他版本号`)
+  const existingDraft = factorLibraryVersionStore.find(
+    (item) => item.libraryId === libraryId && item.status === 'draft',
+  )
+  if (existingDraft) {
+    throw new Error(`已存在草稿版本「${existingDraft.versionNo}」，请先发布或删除该草稿后再新建版本`)
+  }
+  const versions = factorLibraryVersionStore.filter((item) => item.libraryId === libraryId)
+  const base: FactorLibraryVersion | undefined =
+    versions.find((item) => item.id === library.currentVersionId) ??
+    versions.find((item) => item.status === 'draft') ??
+    versions[0]
+  const version: FactorLibraryVersion = {
+    id: nextVersionId(),
+    libraryId,
+    versionNo: payload.versionNo.trim(),
+    year: payload.year,
+    status: 'draft',
+    changeNote: payload.changeNote.trim(),
+    basedOnVersionNo: base?.versionNo,
+    factorCount: 0,
+    createdBy: '当前用户',
+    createdAt: NOW,
+  }
+  factorLibraryVersionStore = [version, ...factorLibraryVersionStore]
+  // 快照：复制基线版本因子为新草稿
+  if (base) {
+    const snapshot = factorStore
+      .filter((item) => item.libraryVersionId === base.id)
+      .map((item) => ({ ...clone(item), id: nextFactorId(), libraryVersionId: version.id }))
+    factorStore = [...snapshot, ...factorStore]
+  }
+  syncLibraryStats()
+  return request(clone(version))
+}
+
+/**
+ * 发布库版本（**软件发版模型**，同一库同时只有一个「生效中」版本）：
+ * - **发布新版本**：草稿 → 生效中；同库上一「生效中」版本自动转为「历史版本」；
+ * - **回滚**：历史版本 → 生效中（当前生效版本自动转为历史），即直接把历史版本设为生效；
+ * - 发布时间拆分：`publishedAt` 仅首次发布时写入（回滚不覆盖），`lastActivatedAt` 每次发布 / 回滚均更新。
+ */
+export async function publishLibraryVersion(versionId: string): Promise<FactorLibraryVersion> {
+  const version = factorLibraryVersionStore.find((item) => item.id === versionId)
+  if (!version) throw new Error('版本不存在或已被删除')
+  const library = factorLibraryStore.find((item) => item.id === version.libraryId)
+  if (!library) throw new Error('因子库不存在或已被删除')
+  if (library.offline) throw new Error('该库已「整库下架」，请先「整库上架」后再发布版本')
+  // 空在线版本校验：不允许发布空版本，否则前台将出现无有效因子的库（触发 E03 因子缺失）
+  const factorCount = factorStore.filter((item) => item.libraryVersionId === version.id).length
+  if (factorCount === 0) throw new Error('该版本内容为空，不允许发布空版本（前台将无有效因子可用）')
+  // 生效中版本唯一：其余已生效版本（含被新版本替代 / 被回滚替代的）转「历史版本」
+  factorLibraryVersionStore.forEach((item) => {
+    if (item.libraryId === version.libraryId && item.status === 'published') item.status = 'history'
+  })
+  version.status = 'published'
+  version.publishedBy = '当前用户'
+  version.publishedAt = version.publishedAt ?? NOW
+  version.lastActivatedAt = NOW
+  library.currentVersionId = version.id
+  library.updatedBy = '当前用户'
+  library.updatedAt = NOW
+  syncLibraryStats()
+  return request(clone(version))
+}
+
+/** 删除库版本：仅草稿可删除 */
+export async function deleteLibraryVersion(versionId: string): Promise<void> {
+  const version = factorLibraryVersionStore.find((item) => item.id === versionId)
+  if (!version) throw new Error('版本不存在或已被删除')
+  if (version.status !== 'draft') throw new Error('仅草稿版本可删除（生效中 / 历史版本只读）')
+  factorStore = factorStore.filter((item) => item.libraryVersionId !== versionId)
+  factorLibraryVersionStore = factorLibraryVersionStore.filter((item) => item.id !== versionId)
+  syncLibraryStats()
+  await new Promise((resolve) => setTimeout(resolve, 240))
+}
+
+/** 整库下架：前台不可见、不参与因子匹配；库数据与版本保留，可随时重新上架 */
+export async function offlineFactorLibrary(id: string): Promise<FactorLibrary> {
+  const target = factorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子库不存在或已被删除')
+  if (!target.currentVersionId) throw new Error('该库尚无已发布版本，无需下架')
+  target.offline = true
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(clone(target))
+}
+
+/** 整库上架：恢复前台可见与参与因子匹配 */
+export async function onlineFactorLibrary(id: string): Promise<FactorLibrary> {
+  const target = factorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子库不存在或已被删除')
+  if (!target.offline) throw new Error('该库未下架，无需上架')
+  target.offline = false
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(clone(target))
+}
+
+/* ---------- 后台：库内因子 ---------- */
+
+export function fetchFactorsByVersion(libraryId: string, versionId: string): Promise<FactorItem[]> {
+  syncLibraryStats()
+  const list = factorStore
+    .filter((item) => item.libraryId === libraryId && item.libraryVersionId === versionId)
+    .sort((a, b) => (a.code < b.code ? -1 : 1))
+  return request(clone(list))
+}
+
+/** 库内因子载荷（与 FactorPayload 同构） */
+export type LibraryFactorPayload = FactorPayload
+
+function buildLibraryFactor(
+  libraryId: string,
+  versionId: string,
+  payload: LibraryFactorPayload,
+): FactorItem {
+  return {
+    id: nextFactorId(),
+    code: nextFactorCode(),
+    name: payload.name.trim(),
+    alias: payload.alias.trim(),
+    englishName: payload.englishName?.trim() || undefined,
+    scenario: payload.scenario.trim(),
+    value: payload.value,
+    calibers: normalizeCalibers(payload.calibers),
+    numeratorUnit: payload.numeratorUnit,
+    denominatorUnit: payload.denominatorUnit,
+    source: 'preset',
+    libraryId,
+    libraryVersionId: versionId,
+    unitCategory: payload.unitCategory,
+    region: payload.region,
+    ext: payload.ext,
+    exchanges: payload.exchanges,
+    description: payload.description.trim(),
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+}
+
+export async function createLibraryFactor(
+  libraryId: string,
+  versionId: string,
+  payload: LibraryFactorPayload,
+): Promise<FactorItem> {
+  assertFactor(payload)
+  const item = buildLibraryFactor(libraryId, versionId, payload)
+  factorStore = [item, ...factorStore]
+  syncLibraryStats()
+  return request(clone(item))
+}
+
+export async function updateLibraryFactor(id: string, payload: LibraryFactorPayload): Promise<FactorItem> {
+  const target = factorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  const ownerLibrary = factorLibraryStore.find((item) => item.id === target.libraryId)
+  if (ownerLibrary?.type === 'external') {
+    throw new Error('商业数据库因子只读，不支持编辑')
+  }
+  assertFactor(payload)
+  Object.assign(target, buildLibraryFactor(target.libraryId ?? '', target.libraryVersionId ?? '', payload), {
+    id: target.id,
+    code: target.code,
+    libraryId: target.libraryId,
+    libraryVersionId: target.libraryVersionId,
+    // 未提交的扩展信息保持原值（编辑基础字段时不误清空单位类别 / 地域 / 扩展信息 / 输入输出）
+    unitCategory: payload.unitCategory ?? target.unitCategory,
+    region: payload.region ?? target.region,
+    ext: payload.ext ?? target.ext,
+    exchanges: payload.exchanges ?? target.exchanges,
+    calibers: payload.calibers !== undefined ? normalizeCalibers(payload.calibers) : target.calibers,
+    createdAt: target.createdAt,
+    createdBy: target.createdBy,
+  })
+  syncLibraryStats()
+  return request(clone(target))
+}
+
+export async function deleteLibraryFactor(id: string): Promise<void> {
+  const target = factorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  const ownerLibrary = factorLibraryStore.find((item) => item.id === target.libraryId)
+  if (ownerLibrary?.type === 'external') {
+    throw new Error('商业数据库因子只读，不支持删除')
+  }
+  factorStore = factorStore.filter((item) => item.id !== id)
+  syncLibraryStats()
+  await new Promise((resolve) => setTimeout(resolve, 240))
+}
+
+/** 整库导入（商业数据库）/ 批量导入（自建库）：逐条落库并返回结果 */
+export async function importLibraryFactors(
+  libraryId: string,
+  versionId: string,
+  payloads: LibraryFactorPayload[],
+): Promise<FactorBatchResult> {
+  const failed: FactorBatchFailure[] = []
+  let success = 0
+  payloads.forEach((payload) => {
+    try {
+      assertFactor(payload)
+      factorStore = [buildLibraryFactor(libraryId, versionId, payload), ...factorStore]
+      success += 1
+    } catch (error) {
+      failed.push({
+        id: `IMPORT-${failed.length + 1}`,
+        code: '-',
+        name: payload.name,
+        reason: (error instanceof Error ? error.message : '导入失败').replace('保存失败：', ''),
+      })
+    }
+  })
+  syncLibraryStats()
+  return request({ success, failed })
+}
+
+/* ---------- 前台：已发布库预览 ---------- */
+
+/** 已发布库列表（有当前发布版本**且未整库下架**的库） */
+export function fetchPublishedLibraries(): Promise<FactorLibrary[]> {
+  syncLibraryStats()
+  return request(clone(factorLibraryStore.filter((item) => !!item.currentVersionId && !item.offline)))
+}
+
+export interface PublishedLibraryDetail {
+  library: FactorLibrary
+  /** 可见版本：生效中 + 历史版本（不含草稿） */
+  versions: FactorLibraryVersion[]
+  factors: FactorItem[]
+  /** 当前展示的版本 id */
+  activeVersionId: string
+}
+
+/** 已发布库详情：默认展示当前生效版本，可切换历史（history）版本 */
+export async function fetchPublishedLibraryDetail(
+  id: string,
+  versionId?: string,
+): Promise<PublishedLibraryDetail> {
+  syncLibraryStats()
+  const library = factorLibraryStore.find((item) => item.id === id)
+  if (!library || !library.currentVersionId) throw new Error('该因子库尚未发布或已被删除')
+  if (library.offline) throw new Error('该因子库已下架，暂不可用')
+  const versions = factorLibraryVersionStore
+    .filter((item) => item.libraryId === id && item.status !== 'draft')
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  const activeVersionId = versionId && versions.some((item) => item.id === versionId)
+    ? versionId
+    : library.currentVersionId
+  const factors = factorStore
+    .filter((item) => item.libraryVersionId === activeVersionId)
+    .sort((a, b) => (a.code < b.code ? -1 : 1))
+  return request(clone({ library, versions, factors, activeVersionId }))
+}
+
+/* ---------- 前台：我的因子库 ---------- */
+
+export function fetchMyFactorLibraries(): Promise<MyFactorLibrary[]> {
+  syncLibraryStats()
+  return request(clone(myFactorLibraryStore))
+}
+
+export async function fetchMyFactorLibrary(id: string): Promise<MyFactorLibrary> {
+  syncLibraryStats()
+  const target = myFactorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('我的因子库不存在或已被删除')
+  return request(clone(target))
+}
+
+export async function createMyFactorLibrary(name: string, description = ''): Promise<MyFactorLibrary> {
+  if (!name.trim()) throw new Error('保存失败：库名称必填')
+  const item: MyFactorLibrary = {
+    id: `MFL${String(Date.now()).slice(-6)}`,
+    name: name.trim(),
+    description: description.trim(),
+    factorCount: 0,
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+  myFactorLibraryStore = [item, ...myFactorLibraryStore]
+  syncLibraryStats()
+  return request(clone(item))
+}
+
+export async function updateMyFactorLibrary(
+  id: string,
+  patch: { name?: string; description?: string },
+): Promise<MyFactorLibrary> {
+  const target = myFactorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('我的因子库不存在或已被删除')
+  if (patch.name !== undefined) {
+    if (!patch.name.trim()) throw new Error('保存失败：库名称必填')
+    target.name = patch.name.trim()
+  }
+  if (patch.description !== undefined) target.description = patch.description.trim()
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(clone(target))
+}
+
+export async function deleteMyFactorLibrary(id: string): Promise<void> {
+  const target = myFactorLibraryStore.find((item) => item.id === id)
+  if (!target) throw new Error('我的因子库不存在或已被删除')
+  myFactorStore = myFactorStore.filter((item) => item.libraryId !== id)
+  myFactorLibraryStore = myFactorLibraryStore.filter((item) => item.id !== id)
+  await new Promise((resolve) => setTimeout(resolve, 240))
+}
+
+/** 计算「收藏副本」是否可更新：源库当前发布版本中存在同编码因子且数值不同 */
+function isMyFactorUpdatable(item: MyFactor): boolean {
+  if (item.origin !== 'collected' || !item.sourceLibraryId || !item.sourceFactorCode) return false
+  const library = factorLibraryStore.find((lib) => lib.id === item.sourceLibraryId)
+  if (!library || !library.currentVersionId || library.offline) return false
+  if (library.currentVersionId === item.sourceVersionId) return false
+  const latest = factorStore.find(
+    (f) => f.libraryVersionId === library.currentVersionId && f.code === item.sourceFactorCode,
+  )
+  return !!latest && latest.value !== item.value
+}
+
+/**
+ * 收藏副本的「来源状态」：
+ * - `ok` 正常；
+ * - `offline` 来源库已下架（前台不可见），副本停留在快照值；
+ * - `removed` 来源库最新版本中该因子已被移除（或来源库已不存在）。
+ */
+function resolveMyFactorSourceStatus(item: MyFactor): 'ok' | 'offline' | 'removed' {
+  if (item.origin !== 'collected' || !item.sourceLibraryId || !item.sourceFactorCode) return 'ok'
+  const library = factorLibraryStore.find((lib) => lib.id === item.sourceLibraryId)
+  if (!library || !library.currentVersionId) return 'removed'
+  if (library.offline) return 'offline'
+  const latest = factorStore.find(
+    (f) => f.libraryVersionId === library.currentVersionId && f.code === item.sourceFactorCode,
+  )
+  return latest ? 'ok' : 'removed'
+}
+
+/** 我的因子列表（附「有新版本可更新」与「来源状态」实时判定） */
+export function fetchMyFactors(libraryId: string): Promise<MyFactor[]> {
+  syncLibraryStats()
+  const list = myFactorStore
+    .filter((item) => item.libraryId === libraryId)
+    .map((item) => {
+      const cloned = clone(item)
+      cloned.updateAvailable = isMyFactorUpdatable(item)
+      cloned.sourceStatus = resolveMyFactorSourceStatus(item)
+      return cloned
+    })
+    .sort((a, b) => (a.code < b.code ? -1 : 1))
+  return request(list)
+}
+
+export async function fetchMyFactor(id: string): Promise<MyFactor> {
+  const target = myFactorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  const cloned = clone(target)
+  cloned.updateAvailable = isMyFactorUpdatable(target)
+  cloned.sourceStatus = resolveMyFactorSourceStatus(target)
+  return request(cloned)
+}
+
+function buildManualMyFactor(libraryId: string, payload: FactorPayload): MyFactor {
+  return {
+    id: nextMyFactorId(),
+    code: nextMyFactorCode(),
+    name: payload.name.trim(),
+    alias: payload.alias.trim(),
+    englishName: payload.englishName?.trim() || undefined,
+    scenario: payload.scenario.trim(),
+    value: payload.value,
+    calibers: normalizeCalibers(payload.calibers),
+    numeratorUnit: payload.numeratorUnit,
+    denominatorUnit: payload.denominatorUnit,
+    unitCategory: payload.unitCategory,
+    region: payload.region,
+    ext: payload.ext,
+    exchanges: payload.exchanges,
+    source: 'custom',
+    libraryId,
+    origin: 'manual',
+    description: payload.description.trim(),
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+}
+
+export async function createMyFactor(libraryId: string, payload: FactorPayload): Promise<MyFactor> {
+  assertFactor(payload)
+  const item = buildManualMyFactor(libraryId, payload)
+  myFactorStore = [item, ...myFactorStore]
+  syncLibraryStats()
+  return request(clone(item))
+}
+
+export async function updateMyFactor(id: string, payload: FactorPayload): Promise<MyFactor> {
+  const target = myFactorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  assertFactor(payload)
+  Object.assign(target, buildManualMyFactor(target.libraryId, payload), {
+    id: target.id,
+    code: target.code,
+    origin: target.origin,
+    sourceLibraryId: target.sourceLibraryId,
+    sourceLibraryName: target.sourceLibraryName,
+    sourceVersionId: target.sourceVersionId,
+    sourceVersionNo: target.sourceVersionNo,
+    sourceFactorId: target.sourceFactorId,
+    sourceFactorCode: target.sourceFactorCode,
+    libraryId: target.libraryId,
+    unitCategory: payload.unitCategory ?? target.unitCategory,
+    region: payload.region ?? target.region,
+    ext: payload.ext ?? target.ext,
+    exchanges: payload.exchanges ?? target.exchanges,
+    calibers: payload.calibers !== undefined ? normalizeCalibers(payload.calibers) : target.calibers,
+    createdAt: target.createdAt,
+    createdBy: target.createdBy,
+  })
+  target.updateAvailable = isMyFactorUpdatable(target)
+  return request(clone(target))
+}
+
+export async function deleteMyFactor(id: string): Promise<void> {
+  const target = myFactorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  myFactorStore = myFactorStore.filter((item) => item.id !== id)
+  syncLibraryStats()
+  await new Promise((resolve) => setTimeout(resolve, 240))
+}
+
+/**
+ * 收藏：把已发布库中的因子**复制**为「我的因子库」中的独立副本（复制式快照）。
+ * 跳过规则：源版本不存在 / 目标库不存在 / 同库内已收藏同一源因子（重复收藏）。
+ */
+export async function collectFactorsToLibrary(
+  sourceVersionId: string,
+  factorIds: string[],
+  targetLibraryId: string,
+): Promise<FactorBatchResult> {
+  const failed: FactorBatchFailure[] = []
+  let success = 0
+  const targetLibrary = myFactorLibraryStore.find((item) => item.id === targetLibraryId)
+  if (!targetLibrary) throw new Error('请选择「我的因子库」作为收藏目标')
+
+  factorIds.forEach((id) => {
+    const factor = factorStore.find((item) => item.id === id)
+    if (!factor) {
+      failed.push({ id, code: '-', name: '-', reason: '因子不存在或已被删除' })
+      return
+    }
+    if (factor.libraryVersionId !== sourceVersionId) {
+      failed.push({ id: factor.id, code: factor.code, name: factor.name, reason: '因子不属于所选发布版本' })
+      return
+    }
+    const duplicated = myFactorStore.some(
+      (item) => item.libraryId === targetLibraryId && item.sourceFactorId === factor.id,
+    )
+    if (duplicated) {
+      failed.push({ id: factor.id, code: factor.code, name: factor.name, reason: '该因子已收藏，请勿重复收藏' })
+      return
+    }
+    const sourceVersion = factorLibraryVersionStore.find((item) => item.id === sourceVersionId)
+    const sourceLibrary = factorLibraryStore.find((item) => item.id === factor.libraryId)
+    const copy: MyFactor = {
+      ...clone(factor),
+      id: nextMyFactorId(),
+      code: nextMyFactorCode(),
+      libraryId: targetLibraryId,
+      libraryVersionId: undefined,
+      origin: 'collected',
+      source: 'custom',
+      sourceLibraryId: sourceLibrary?.id,
+      sourceLibraryName: sourceLibrary?.name,
+      sourceVersionId,
+      sourceVersionNo: sourceVersion?.versionNo,
+      sourceFactorId: factor.id,
+      sourceFactorCode: factor.code,
+      updateAvailable: false,
+      createdBy: '当前用户',
+      createdAt: NOW,
+      updatedBy: '当前用户',
+      updatedAt: NOW,
+    }
+    myFactorStore = [copy, ...myFactorStore]
+    success += 1
+  })
+
+  syncLibraryStats()
+  return request({ success, failed })
+}
+
+/** 查询某「已发布库因子」的收藏状态（详情页五角星：已收藏 / 未收藏） */
+export function fetchFactorCollectState(
+  sourceFactorId: string,
+): Promise<{ collected: boolean; myFactorId?: string }> {
+  const found = myFactorStore.find((item) => item.sourceFactorId === sourceFactorId)
+  return request({ collected: !!found, myFactorId: found?.id })
+}
+
+/** 一键更新收藏副本：以源库当前发布版本的因子值刷新副本 */
+export async function refreshMyFactorFromSource(id: string): Promise<MyFactor> {
+  const target = myFactorStore.find((item) => item.id === id)
+  if (!target) throw new Error('因子不存在或已被删除')
+  if (target.origin !== 'collected' || !target.sourceLibraryId || !target.sourceFactorCode) {
+    throw new Error('仅收藏副本支持按源库更新')
+  }
+  const library = factorLibraryStore.find((item) => item.id === target.sourceLibraryId)
+  if (!library || !library.currentVersionId) throw new Error('源库当前无已发布版本')
+  const latest = factorStore.find(
+    (f) => f.libraryVersionId === library.currentVersionId && f.code === target.sourceFactorCode,
+  )
+  if (!latest) throw new Error('源库最新版本中未找到该因子')
+  const sourceVersion = factorLibraryVersionStore.find((item) => item.id === library.currentVersionId)
+  target.value = latest.value
+  target.numeratorUnit = latest.numeratorUnit
+  target.denominatorUnit = latest.denominatorUnit
+  target.name = latest.name
+  target.alias = latest.alias
+  target.ext = latest.ext
+  target.exchanges = latest.exchanges
+  target.sourceVersionId = library.currentVersionId
+  target.sourceVersionNo = sourceVersion?.versionNo
+  target.updateAvailable = false
+  target.updatedBy = '当前用户'
+  target.updatedAt = NOW
+  return request(clone(target))
+}
+
+/** 一键更新：批量刷新某「我的因子库」内所有可更新的收藏副本 */
+export async function refreshAllMyFactors(libraryId: string): Promise<FactorBatchResult> {
+  const failed: FactorBatchFailure[] = []
+  let success = 0
+  const candidates = myFactorStore.filter((item) => item.libraryId === libraryId && isMyFactorUpdatable(item))
+  for (const item of candidates) {
+    try {
+      await refreshMyFactorFromSource(item.id)
+      success += 1
+    } catch (error) {
+      failed.push({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        reason: error instanceof Error ? error.message : '更新失败',
+      })
+    }
+  }
   return request({ success, failed })
 }
 
@@ -2606,8 +3956,6 @@ function nextCalcFormulaCode(): string {
 export interface CalcFormulaPayload {
   name: string
   formulaType: FormulaType
-  /** 适用行业（多选，引用行业库 A1-4），至少 1 项 */
-  industries: string[]
   expression: string
   resultName: string
   resultUnit: string
@@ -2621,12 +3969,11 @@ export interface CalcFormulaPayload {
 
 /**
  * 公式校验（对齐竞品「算法配置」口径）：
- * 数据因素名称必填且不重复；因子类必须选择引用对象；常量类必须有常量值；活动数据 / 常量必须有单位；
+ * 数据因素名称必填且不重复；常量类必须有常量值；活动数据 / 变量 / 因子仅作运行时占位，无需维护单位与因子值；
  * 计算公式只能由数据因素与 `+ - * / ( ) [ ] %` 组成。
  */
 function assertCalcFormula(payload: CalcFormulaPayload): void {
   if (!payload.name.trim()) throw new Error('保存失败：公式名称必填')
-  if (payload.industries.length === 0) throw new Error('保存失败：适用行业必填（至少选择 1 项）')
   if (!payload.formulaType) throw new Error('保存失败：公式类型必填')
   if (!payload.resultName.trim()) throw new Error('保存失败：结果名称必填')
   if (!payload.resultUnit) throw new Error('保存失败：结果单位必填')
@@ -2637,14 +3984,10 @@ function assertCalcFormula(payload: CalcFormulaPayload): void {
   if (new Set(names).size !== names.length) throw new Error('保存失败：数据因素名称不得重复')
 
   payload.factors.forEach((item) => {
-    if (item.sourceType === 'factor') {
-      if (!item.sourceCode) throw new Error(`保存失败：数据因素「${item.name}」请选择引用对象`)
-      return
-    }
+    // 活动数据 / 变量 / 因子仅作运行时占位（因子数值与单位在建模绑定后按因子库带出），此处只校验常量必须填值
     if (item.sourceType === 'constant' && !item.value.trim()) {
       throw new Error(`保存失败：常量因素「${item.name}」必须填写常量值`)
     }
-    if (!item.unit.trim()) throw new Error(`保存失败：数据因素「${item.name}」必须填写单位`)
   })
 
   const expressionError = validateFormulaExpression(payload.expression, names)
@@ -2673,7 +4016,6 @@ export async function createCalcFormula(payload: CalcFormulaPayload): Promise<Ca
     code: nextCalcFormulaCode(),
     name: payload.name.trim(),
     formulaType: payload.formulaType,
-    industries: [...payload.industries],
     expression: payload.expression.trim(),
     resultName: payload.resultName.trim(),
     resultUnit: payload.resultUnit,
@@ -2705,7 +4047,6 @@ export async function updateCalcFormula(id: string, payload: CalcFormulaPayload)
 
   target.name = payload.name.trim()
   target.formulaType = payload.formulaType
-  target.industries = [...payload.industries]
   target.expression = payload.expression.trim()
   target.resultName = payload.resultName.trim()
   target.resultUnit = payload.resultUnit
@@ -2740,41 +4081,38 @@ export async function deleteCalcFormula(id: string): Promise<void> {
 
 /* ---------- 计算公式：表单下拉选项 ---------- */
 
-export interface CalcEngineOptions {
-  /** 适用行业（引用行业库 A1-4） */
-  industries: string[]
-}
-
-/** 计算公式表单下拉选项（行业引用行业库 A1-4） */
-export function fetchCalcEngineOptions(): Promise<CalcEngineOptions> {
-  return request({
-    industries: [...industryOptions],
-  })
-}
-
-/* ===================== 前台业务平台 · 核算项目（P17 / P18） ===================== */
+/* ===================== 产品碳足迹 · 核算项目（P17 / P18） ===================== */
 
 /** 项目备注长度上限（《核算项目字段清单》§4 备注） */
 export const PCF_PROJECT_REMARK_MAX = 200
 
 /**
- * 可编辑状态（V0.3 放宽）：**核算完成前均可编辑**。
- * `calculated` 可编辑，但保存即回退「进行中」并需重走检测 → 核算（E13）。
+ * 步骤①「目标与范围」可编辑状态（2026-10-16）：
+ * 核算完成（`done`）后**步骤①数据锁定不可修改**，故 `done` / 历史报告态不在其列。
+ * 步骤②「产品建模」仍可编辑（走 `savePcfStageData`，见 `PCF_REVERT_STATUSES`）。
  */
 const PCF_EDITABLE_STATUS: PcfProjectStatus[] = [
   'new',
   'ongoing',
-  'checking',
+  'toCheck',
   'toCalc',
   'calcFailed',
   'calculated',
 ]
 
-/** 可删除状态：仅「新建 / 进行中」 */
-const PCF_DELETABLE_STATUS: PcfProjectStatus[] = ['new', 'ongoing']
-
-/** 需「编辑即回退重算」的状态（E13） */
-const PCF_REVERT_STATUSES: PcfProjectStatus[] = ['calculated']
+/**
+ * 需「编辑即回退重跑」的状态（2026-10-16）：
+ * 检测 / 核算环节已进行后（含核算完成 `done`），一旦回改数据，即回退「待检测」currentStep=3，
+ * 需重走 一键检测 → 核算（历史结果版本保留）；前端在保存前弹出「数据变更」提示。
+ */
+const PCF_REVERT_STATUSES: PcfProjectStatus[] = [
+  'toCheck',
+  'toCalc',
+  'calculating',
+  'calcFailed',
+  'calculated',
+  'done',
+]
 
 /**
  * 步骤口径（V0.4）：②「模型与数据」已合并原「生命周期模型 / 分配场景 / 数据填报」，共 6 步。
@@ -2809,7 +4147,9 @@ export function fetchPcfProductOptions(): Promise<PcfProductOption[]> {
         spec: item.spec,
         unit: item.unit,
         category: categoryStore.find((c) => c.id === item.categoryId)?.name ?? '-',
+        categoryId: item.categoryId,
         industry: item.industry,
+        imageUrl: item.imageUrl,
         version: 'V1.0',
         useStatus: item.useStatus,
       })),
@@ -2828,12 +4168,9 @@ export interface PcfMyProductOption extends PcfProductOption {
 }
 
 export function fetchPcfMyProductOptions(): Promise<PcfMyProductOption[]> {
-  const referenced = myProductRefIds
-    .map((id) => productStore.find((p) => p.id === id))
-    .filter((p): p is ProductItem => !!p)
-  const items = [...myProductStore, ...referenced.map(projectReferenced)]
+  // 自建与引用副本统一作为核算可选产品（仅上架可选）
   return request(
-    items
+    myProductStore
       .filter((item) => item.useStatus === 'on')
       .map((item) => ({
         id: item.id,
@@ -2843,7 +4180,9 @@ export function fetchPcfMyProductOptions(): Promise<PcfMyProductOption[]> {
         spec: item.spec,
         unit: item.unit,
         category: categoryStore.find((c) => c.id === item.categoryId)?.name ?? '-',
+        categoryId: item.categoryId,
         industry: item.industry,
+        imageUrl: item.imageUrl,
         version: 'V1.0',
         useStatus: item.useStatus,
         source: item.source,
@@ -2852,9 +4191,25 @@ export function fetchPcfMyProductOptions(): Promise<PcfMyProductOption[]> {
   )
 }
 
-/** 列表：核算项目（默认按更新时间倒序，R-013） */
+/**
+ * 列表：核算项目（默认按更新时间倒序，R-013）。
+ * 附带**最近一次核算结果**的「总碳排放量 / 核算时间」投影，供列表「碳排放量（总值）」「核算时间」列展示。
+ */
 export function fetchPcfProjects(): Promise<PcfProject[]> {
-  return request([...pcfProjectStore].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)))
+  return request(
+    [...pcfProjectStore]
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+      .map((item) => {
+        const latest = pcfCalcResultStore
+          .filter((result) => result.projectId === item.id)
+          .sort((a, b) => b.version - a.version)[0]
+        return {
+          ...clone(item),
+          totalEmission: latest ? latest.totalEmission : null,
+          calculatedAt: latest ? latest.calculatedAt : '',
+        }
+      }),
+  )
 }
 
 /** 产品维度分组条目（核算列表第一层：一个产品多条核算记录） */
@@ -2936,11 +4291,21 @@ export interface PcfProjectPayload {
   remark: string
   productSource?: PcfProductSource
   refProductId?: string | null
+  productCode?: string
   productName?: string
+  productModel?: string
   productSpec?: string
+  /** 产品图片（**必填**；引用产品时带出快照） */
+  productImageUrl?: string
+  productCategory?: string
+  productIndustry?: string
   functionalUnit?: string
+  /** 声明/功能单位数值（文本框录入） */
+  functionalUnitValue?: number | string | null
   /** 转换系数（功能单位 / 声明单位 ↔ 产品单位；默认 1 = 与产品单位一致） */
   conversionFactor?: number | null
+  conversionUnit?: string
+  convertedUnit?: string
 }
 
 /** 生成项目编号：`PCF-YYYYMMDD-NNN`，全局唯一、同一天内序号连续（R-001） */
@@ -2974,22 +4339,20 @@ function assertPcfProject(payload: PcfProjectPayload): void {
 export async function createPcfProject(payload: PcfProjectPayload): Promise<PcfProject> {
   assertPcfProject(payload)
 
-  if (!payload.refProductId) throw new Error('保存失败：请选择产品')
-  // 前台核算产品 = 我的产品库（组织自建 / 引用平台产品）；兼容平台产品库直连
-  const product =
-    productStore.find((item) => item.id === payload.refProductId) ??
-    myProductStore.find((item) => item.id === payload.refProductId)
-  if (!product) throw new Error('保存失败：所选产品不存在或已被删除')
-  if (product.useStatus !== 'on') throw new Error('保存失败：所选产品已下架，请重新选择')
+  // 引用产品**可选**：未引用时由用户自行录入产品信息
+  const product = payload.refProductId
+    ? productStore.find((item) => item.id === payload.refProductId) ??
+      myProductStore.find((item) => item.id === payload.refProductId)
+    : undefined
+  if (payload.refProductId && !product) throw new Error('保存失败：所选产品不存在或已被删除')
+  if (product && product.useStatus !== 'on') throw new Error('保存失败：所选产品已下架，请重新选择')
 
-  // 按边界 + 行业带出默认生命周期阶段（新建即生效，步骤② 据此对齐展示）
-  const ruleOf = (s: LifecycleStageItem) => (payload.boundary === 'gate' ? s.gateRule : s.graveRule)
+  // 按系统边界 + 行业带出默认生命周期阶段（默认全部纳入，新建即生效，步骤② 据此对齐展示）
   const lifecycleStages: PcfLifecycleStage[] = lifecycleStore
     .filter(
       (s) =>
         s.status === 'enabled' &&
-        ruleOf(s) !== 'excluded' &&
-        (s.industries.length === 0 || s.industries.includes(product.industry)),
+        (s.boundaries.length === 0 || s.boundaries.includes(payload.boundary)),
     )
     .sort((a, b) => a.order - b.order)
     .map((s) => ({
@@ -2998,7 +4361,7 @@ export async function createPcfProject(payload: PcfProjectPayload): Promise<PcfP
       level: s.level,
       parentName: '',
       custom: false,
-      rule: ruleOf(s),
+      description: s.description,
       included: true,
     }))
 
@@ -3010,18 +4373,23 @@ export async function createPcfProject(payload: PcfProjectPayload): Promise<PcfP
     startDate: payload.startDate,
     endDate: payload.endDate,
     productSource:
-      payload.productSource ??
-      (productStore.some((item) => item.id === product.id) ? 'library' : 'custom'),
-    refProductId: payload.refProductId,
-    productCode: product.code,
-    productName: product.name,
-    productModel: product.model,
-    productSpec: product.spec,
-    productCategory: categoryStore.find((c) => c.id === product.categoryId)?.name ?? '',
-    productIndustry: product.industry,
+      payload.productSource ?? (product && productStore.some((item) => item.id === product.id) ? 'library' : 'custom'),
+    refProductId: product?.id ?? null,
+    productCode: product?.code ?? payload.productCode ?? '',
+    productName: (product?.name ?? payload.productName ?? '').trim(),
+    productModel: product?.model ?? payload.productModel ?? '',
+    productSpec: product?.spec ?? payload.productSpec ?? '',
+    productCategory:
+      product != null
+        ? categoryStore.find((c) => c.id === product.categoryId)?.name ?? ''
+        : payload.productCategory ?? '',
+    productIndustry: product?.industry ?? payload.productIndustry ?? '',
     productVersion: 'V1.0',
-    functionalUnit: payload.functionalUnit ?? product.unit,
+    functionalUnit: payload.functionalUnit ?? product?.unit ?? '',
+    functionalUnitValue: payload.functionalUnitValue ?? 1,
     conversionFactor: payload.conversionFactor ?? 1,
+    conversionUnit: payload.conversionUnit ?? '',
+    convertedUnit: payload.convertedUnit ?? '',
     lifecycleStages,
     boundary: payload.boundary,
     currentStep: 1,
@@ -3036,17 +4404,190 @@ export async function createPcfProject(payload: PcfProjectPayload): Promise<PcfP
 }
 
 /**
- * 删除：**「新建 / 进行中」均可删除**（物理删除、记录消失、不可恢复）。
- * 已移除「作废」状态，取消项目统一走删除。
+ * 删除：**任意状态均可删除**（物理删除、记录消失、不可恢复）。
+ * 已移除「作废」与「归档」状态，取消 / 清理项目统一走删除。
  */
 export async function deletePcfProject(id: string): Promise<void> {
   const target = pcfProjectStore.find((item) => item.id === id)
   if (!target) throw new Error('项目不存在或已被删除')
-  if (!PCF_DELETABLE_STATUS.includes(target.status)) {
-    throw new Error('当前状态不可删除（仅「新建 / 进行中」支持删除）')
-  }
   pcfProjectStore = pcfProjectStore.filter((item) => item.id !== id)
   await new Promise((resolve) => setTimeout(resolve, 260))
+}
+
+/**
+ * 复制核算项目（2026-10-16）：以既有核算记录为模板**复制**出一条新记录，
+ * 带出原项目的目标与范围 + 步骤②建模数据（阶段数据项 / 过程节点），
+ * 新记录状态置「进行中」、可自由编辑修改（核算结果不复制，需重新检测 → 核算）。
+ */
+export async function copyPcfProject(id: string): Promise<PcfProject> {
+  const source = pcfProjectStore.find((item) => item.id === id)
+  if (!source) throw new Error('项目不存在或已被删除')
+
+  const newId = `PJ${Date.now().toString().slice(-6)}`
+  const hasStageData = pcfStageDataStore.some((item) => item.projectId === id)
+  const copy: PcfProject = {
+    ...clone(source),
+    id: newId,
+    code: nextPcfProjectCode(),
+    name: `${source.name}（副本）`,
+    status: 'ongoing',
+    // 原项目已完成步骤①（且可能带出步骤②建模数据）→ 新记录从步骤②起，
+    // 否则从步骤①起；避免复制后步骤②之后的步骤被锁死无法继续。
+    currentStep: hasStageData ? 2 : 1,
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedAt: NOW,
+    totalEmission: null,
+    calculatedAt: '',
+  }
+  pcfProjectStore = [copy, ...pcfProjectStore]
+
+  // 复制步骤②建模数据（阶段数据项 + 过程节点），新项目可在此基础上继续编辑
+  pcfStageDataStore = [
+    ...pcfStageDataStore,
+    ...pcfStageDataStore
+      .filter((item) => item.projectId === id)
+      .map((item) => ({ ...clone(item), projectId: newId })),
+  ]
+  pcfProcessNodeStore = [
+    ...pcfProcessNodeStore,
+    ...pcfProcessNodeStore
+      .filter((item) => item.projectId === id)
+      .map((item) => ({ ...clone(item), projectId: newId })),
+  ]
+
+  return request(copy)
+}
+
+/* ---------- 步骤② 产品建模：生命周期阶段数据项 ---------- */
+
+let pcfStageDataStore: PcfStageDataItem[] = clone(pcfStageDataSeed)
+
+/** 阶段数据项列表（按项目：默认按步骤①勾选的生命周期阶段带出，数据由用户新增 / 删除） */
+export function fetchPcfStageData(projectId: string): Promise<PcfStageDataItem[]> {
+  return request(pcfStageDataStore.filter((item) => item.projectId === projectId))
+}
+
+/**
+ * 保存阶段数据项（整表覆盖：新增 / 删除在本地完成后一次性提交）。
+ * 2026-10-09：报告「已完成」前允许回改数据；一旦回改，检测 / 核算结果失效，
+ * 项目回退「进行中」并定位到步骤③（需重走检测 → 核算，历史结果版本保留）。
+ */
+export async function savePcfStageData(
+  projectId: string,
+  items: PcfStageDataItem[],
+): Promise<PcfStageDataItem[]> {
+  pcfStageDataStore = [
+    ...pcfStageDataStore.filter((item) => item.projectId !== projectId),
+    ...items.map((item) => ({ ...item, projectId })),
+  ]
+  const project = pcfProjectStore.find((item) => item.id === projectId)
+  if (project) {
+    // 步骤②数据保存后即进入「待检测」（首次录入 / 回改数据回退重跑均如此）
+    project.status = 'toCheck'
+    project.currentStep = 3
+    project.updatedAt = NOW
+  }
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  return clone(pcfStageDataStore.filter((item) => item.projectId === projectId))
+}
+
+/** 导入预设：按当前生命周期阶段名称匹配典型输入 / 输出（原型内置示例） */
+const STAGE_IMPORT_PRESETS: Array<{
+  match: RegExp
+  inputs: PcfStageImportRow[]
+  outputs: PcfStageImportRow[]
+}> = [
+  {
+    match: /原料|原材料|获取|开采|种植|养殖|培育/,
+    inputs: [
+      { name: '主要原辅料', itemType: 'material', unit: 'kg' },
+      { name: '包装材料', itemType: 'material', unit: 'kg' },
+      { name: '电力', itemType: 'energy', unit: 'kWh' },
+    ],
+    outputs: [
+      { name: '中间产品', itemType: 'intermediate', unit: 'kg' },
+      { name: '废渣', itemType: 'emission', emissionType: 'wasteSolid', unit: 'kg' },
+    ],
+  },
+  {
+    match: /生产|制造|加工|装配|成型/,
+    inputs: [
+      { name: '电力', itemType: 'energy', unit: 'kWh' },
+      { name: '天然气', itemType: 'energy', unit: 'm³' },
+      { name: '水', itemType: 'natural', unit: 'm³' },
+    ],
+    outputs: [
+      { name: '产品', itemType: 'product', unit: 'kg' },
+      { name: '副产品', itemType: 'byproduct', unit: 'kg' },
+      { name: '废水', itemType: 'emission', emissionType: 'wastewater', unit: 'm³' },
+      { name: '废气', itemType: 'emission', emissionType: 'wasteGas', unit: 'm³' },
+      { name: '废渣', itemType: 'emission', emissionType: 'wasteSolid', unit: 'kg' },
+    ],
+  },
+  {
+    match: /运输|物流|分销|配送|仓储/,
+    inputs: [
+      { name: '柴油', itemType: 'energy', unit: 'L' },
+      { name: '公路运输', itemType: 'energy', unit: 't·km' },
+    ],
+    outputs: [{ name: '废气', itemType: 'emission', emissionType: 'wasteGas', unit: 'm³' }],
+  },
+  {
+    match: /使用|消费|运行/,
+    inputs: [{ name: '电力', itemType: 'energy', unit: 'kWh' }],
+    outputs: [{ name: '废气', itemType: 'emission', emissionType: 'wasteGas', unit: 'm³' }],
+  },
+  {
+    match: /废弃|处置|回收|生命末期|末端|拆解/,
+    inputs: [
+      { name: '柴油', itemType: 'energy', unit: 'L' },
+      { name: '电力', itemType: 'energy', unit: 'kWh' },
+    ],
+    outputs: [
+      { name: '废渣', itemType: 'emission', emissionType: 'wasteSolid', unit: 'kg' },
+      { name: '废水', itemType: 'emission', emissionType: 'wastewater', unit: 'm³' },
+    ],
+  },
+]
+
+const DEFAULT_IMPORT_PRESET: { inputs: PcfStageImportRow[]; outputs: PcfStageImportRow[] } = {
+  inputs: [
+    { name: '原辅料', itemType: 'material', unit: 'kg' },
+    { name: '电力', itemType: 'energy', unit: 'kWh' },
+  ],
+  outputs: [
+    { name: '产品', itemType: 'product', unit: 'kg' },
+    { name: '废渣', itemType: 'emission', emissionType: 'wasteSolid', unit: 'kg' },
+  ],
+}
+
+/** 当前生命周期阶段的导入预设：典型输入 / 输出清单 */
+export function fetchPcfStageImportPresets(stageName: string): Promise<PcfStageImportPreset> {
+  const hit = STAGE_IMPORT_PRESETS.find((item) => item.match.test(stageName))
+  return request(clone(hit ? { inputs: hit.inputs, outputs: hit.outputs } : DEFAULT_IMPORT_PRESET), 160)
+}
+
+/* ---------- 步骤② 产品建模：过程节点（「继续追溯」生成的上游过程） ---------- */
+
+let pcfProcessNodeStore: PcfProcessNode[] = []
+
+/** 过程节点列表（按项目） */
+export function fetchPcfProcessNodes(projectId: string): Promise<PcfProcessNode[]> {
+  return request(pcfProcessNodeStore.filter((item) => item.projectId === projectId))
+}
+
+/** 保存过程节点（整表覆盖） */
+export async function savePcfProcessNodes(
+  projectId: string,
+  nodes: PcfProcessNode[],
+): Promise<PcfProcessNode[]> {
+  pcfProcessNodeStore = [
+    ...pcfProcessNodeStore.filter((item) => item.projectId !== projectId),
+    ...nodes.map((node) => ({ ...node, projectId })),
+  ]
+  await new Promise((resolve) => setTimeout(resolve, 160))
+  return clone(pcfProcessNodeStore.filter((item) => item.projectId === projectId))
 }
 
 /* ---------- 步骤② 产品与边界配置（P19） ---------- */
@@ -3057,12 +4598,18 @@ export function fetchPcfWeightUnitOptions(): Promise<string[]> {
 }
 
 /**
- * 核算方法候选：**引用标准文件库**（Mock 假数据，仅返回「现行」标准）。
- * 标准文件库（P05）交付后替换内部实现，函数签名不变。
+ * 核算方法候选：**引用标准文件库**（A1-3，仅返回「标准状态 = 现行」的标准，R-008 / D10）。
  */
 export function fetchPcfStandardOptions(): Promise<PcfStandardOption[]> {
   return request(
-    pcfStandardOptionSeed.filter((item) => item.status === '现行'),
+    standardStore
+      .filter((item) => item.status === '现行')
+      .map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.nameZh,
+        status: item.status,
+      })),
     120,
   )
 }
@@ -3080,19 +4627,27 @@ export interface PcfStepOnePayload {
   /** 核算依据 */
   boundary: PcfBoundary
   methodId: string
-  /** 产品（引用产品库） */
-  refProductId: string
+  /** 产品：引用产品库可选；未引用时由用户自行录入产品信息 */
+  refProductId?: string
   productCode?: string
   productName: string
   productModel?: string
   productSpec?: string
+  /** 产品图片（**必填**；引用产品时带出快照） */
+  productImageUrl?: string
   productCategory?: string
   productIndustry?: string
   productVersion?: string
   /** 单位（取计量单位库；默认带出产品「单位」，可项目级重选） */
   functionalUnit: string
+  /** 声明/功能单位数值（文本框录入） */
+  functionalUnitValue?: number | string | null
   /** 转换系数（功能单位 / 声明单位 ↔ 产品单位，须 > 0；1 = 与产品单位一致） */
-  conversionFactor: number | null
+  conversionFactor?: number | null
+  /** 单位转换系数的来源单位 */
+  conversionUnit?: string
+  /** 单位转换系数的换算后单位 */
+  convertedUnit?: string
   /** 生命周期阶段（按边界带出，全部可勾选） */
   lifecycleStages: PcfLifecycleStage[]
 }
@@ -3114,27 +4669,32 @@ export async function updatePcfProjectStepOne(id: string, payload: PcfStepOnePay
   if (!payload.ownerOrg) throw new Error('保存失败：核算主体组织必填')
   if (!payload.boundary) throw new Error('保存失败：核算边界必填')
 
-  if (!payload.refProductId) throw new Error('保存失败：请选择产品')
+  if (!payload.productName || !payload.productName.trim()) throw new Error('保存失败：产品名称必填')
 
-  const picked =
-    productStore.find((item) => item.id === payload.refProductId) ??
-    myProductStore.find((item) => item.id === payload.refProductId)
-  if (!picked) throw new Error('保存失败：所选产品不存在或已被删除')
-  if (picked.useStatus !== 'on') throw new Error('保存失败：所选产品已下架，请重新选择')
+  // 引用产品**可选**；仅当引用了产品才校验其有效性
+  const picked = payload.refProductId
+    ? productStore.find((item) => item.id === payload.refProductId) ??
+      myProductStore.find((item) => item.id === payload.refProductId)
+    : undefined
+  if (payload.refProductId && !picked) throw new Error('保存失败：所选产品不存在或已被删除')
+  if (picked && picked.useStatus !== 'on') throw new Error('保存失败：所选产品已下架，请重新选择')
 
   if (!payload.functionalUnit) throw new Error('保存失败：单位必填')
 
+  // 转换系数**选填**；填写时须为大于 0 的数值
   if (
-    payload.conversionFactor == null ||
-    !Number.isFinite(payload.conversionFactor) ||
-    payload.conversionFactor <= 0
+    payload.conversionFactor != null &&
+    (!Number.isFinite(payload.conversionFactor) || payload.conversionFactor <= 0)
   ) {
     throw new Error('保存失败：转换系数须为大于 0 的数值')
   }
 
   if (!payload.methodId) throw new Error('保存失败：核算方法必填')
-  const std = pcfStandardOptionSeed.find((item) => item.id === payload.methodId)
+  const std = standardStore.find((item) => item.id === payload.methodId)
   if (!std) throw new Error('保存失败：所选核算方法不存在或已被移除')
+  if (std.status !== '现行') {
+    throw new Error('保存失败：仅「现行」的标准可作为核算方法（R-008 / D10）')
+  }
 
   if (!payload.startDate || !payload.endDate) throw new Error('保存失败：统计时间必填')
   if (payload.startDate > payload.endDate) {
@@ -3153,27 +4713,36 @@ export async function updatePcfProjectStepOne(id: string, payload: PcfStepOnePay
   // 核算依据（V0.5 起开放编辑）
   target.boundary = payload.boundary
 
-  target.productSource = productStore.some((item) => item.id === picked.id) ? 'library' : 'custom'
-  target.refProductId = payload.refProductId
+  target.productSource = picked
+    ? productStore.some((item) => item.id === picked.id)
+      ? 'library'
+      : 'custom'
+    : 'custom'
+  target.refProductId = picked?.id ?? null
   target.productCode = payload.productCode ?? ''
   target.productName = payload.productName.trim()
   target.productModel = payload.productModel ?? ''
   target.productSpec = payload.productSpec ?? ''
+  target.productImageUrl = payload.productImageUrl ?? ''
   target.productCategory = payload.productCategory ?? ''
   target.productIndustry = payload.productIndustry ?? ''
   target.productVersion = payload.productVersion ?? ''
   target.functionalUnit = payload.functionalUnit
-  target.conversionFactor = payload.conversionFactor
+  target.functionalUnitValue = payload.functionalUnitValue ?? null
+  target.conversionFactor = payload.conversionFactor ?? null
+  target.conversionUnit = payload.conversionUnit ?? ''
+  target.convertedUnit = payload.convertedUnit ?? ''
   target.methodId = std.id
-  target.method = `${std.code}-${std.version}`
+  target.method = std.code
   target.lifecycleStages = clone(payload.lifecycleStages)
   target.updatedAt = NOW
 
   if (PCF_REVERT_STATUSES.includes(target.status)) {
-    // 「已核算」修改 → 回退「进行中」，需重走检测 → 核算（E13）
+    // 检测 / 核算已进行后回改步骤① → 回退「待处理」，需重走步骤② → 一键检测 → 核算（E13）
     target.status = 'ongoing'
-    target.currentStep = 1
+    target.currentStep = 2
   } else if (target.currentStep < 2) {
+    // 步骤①保存后落库并推进到步骤②（编号已在创建时生成）
     target.currentStep = 2
   }
 
@@ -3202,6 +4771,37 @@ function includedStageNamesOf(project: PcfProject): Set<string> | null {
     .filter((s) => s.included && s.level === 1)
     .forEach((s) => names.add(s.name))
   return names.size > 0 ? names : null
+}
+
+/** 步骤①纳入的一级阶段名称集合（空集 = 未配置阶段，不再过滤） */
+function includedLevel1Names(project: PcfProject): Set<string> {
+  const names = new Set<string>()
+  ;(project.lifecycleStages ?? [])
+    .filter((s) => s.included && s.level === 1)
+    .forEach((s) => names.add(s.name))
+  return names
+}
+
+/**
+ * 阶段数据项归属的**一级阶段名**（检测 / 核算统一口径）：
+ * - 直接挂在一级阶段 → 本身；
+ * - 挂在二级阶段 → 上卷到其一级父阶段（项目内 `parentName`，其次生命周期阶段库 `parentId`）；
+ * - 均无法解析 → 回退为自身阶段名。
+ */
+function level1StageNameOf(
+  project: PcfProject,
+  item: PcfStageDataItem,
+  lv1Names: Set<string>,
+): string {
+  if (lv1Names.size === 0 || lv1Names.has(item.stageName)) return item.stageName
+  const mine = (project.lifecycleStages ?? []).find((s) => s.id === item.stageId)
+  if (mine?.parentName && lv1Names.has(mine.parentName)) return mine.parentName
+  const lib = lifecycleStore.find((s) => s.id === item.stageId)
+  if (lib?.parentId) {
+    const parent = lifecycleStore.find((s) => s.id === lib.parentId)
+    if (parent && lv1Names.has(parent.name)) return parent.name
+  }
+  return item.stageName
 }
 
 /**
@@ -3270,22 +4870,32 @@ export function fetchPcfLifecycleBundle(projectId: string): Promise<PcfLifecycle
 let pcfActivityStore: PcfActivityData[] = clone(pcfActivitySeed)
 
 /**
- * 排放因子选项（**手动匹配**用）：引用排放因子库（A2-6），仅返回「启用」态因子。
+ * 排放因子选项（**手动匹配**用）：多库模型下取「后台已发布库当前版本因子 + 我的因子库因子」中**启用**的因子。
  * **本版不做自动匹配、不做自动预选**，由填报人在步骤② 逐条手动选择排放来源。
  */
 export function fetchPcfFactorOptions(): Promise<PcfFactorOption[]> {
+  syncLibraryStats()
+  const offlineLibraryIds = new Set(factorLibraryStore.filter((item) => item.offline).map((item) => item.id))
+  const publishedVersionIds = new Set(
+    factorLibraryVersionStore
+      .filter((item) => item.status === 'published' && !offlineLibraryIds.has(item.libraryId))
+      .map((item) => item.id),
+  )
+  const libraryFactors = factorStore.filter(
+    (item) => !!item.libraryVersionId && publishedVersionIds.has(item.libraryVersionId),
+  )
+  const myFactors = myFactorStore
   return request(
-    factorStore
-      .filter((item) => item.status === 'enabled')
-      .map((item) => ({
-        id: item.id,
-        code: item.code,
-        name: item.name,
-        value: item.value,
-        numeratorUnit: item.numeratorUnit,
-        denominatorUnit: item.denominatorUnit,
-        category: item.category,
-      })),
+    [...libraryFactors, ...myFactors].map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      value: item.value,
+      numeratorUnit: item.numeratorUnit,
+      denominatorUnit: item.denominatorUnit,
+      calibers: item.calibers,
+      libraryId: item.libraryId,
+    })),
     120,
   )
 }
@@ -3295,7 +4905,7 @@ export function fetchPcfFactorOptions(): Promise<PcfFactorOption[]> {
  * 首次进入步骤② 时，按项目内核算工序的投入产出流**生成填报行**。
  * - **绑定公式随工序带入**（引用即复制，产品侧配置完成，前台只读）；填报字段 = 公式 `activity` 因素（**动态**）；
  * - **中间品 / 产品**流不计入（`disposal = excluded`，避免重复计算）；
- * - 因子：公式含 `parameter` 因素时才需手动匹配（**单因子**）；数值与分配比例初始为空。
+ * - 因子：公式含 `factor` / `parameter` 占位因素时才需手动匹配（**单因子**）；数值与分配比例初始为空。
  */
 /** 由单个工序副本生成其活动数据填报行 */
 function buildActivityRows(projectId: string, op: PcfOperationConfig): PcfActivityData[] {
@@ -3309,11 +4919,11 @@ function buildActivityRows(projectId: string, op: PcfOperationConfig): PcfActivi
     const formula = calcFormulaStore.find((item) => item.id === flow.formulaId)
     const factors = formula?.factors ?? []
     const activityFactors = factors.filter((item) => item.sourceType === 'activity')
-    const requiresFactor = factors.some((item) => item.sourceType === 'parameter')
+    const requiresFactor = factors.some((item) => item.sourceType === 'factor' || item.sourceType === 'parameter')
     // 排放来源**默认带出公式中绑定的因子**（允许填报时修改）
-    const paramFactor = factors.find((item) => item.sourceType === 'parameter')
+    const paramFactor = factors.find((item) => item.sourceType === 'factor' || item.sourceType === 'parameter')
     const defaultFactor = paramFactor?.sourceCode
-      ? factorStore.find((f) => f.code === paramFactor.sourceCode && f.status === 'enabled')
+      ? factorStore.find((f) => f.code === paramFactor.sourceCode)
       : undefined
     return {
       id: `${op.id}-${direction === 'input' ? 'IN' : 'OUT'}-${flow.id}`,
@@ -3505,7 +5115,7 @@ export interface PcfOperationAddPayload {
   stage?: string
 }
 
-/** 工序库投入产出流 → 项目工序副本流（公式随流带入 / 默认带出，引用即复制） */
+/** 工序库投入产出流 → 项目工序副本流（公式按流类型 / 名称默认带出，引用即复制） */
 function toProjectFlow(flow: OperationFlowItem, prefix: string, stamp: string): ProductFlowItem {
   const base: ProductFlowItem = {
     id: `${stamp}-${prefix}-${flow.id}`,
@@ -3514,11 +5124,11 @@ function toProjectFlow(flow: OperationFlowItem, prefix: string, stamp: string): 
     qty: 1,
     unit: flow.unit,
     emissionCategory: flow.emissionCategory,
-    formulaId: flow.formulaId,
-    formulaCode: flow.formulaCode,
-    formulaName: flow.formulaName,
-    formulaExpression: flow.formulaExpression,
-    disposal: flow.disposal,
+    formulaId: '',
+    formulaCode: '',
+    formulaName: '',
+    formulaExpression: '',
+    disposal: 'formula',
   }
   return decorateProductFlow(base)
 }
@@ -3628,9 +5238,9 @@ export async function updatePcfActivityFormula(
   if (formula.status !== 'enabled') throw new Error('所选公式已禁用，不可选择')
 
   const activityFactors = formula.factors.filter((item) => item.sourceType === 'activity')
-  const paramFactor = formula.factors.find((item) => item.sourceType === 'parameter')
+  const paramFactor = formula.factors.find((item) => item.sourceType === 'factor' || item.sourceType === 'parameter')
   const defaultFactor = paramFactor?.sourceCode
-    ? factorStore.find((f) => f.code === paramFactor.sourceCode && f.status === 'enabled')
+    ? factorStore.find((f) => f.code === paramFactor.sourceCode)
     : undefined
 
   target.formulaId = formula.id
@@ -3643,7 +5253,9 @@ export async function updatePcfActivityFormula(
     refQty: null,
     value: null,
   }))
-  target.requiresFactor = formula.factors.some((item) => item.sourceType === 'parameter')
+  target.requiresFactor = formula.factors.some(
+    (item) => item.sourceType === 'factor' || item.sourceType === 'parameter',
+  )
   target.factorId = defaultFactor?.id ?? null
   target.factorName = defaultFactor?.name ?? ''
   target.factorValue = defaultFactor?.value ?? null
@@ -3706,12 +5318,20 @@ export async function addPcfProcess(
 
 /* ---------- 步骤③ 数据检测：提交检测 + 检测结果 + 问题清单（P23） ---------- */
 
-/** 数据检测结果（内存态；PJ01 为演示项目「检测已通过」的留存记录） */
+/** 数据检测结果（内存态；两个演示项目均为「检测已通过」的留存记录） */
 let pcfCheckStore: PcfCheckResult[] = [
   {
     projectId: 'PJ01',
     status: 'passed',
     checkedAt: '2026-09-10 14:20',
+    blockingCount: 0,
+    warningCount: 0,
+    issues: [],
+  },
+  {
+    projectId: 'PJ02',
+    status: 'passed',
+    checkedAt: '2026-09-11 10:05',
     blockingCount: 0,
     warningCount: 0,
     issues: [],
@@ -3742,56 +5362,77 @@ function unitTypeOf(symbol: string): string {
 }
 
 /**
- * 提交检测：真实执行简化检测逻辑（阻断 B1–B5 + 提示 W1），生成并留存检测结果。
+ * 单位换算系数（核算引擎 / 公式变量 `[当前行.单位换算系数]` 的取值）：
+ * 把「活动数据数量（from 单位）」换算为「因子分母单位（to 单位）」。
+ *
+ * 规则（对齐《计量单位业务 PRD》「基准中转」）：
+ * - `1 from = f_from × 基准`、`1 to = f_to × 基准` → `x(to) = x(from) × f_from ÷ f_to`
+ * - 无法解析（复合单位 / 数量类无基准 / 类型不同）时返回 **1**（视为已同口径）
+ */
+function unitConversionFactor(from: string, to: string): number {
+  if (!from || !to || from === to) return 1
+  const source = unitStore.find((item) => item.symbol === from)
+  const target = unitStore.find((item) => item.symbol === to)
+  if (!source || !target || source.unitType !== target.unitType) return 1
+  const sourceFactor = source.isBase ? 1 : source.factor
+  const targetFactor = target.isBase ? 1 : target.factor
+  if (!(sourceFactor > 0) || !(targetFactor > 0)) return 1
+  return sourceFactor / targetFactor
+}
+
+/** 需匹配排放因子的投入项类型（原辅料 / 自然资源 / 能源及能源介质） */
+const PCF_INPUT_FACTOR_TYPES: PcfDataItemType[] = ['material', 'natural', 'energy']
+
+/**
+ * 提交检测：基于步骤②「阶段数据项」真实执行检测（阻断 B1 / B2 / B4 / B5），生成并留存检测结果。
+ * - B1 数量未填写；B2 投入项未匹配排放因子；B4 数量单位与因子分母单位不可换算；
+ * - B5 步骤①纳入的一级阶段在该阶段下无任何数据项；
  * - 检测通过（阻断项 = 0）→ 项目「待核算」、步骤推进到④；
  * - 检测不通过 → 项目回「进行中」、步骤停留③，返回问题清单。
  */
 export async function submitPcfCheck(projectId: string): Promise<PcfCheckResult> {
   const project = pcfProjectStore.find((item) => item.id === projectId)
   if (!project) throw new Error('项目不存在或已被删除')
-  if (!['ongoing', 'checking'].includes(project.status)) {
+  // 可检测状态：「待处理」/「待检测」（历史 `checking` 兼容）
+  if (!['ongoing', 'toCheck', 'checking'].includes(project.status)) {
     throw new Error('当前状态不可检测')
   }
 
-  // 置「检测中」并模拟异步
-  project.status = 'checking'
+  // 2026-10-16：数据检测为即时校验，**不再占用独立项目状态**（已移除「检测中」）。
+  // 检测不通过 → 停留「待处理」；检测通过 → 直接流转「待核算」。
   project.currentStep = 3
   project.updatedAt = NOW
   await new Promise((resolve) => setTimeout(resolve, 900))
 
   const issues: PcfCheckIssue[] = []
-  const stageNames = includedStageNamesOf(project)
-  const projectOps = pcfOperationStore.filter((item) => item.projectId === projectId)
-  const ops = stageNames ? projectOps.filter((op) => stageNames.has(op.processStage)) : projectOps
-  const rows = pcfActivityStore.filter((item) => item.projectId === projectId)
+  const lv1Names = includedLevel1Names(project)
+  const stageNameOf = (item: PcfStageDataItem) => level1StageNameOf(project, item, lv1Names)
+  const allItems = pcfStageDataStore.filter((item) => item.projectId === projectId)
+  const items = lv1Names.size > 0 ? allItems.filter((item) => lv1Names.has(stageNameOf(item))) : allItems
 
-  // B1 活动数据缺失 / B2 排放来源缺失 / B4 因子单位不匹配（逐数据项）
-  rows.forEach((row) => {
-    const op = pcfOperationStore.find((o) => o.id === row.operationId)
-    const loc = `工序：${op?.opName ?? '-'} / 数据项：${row.flowName}`
+  // B1 数量缺失 / B2 排放因子缺失 / B4 因子单位不匹配（逐数据项）
+  items.forEach((item) => {
+    const loc = `阶段：${stageNameOf(item)} / 数据项：${item.name}`
 
-    // B1 活动数据缺失
-    const missing = row.activityValues.filter((av) => av.value == null)
-    if (missing.length > 0) {
+    if (item.quantity == null) {
       issues.push({
-        id: `${row.id}-B1`,
+        id: `${item.id}-B1`,
         level: 'blocking',
         category: 'completeness',
-        title: `数据项「${row.flowName}」的活动量未填写`,
-        description: `${missing.map((m) => m.factorName).join('、')} 未填写，请补充数量。`,
+        title: `数据项「${item.name}」的数量未填写`,
+        description: '请补充该数据项的数量后重新检测。',
         location: loc,
         fixStep: 2,
         fixLabel: '去填写',
       })
     }
 
-    // B2 排放来源缺失（需因子的投入项）
-    if (row.requiresFactor && row.direction === 'input' && !row.factorId) {
+    if (item.direction === 'input' && PCF_INPUT_FACTOR_TYPES.includes(item.itemType) && !item.factorId) {
       issues.push({
-        id: `${row.id}-B2`,
+        id: `${item.id}-B2`,
         level: 'blocking',
         category: 'completeness',
-        title: `投入项「${row.flowName}」未匹配排放因子`,
+        title: `投入项「${item.name}」未匹配排放因子`,
         description: '该投入项参与计算需匹配排放来源，请选择排放因子。',
         location: loc,
         fixStep: 2,
@@ -3799,23 +5440,15 @@ export async function submitPcfCheck(projectId: string): Promise<PcfCheckResult>
       })
     }
 
-    // B4 因子单位不匹配（仅活动量已填时检测）
-    if (
-      row.factorId &&
-      row.activityValues.length > 0 &&
-      row.activityValues.every((av) => av.value != null)
-    ) {
-      const factor = factorStore.find((f) => f.id === row.factorId)
-      const incompatible = factor
-        ? row.activityValues.some((av) => unitTypeOf(av.unit) !== unitTypeOf(factor.denominatorUnit))
-        : false
-      if (incompatible && factor) {
+    if (item.factorId && item.quantity != null) {
+      const factor = factorStore.find((f) => f.id === item.factorId)
+      if (factor && unitTypeOf(item.unit) !== unitTypeOf(factor.denominatorUnit)) {
         issues.push({
-          id: `${row.id}-B4`,
+          id: `${item.id}-B4`,
           level: 'blocking',
           category: 'factorUnit',
-          title: `数据项「${row.flowName}」的活动量单位与因子单位不可换算`,
-          description: `活动量单位为「${row.activityValues.map((av) => av.unit).join(' / ')}」，排放因子分母单位为「${factor.denominatorUnit}」，无法换算，请重新选择排放因子或调整单位。`,
+          title: `数据项「${item.name}」的数量单位与因子单位不可换算`,
+          description: `数量单位为「${item.unit}」，排放因子分母单位为「${factor.denominatorUnit}」，无法换算，请重新选择排放因子或调整单位。`,
           location: loc,
           fixStep: 2,
           fixLabel: '去修改',
@@ -3824,36 +5457,17 @@ export async function submitPcfCheck(projectId: string): Promise<PcfCheckResult>
     }
   })
 
-  // B3 分配比例不闭合（多产出工序）
-  ops.forEach((op) => {
-    if (op.outputs.length <= 1) return
-    const outRows = rows.filter((r) => r.operationId === op.id && r.direction === 'output')
-    const total = outRows.reduce((sum, r) => sum + (r.allocateRatio ?? 0), 0)
-    if (Math.abs(total - 100) > 0.01) {
-      issues.push({
-        id: `${op.id}-B3`,
-        level: 'blocking',
-        category: 'allocation',
-        title: `工序「${op.opName}」的产出分配比例合计 ${total}%，须为 100%`,
-        description: '该工序存在多个产出，分配比例合计须为 100%。',
-        location: `工序：${op.opName}`,
-        fixStep: 2,
-        fixLabel: '去调整比例',
-      })
-    }
-  })
-
-  // B5 阶段无数据（步骤①勾选纳入的一级阶段未匹配任何工序）
+  // B5 阶段覆盖（步骤①纳入的一级阶段在该阶段下无任何数据项）
   const includedLevel1 = (project.lifecycleStages ?? []).filter((s) => s.included && s.level === 1)
   includedLevel1.forEach((stage) => {
-    const has = ops.some((op) => op.processStage === stage.name)
+    const has = items.some((item) => stageNameOf(item) === stage.name)
     if (!has) {
       issues.push({
         id: `stage-${stage.id}-B5`,
         level: 'blocking',
         category: 'stageCoverage',
-        title: `阶段「${stage.name}」已纳入但未匹配到工序数据`,
-        description: '该阶段已纳入核算，但未匹配到任何工序，请补充该阶段的工序与数据。',
+        title: `阶段「${stage.name}」已纳入但未录入数据项`,
+        description: '该阶段已纳入核算，但尚未录入任何数据项，请到步骤②补充该阶段的数据。',
         location: `阶段：${stage.name}`,
         fixStep: 2,
         fixLabel: '去补充',
@@ -3861,39 +5475,25 @@ export async function submitPcfCheck(projectId: string): Promise<PcfCheckResult>
     }
   })
 
-  // W1 质量平衡偏差（提示级，简化启发式：物料类投入 vs 成品 / 副产品类产出）
-  ops.forEach((op) => {
-    const inputRows = rows.filter(
-      (r) =>
-        r.operationId === op.id &&
-        r.direction === 'input' &&
-        (r.flowType === 'material' || r.flowType === 'resource'),
-    )
-    const outputRows = rows.filter(
-      (r) =>
-        r.operationId === op.id &&
-        r.direction === 'output' &&
-        (r.flowType === 'product' || r.flowType === 'byproduct'),
-    )
-    if (inputRows.length === 0 || outputRows.length === 0) return
-    const inputTotal = inputRows.reduce((sum, r) => sum + (r.activityValues[0]?.value ?? 0), 0)
-    const outputTotal = outputRows.reduce((sum, r) => sum + (r.activityValues[0]?.value ?? 0), 0)
-    if (inputTotal > 0 && outputTotal > 0) {
-      const diff = (Math.abs(inputTotal - outputTotal) / inputTotal) * 100
-      if (diff > 5) {
-        issues.push({
-          id: `${op.id}-W1`,
-          level: 'warning',
-          category: 'massBalance',
-          title: `工序「${op.opName}」投入与产出质量偏差 ${diff.toFixed(1)}%，请核对`,
-          description: '投入与产出质量偏差超过 5% 阈值，请核对数量与单位。',
-          location: `工序：${op.opName}`,
-          fixStep: 2,
-          fixLabel: '去核对',
-        })
-      }
+  // 生物碳对称性（E16 简化版）：含生物碳（口径带生物碳分量）但未覆盖生命末期时提示
+  const hasBiogenic = items.some(
+    (item) => (item.factorCalibers?.gwpBiogenic ?? 0) !== 0,
+  )
+  if (hasBiogenic) {
+    const coversEol = includedLevel1.some((stage) => /生命末期|末期|废弃|处置|回收/.test(stage.name))
+    if (!coversEol) {
+      issues.push({
+        id: `biogenic-${projectId}`,
+        level: 'warning',
+        category: 'biogenic',
+        title: '生物碳未在生命末期闭环',
+        description:
+          '本次核算含生物碳口径，但未纳入生命末期（释放）阶段，含生物碳净值可能未闭合；如为摇篮到大门口径可忽略。',
+        fixStep: 1,
+        fixLabel: '去调整边界',
+      })
     }
-  })
+  }
 
   const blocking = issues.filter((i) => i.level === 'blocking')
   const warnings = issues.filter((i) => i.level === 'warning')
@@ -3925,6 +5525,15 @@ function roundCalc(value: number): number {
   return Math.round(value * 10000) / 10000
 }
 
+/**
+ * 明细行精度：保留 6 位小数。
+ * 明细量级可能很小（如 0.000144 kgCO₂e），按 4 位小数落库会丢有效数字，
+ * 导致清册「逐行相加」与合计对不上；界面展示仍按 4 位小数格式化，不影响观感。
+ */
+function roundDetail(value: number): number {
+  return Math.round(value * 1e6) / 1e6
+}
+
 /** 占比（%）：总分 0 时返回 0 */
 function ratioCalc(part: number, total: number): number {
   if (total === 0) return 0
@@ -3946,14 +5555,6 @@ function parseConstValue(value: string): number {
 /** 活动量描述：各 activity 因素「值 × 单位」拼接（如「5 t × 300 km」） */
 function activityTextOf(row: PcfActivityData): string {
   return row.activityValues.map((av) => `${av.value ?? '-'} ${av.unit}`).join(' × ')
-}
-
-/** 排放源归类：优先按匹配因子分类，无因子按流类型兜底 */
-function sourceOf(row: PcfActivityData, factor?: FactorItem): PcfCalcSourceType {
-  if (factor) return factor.category
-  if (row.flowType === 'energy') return 'energy'
-  if (row.flowType === 'emission') return 'waste'
-  return 'material'
 }
 
 /**
@@ -3978,7 +5579,7 @@ export function fetchPcfCalcResult(projectId: string): Promise<PcfCalcResult | n
 
 /**
  * 执行核算（业务 PRD §4 / §6）：真实遍历项目活动数据 + 工序 + 公式做简化核算。
- * - 准入：项目「待核算 / 核算失败 / 已核算」；
+ * - 准入：项目「待核算 / 核算失败 / 已核算 / **已完成**」（V1.1 起已完成不锁定，可重新核算）；
  *   **已核算（`calculated`）= 在既有结果上重新计算**（活动数据、排放因子或公式口径变更后使用），
  *   不覆盖历史，按版本号递增产出新结果版本；
  * - 置「核算中」模拟异步，懒初始化工序与填报行后逐行计算；
@@ -3987,7 +5588,7 @@ export function fetchPcfCalcResult(projectId: string): Promise<PcfCalcResult | n
 export async function startPcfCalc(projectId: string): Promise<PcfCalcResult> {
   const project = pcfProjectStore.find((item) => item.id === projectId)
   if (!project) throw new Error('项目不存在或已被删除')
-  if (!['toCalc', 'calcFailed', 'calculated'].includes(project.status)) {
+  if (!['toCalc', 'calcFailed', 'calculated', 'done'].includes(project.status)) {
     throw new Error('当前状态不可核算')
   }
 
@@ -4013,102 +5614,247 @@ export async function resumePcfCalc(projectId: string): Promise<PcfCalcResult> {
   return runPcfCalc(project)
 }
 
-/** 核算主流程：懒初始化 → 逐行计算 → 逐级汇总 → 写入新结果版本 → 项目置「已核算」 */
+/** 数据项类型 → 流类型（`natural`→`resource`、`intermediate`→`semi`，其余同名） */
+function toFlowType(type: PcfDataItemType): FlowItemType {
+  if (type === 'natural') return 'resource'
+  if (type === 'intermediate') return 'semi'
+  return type as FlowItemType
+}
+
+/**
+ * 数据项归属的**最末级生命周期阶段路径**（清册按最末级阶段拆表的分组依据）：
+ * - 挂在二级阶段 → `一级阶段名-二级阶段名`（即使同名也保留一级前缀，如「原材料获取-原材料获取」）；
+ * - 直接挂在一级阶段 → 一级阶段名；
+ * - 项目内 / 阶段库均取不到 → 回退该行所属的一级阶段名。
+ */
+function stagePathOf(project: PcfProject, item: PcfStageDataItem, level1Name: string): string {
+  const stage =
+    (project.lifecycleStages ?? []).find((s) => s.id === item.stageId) ??
+    lifecycleStore.find((s) => s.id === item.stageId)
+  if (stage?.level === 2) return `${level1Name}-${stage.name}`
+  return level1Name
+}
+
+/**
+ * 背景数据来源文案（清册「背景数据来源」列）：
+ * 优先商业数据库的「所有者 + 系统模型」（如 `Ecoinvent3.11,Cutoff`），
+ * 其次「库名称 + 库版本号」（如 `中国官方排放因子库 V1.0`），最终回退因子名称。
+ */
+function factorSourceText(factor?: FactorItem): string {
+  if (!factor) return ''
+  const library = factor.libraryId ? factorLibraryStore.find((l) => l.id === factor.libraryId) : undefined
+  const version = factor.libraryVersionId
+    ? factorLibraryVersionStore.find((v) => v.id === factor.libraryVersionId)
+    : undefined
+  const dbName = factor.ext?.owner || [library?.name, version?.versionNo].filter(Boolean).join(' ')
+  return dbName ? `${dbName} 数据库：${factor.name}` : factor.name
+}
+
+/** 阶段数据项 → 最末级生命周期阶段路径（清册拆表用） */
+
+/**
+ * 核算主流程（**方案 A：基于步骤②「阶段数据项 + 过程节点」**）：
+ * 行级公式逐行算碳排 → 阶段汇总公式算阶段碳排 → 全局公式算核算结果。
+ * V0.8（2026-10-12）：项目步骤①不再引用「核算公式」，碳核算计算引擎内置代码层级，
+ * 暂按默认公式（`defaultFormulas()`）求值，后续按引擎建设逐层替换。
+ */
 async function runPcfCalc(project: PcfProject): Promise<PcfCalcResult> {
   const projectId = project.id
 
-  // 懒初始化（确保工序与填报行已生成）
-  await fetchPcfLifecycleBundle(projectId)
-  await fetchPcfActivityData(projectId)
+  const lv1Names = includedLevel1Names(project)
+  const stageNameOf = (item: PcfStageDataItem) => level1StageNameOf(project, item, lv1Names)
+  const allItems = pcfStageDataStore.filter((item) => item.projectId === projectId)
+  const items = lv1Names.size > 0 ? allItems.filter((item) => lv1Names.has(stageNameOf(item))) : allItems
+  const nodes = pcfProcessNodeStore.filter((item) => item.projectId === projectId)
 
-  const stageNames = includedStageNamesOf(project)
-  const projectOps = pcfOperationStore.filter((item) => item.projectId === projectId)
-  const ops = stageNames ? projectOps.filter((op) => stageNames.has(op.processStage)) : projectOps
-  const visibleOpIds = new Set(ops.map((op) => op.id))
-  const rows = pcfActivityStore.filter(
-    (item) => item.projectId === projectId && visibleOpIds.has(item.operationId),
-  )
+  // 公式口径：引擎内置代码层（V0.8 起步骤①不再引用公式配置），暂用默认公式
+  const formulas = defaultFormulas()
+  /** 按公式求值；表达式缺失 / 语法错误返回 NaN，由调用方回退默认口径 */
+  const evaluateFormula = (scopeKey: string, values: Record<string, number | number[]>): number => {
+    try {
+      return evaluateExpression(formulas[scopeKey] ?? '', values)
+    } catch {
+      return NaN
+    }
+  }
 
   const details: PcfResultDetail[] = []
-  const opEmission = new Map<string, number>()
-  const stageEmission = new Map<string, number>()
-  const sourceEmission = new Map<PcfCalcSourceType, number>()
-  // 汇总用「未四舍五入」的原始排放，保证各维度占比合计 = 100%（避免四舍五入引入误差）
-  let rawTotal = 0
+  const itemSummaries: Array<{
+    item: PcfStageDataItem
+    emission: number
+    processName: string
+    stagePath: string
+  }> = []
+  /** 阶段 → 该阶段各行碳排（供阶段汇总公式使用） */
+  const stageRowValues = new Map<string, number[]>()
+  /** 四分量累计（化石 / 生物源 / 土地利用；总量 = 化石 + 土地利用） */
+  const caliberTotals = { total: 0, fossil: 0, biogenic: 0, luluc: 0 }
 
-  rows.forEach((row) => {
-    const op = pcfOperationStore.find((o) => o.id === row.operationId)
-    const formula = calcFormulaStore.find((f) => f.id === row.formulaId)
-    const factor = row.factorId ? factorStore.find((f) => f.id === row.factorId) : undefined
-    const emission = computeRowEmission(row, formula)
+  items.forEach((item) => {
+    const stage = stageNameOf(item)
+    const node = item.nodeId ? nodes.find((n) => n.id === item.nodeId) : undefined
+    const processName = node?.name ?? stage
+    const factor = item.factorId ? factorStore.find((f) => f.id === item.factorId) : undefined
+    const quantity = item.quantity ?? 0
+    const factorValue = item.factorValue ?? 0
+    const calibers = item.factorCalibers ?? null
+    /** 生物碳因子（吸收为负、释放为正）；无口径信息时为 0 */
+    const biogenicFactor = calibers?.gwpBiogenic ?? 0
+
+    // 行级公式：默认 `活动数据 × 单位换算系数 × 排放因子`
+    // 单位换算系数 = 活动数据单位 → 因子分母单位（无法换算时为 1）
+    const unitConv = unitConversionFactor(item.unit, factor?.denominatorUnit ?? '')
+    const evalRow = (fv: number): number => {
+      const value = evaluateFormula('row-formula', {
+        [ROW_ACTIVITY_VAR]: quantity,
+        [ROW_CONV_VAR]: unitConv,
+        [ROW_FACTOR_VAR]: fv,
+      })
+      // 公式不可用 / 结果非法 → 回退「活动数据 × 排放因子」
+      return Number.isFinite(value) ? value : quantity * unitConv * fv
+    }
+    /**
+     * 四分量排放系数（因子值口径，取自数据项的口径快照）：
+     * - 无量级分项时按「单一口径」处理：总量 = 因子值 − 生物源（化石 + 土地利用）。
+     */
+    const lulucFactor = calibers?.gwpLuluc ?? 0
+    const fossilFactor = calibers?.gwpFossil ?? factorValue - biogenicFactor - lulucFactor
+    const totalFactor = fossilFactor + lulucFactor
+    const factorCaliberValues: PcfCaliberValues = {
+      total: roundDetail(totalFactor),
+      fossil: roundDetail(fossilFactor),
+      biogenic: roundDetail(biogenicFactor),
+      luluc: roundDetail(lulucFactor),
+    }
+    const emissionBreakdown: PcfCaliberValues = {
+      total: roundDetail(evalRow(totalFactor)),
+      fossil: roundDetail(evalRow(fossilFactor)),
+      biogenic: roundDetail(evalRow(biogenicFactor)),
+      luluc: roundDetail(evalRow(lulucFactor)),
+    }
+    /** GWP 总量（含生物碳，= 因子值口径）——界面「排放量」与报告沿用该值 */
+    const emission = evalRow(factorValue)
+    /** 最末级生命周期阶段路径：清册按此拆表（「一级-二级」；直接挂一级时即一级名） */
+    const stagePath = stagePathOf(project, item, stage)
 
     details.push({
-      id: row.id,
-      operationId: row.operationId,
-      processName: op?.processName ?? '',
-      opName: op?.opName ?? '',
-      stage: op?.processStage ?? '',
-      flowName: row.flowName,
-      flowType: row.flowType,
-      direction: row.direction,
-      activityText: activityTextOf(row),
-      factorName: factor?.name ?? row.factorName ?? '',
-      factorValue: factor?.value ?? row.factorValue ?? null,
-      formulaName: formula?.name ?? row.formulaName ?? '',
-      emission: roundCalc(emission),
+      id: item.id,
+      operationId: item.id,
+      processName,
+      opName: item.name,
+      stage,
+      stagePath,
+      flowName: item.name,
+      flowType: toFlowType(item.itemType),
+      direction: item.direction,
+      activityText: `${item.quantity ?? '-'} ${item.unit}`.trim(),
+      factorName: factor?.name ?? item.factorName ?? '',
+      factorValue: item.factorValue ?? null,
+      factorUnit: factor ? `${factor.numeratorUnit}/${factor.denominatorUnit}` : '',
+      factorCaliberValues,
+      factorSource: factorSourceText(factor),
+      formulaName: '默认口径（活动数据 × 排放因子）',
+      emission: roundDetail(emission),
+      fossilEmission: emissionBreakdown.fossil,
+      biogenicEmission: emissionBreakdown.biogenic,
+      lulucEmission: emissionBreakdown.luluc,
+      emissionBreakdown,
     })
 
-    opEmission.set(row.operationId, (opEmission.get(row.operationId) ?? 0) + emission)
-    const stage = op?.processStage ?? '未归类'
-    stageEmission.set(stage, (stageEmission.get(stage) ?? 0) + emission)
-    const source = sourceOf(row, factor)
-    sourceEmission.set(source, (sourceEmission.get(source) ?? 0) + emission)
-    rawTotal += emission
+    const rows = stageRowValues.get(stage)
+    if (rows) rows.push(emission)
+    else stageRowValues.set(stage, [emission])
+
+    itemSummaries.push({ item, emission, processName, stagePath })
+    caliberTotals.total += emissionBreakdown.total
+    caliberTotals.fossil += emissionBreakdown.fossil
+    caliberTotals.biogenic += emissionBreakdown.biogenic
+    caliberTotals.luluc += emissionBreakdown.luluc
   })
 
-  const total = rawTotal
+  /** 阶段汇总公式：默认 `SUM(该阶段各行碳排)` */
+  const stageResults = [...stageRowValues.entries()].map(([stage, rowValues]) => {
+    let stageTotal = evaluateFormula('stage-sum', { [STAGE_ROWS_VAR]: rowValues })
+    if (!Number.isFinite(stageTotal)) stageTotal = rowValues.reduce((sum, value) => sum + value, 0)
+    return { stage, total: stageTotal }
+  })
+  // 汇总用「未四舍五入」的原始排放，保证各维度占比合计 = 100%（避免四舍五入引入误差）
+  const total = stageResults.reduce((sum, item) => sum + item.total, 0)
+
+  /** 全局公式：默认 `SUM(各阶段碳排)` → 核算结果（单位产品碳足迹） */
+  let footprint = evaluateFormula('global-footprint', { [STAGE_ROWS_VAR]: stageResults.map((item) => item.total) })
+  if (!Number.isFinite(footprint)) footprint = total
+
   // 版本号 = 该项目已有结果的最大版本 + 1（重新计算时递增，历史版本不可篡改）
   const version =
     pcfCalcResultStore
       .filter((item) => item.projectId === projectId)
       .reduce((max, item) => Math.max(max, item.version), 0) + 1
 
+  /**
+   * 结果口径：
+   * - `unitEmission` = 全局公式结果（公式管理的「全局公式」决定，默认 = 各阶段合计）；
+   * - `totalEmission` = 各阶段合计（模型总碳排，用于占比与「总量」展示）；
+   * - 若项目填了「单位转换系数」（`N 声明单位 = 1 换算单位`），再派生一个换算口径：
+   *   `换算口径值 = 核算结果 × N`（例：`0.3341 Item = 1 kg` → 每 kg = 每 Item × 0.3341）。
+   */
+  const convFactor = project.conversionFactor
+  const unitEmissionBreakdown: PcfUnitEmission[] = [
+    { unit: project.functionalUnit, value: roundCalc(footprint) },
+  ]
+  if (
+    convFactor != null &&
+    Number.isFinite(convFactor) &&
+    convFactor > 0 &&
+    project.conversionUnit &&
+    project.convertedUnit
+  ) {
+    unitEmissionBreakdown.push({ unit: project.convertedUnit, value: roundCalc(footprint * convFactor) })
+  }
+
   const result: PcfCalcResult = {
     projectId,
     version,
     calculatedAt: NOW,
     totalEmission: roundCalc(total),
+    fossilEmission: roundCalc(caliberTotals.fossil),
+    biogenicEmission: roundCalc(caliberTotals.biogenic),
+    lulucEmission: roundCalc(caliberTotals.luluc),
+    /** 四分量口径值（kgCO₂e / 声明单位）：清单口径即数量，故等于各分量清单合计 */
+    caliberEmission: {
+      total: roundCalc(caliberTotals.total),
+      fossil: roundCalc(caliberTotals.fossil),
+      biogenic: roundCalc(caliberTotals.biogenic),
+      luluc: roundCalc(caliberTotals.luluc),
+    },
     unit: project.functionalUnit,
-    unitEmission: roundCalc(total),
-    stageSummary: [...stageEmission.entries()].map(([stage, emission]) => ({
-      stage,
-      emission: roundCalc(emission),
-      ratio: roundCalc(ratioCalc(emission, total)),
+    unitEmission: roundCalc(footprint),
+    unitEmissionBreakdown,
+    stageSummary: stageResults.map((item) => ({
+      stage: item.stage,
+      emission: roundCalc(item.total),
+      ratio: roundCalc(ratioCalc(item.total, total)),
     })),
-    operationSummary: ops
-      .map((op) => {
-        const emission = opEmission.get(op.id) ?? 0
-        return {
-          operationId: op.id,
-          processName: op.processName,
-          opName: op.opName,
-          stage: op.processStage,
-          emission: roundCalc(emission),
-          ratio: roundCalc(ratioCalc(emission, total)),
-        }
-      })
-      .filter((item) => item.emission !== 0),
-    sourceSummary: [...sourceEmission.entries()].map(([source, emission]) => ({
-      source,
-      emission: roundCalc(emission),
-      ratio: roundCalc(ratioCalc(emission, total)),
-    })),
+    // 「数据项汇总」：按排放量降序（替代原工序维度）
+    operationSummary: itemSummaries
+      .sort((a, b) => b.emission - a.emission)
+      .map(({ item, emission, processName, stagePath }) => ({
+        operationId: item.id,
+        processName,
+        opName: item.name,
+        // 阶段口径与「阶段汇总」对齐：逐条数据上卷到**一级阶段**（原取 item.stageName 会出现一级 / 二级混用）
+        stage: stageNameOf(item),
+        stagePath,
+        emission: roundCalc(emission),
+        ratio: roundCalc(ratioCalc(emission, total)),
+      })),
     details,
   }
 
   // 新版本前插，历史版本保留（界面仅展示最近版本）
   pcfCalcResultStore = [result, ...pcfCalcResultStore]
-  project.status = 'calculated'
+  // 2026-10-16：核算完成即置「已完成」（不再经过中间态「已核算」）
+  project.status = 'done'
   project.currentStep = 4
   project.updatedAt = NOW
 
@@ -4126,26 +5872,22 @@ export function exportPcfResult(
 
   const header = [
     '数据项名称',
-    '工序',
-    '工艺流程',
-    '阶段',
+    '所属阶段',
+    '所属过程',
     '流向',
-    '活动量',
+    '数量',
     '排放因子',
-    '绑定公式',
     '排放量(kgCO₂e)',
   ]
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`
   const lines = latest.details.map((d) =>
     [
       d.flowName,
-      d.opName,
-      d.processName,
       d.stage,
+      d.processName,
       d.direction === 'input' ? '投入' : '产出',
       d.activityText,
       d.factorName,
-      d.formulaName,
       d.emission.toFixed(4),
     ]
       .map((v) => escape(String(v)))
@@ -4156,6 +5898,277 @@ export function exportPcfResult(
   return request(
     { filename: `${project?.code ?? projectId}_核算结果明细.csv`, content },
     120,
+  )
+}
+
+/* ---------- 步骤④ 核算清册（按口径导出：总表 + 每个最末级生命周期阶段一张表） ---------- */
+
+/**
+ * 清册口径：GWP 四分量（与竞品「影响评价指标」一一对应）——
+ * 总量（不含生物源CO₂）/ 化石 / 生物源（不含CO₂）/ 直接土地利用变化。
+ */
+export type PcfInventoryCaliber = PcfCaliberKey
+
+/** SpreadsheetML（Excel 2003 XML）单元格 */
+interface SmCell {
+  text: string
+  type?: 'String' | 'Number'
+  style?: string
+  /** 数字格式（仅 Number 生效，如 `0.0000`） */
+  format?: string
+  /** 横向合并列数 − 1 */
+  merge?: number
+}
+
+function smEscape(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function smCellXml(cell: SmCell): string {
+  const attrs = [
+    cell.style ? `ss:StyleID="${cell.style}"` : '',
+    cell.format ? `ss:Format="${cell.format}"` : '',
+    cell.merge && cell.merge > 0 ? `ss:MergeAcross="${cell.merge}"` : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return `<Cell${attrs ? ` ${attrs}` : ''}><Data ss:Type="${cell.type ?? 'String'}">${smEscape(cell.text)}</Data></Cell>`
+}
+
+function smRowXml(cells: SmCell[]): string {
+  if (cells.length === 0) return '<Row/>'
+  return `<Row>${cells.map(smCellXml).join('')}</Row>`
+}
+
+/** 工作表名：剔除 Excel 非法字符并截断到 31 字符 */
+function smSheetName(name: string): string {
+  const cleaned = name.replace(/[\\/?*[\]:]/g, '-').trim().slice(0, 31)
+  return cleaned || 'Sheet'
+}
+
+/** 单元格样式（细边框 / 表头底色 / 数字右对齐），与清册模板观感对齐 */
+const SM_STYLES = `<Styles>
+<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="微软雅黑" ss:Size="10"/></Style>
+<Style ss:ID="sTitle"><Font ss:FontName="微软雅黑" ss:Size="14" ss:Bold="1"/><Alignment ss:Vertical="Center"/></Style>
+<Style ss:ID="sValue"><Font ss:FontName="微软雅黑" ss:Size="10"/><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>
+<Style ss:ID="sLabel"><Font ss:FontName="微软雅黑" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#F5F7FA" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/></Borders></Style>
+<Style ss:ID="sHead"><Font ss:FontName="微软雅黑" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#E6F4FF" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/></Borders></Style>
+<Style ss:ID="sText"><Font ss:FontName="微软雅黑" ss:Size="10"/><Alignment ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/></Borders></Style>
+<Style ss:ID="sNum"><Font ss:FontName="微软雅黑" ss:Size="10"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/></Borders></Style>
+<Style ss:ID="sSum"><Font ss:FontName="微软雅黑" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#FAFAFA" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/></Borders></Style>
+<Style ss:ID="sSumNum"><Font ss:FontName="微软雅黑" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#FAFAFA" ss:Pattern="Solid"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BFBFBF"/></Borders></Style>
+</Styles>`
+
+function smSheetXml(name: string, columns: number[], rows: string[]): string {
+  const cols = columns
+    .map((width, index) => `<Column ss:Index="${index + 1}" ss:Width="${width}"/>`)
+    .join('')
+  return `<Worksheet ss:Name="${smEscape(smSheetName(name))}"><Table ss:DefaultRowHeight="16">${cols}${rows.join('')}</Table></Worksheet>`
+}
+
+/**
+ * 导出**核算清册**（Excel 多工作表：`总表` + 每个最末级生命周期阶段一张表），按口径分别生成：
+ * - 总表：产品 / 功能单位 / 系统边界 / 影响评价方法 / 影响评价指标 / 结果 + 各阶段排放与占比；
+ * - 阶段表：生命周期过程 | 排放系数 | 背景数据来源 | 结果（kgCO₂e） | 占比（%）；
+ * - 数据全部取自最近一次核算结果明细（步骤② 数据项 × 因子快照），不额外造数。
+ */
+export function exportPcfInventory(
+  projectId: string,
+  caliber: PcfInventoryCaliber = 'total',
+): Promise<{ filename: string; content: string; mime: string }> {
+  const project = pcfProjectStore.find((item) => item.id === projectId)
+  if (!project) throw new Error('项目不存在或已被删除')
+  const latest = pcfCalcResultStore
+    .filter((item) => item.projectId === projectId)
+    .sort((a, b) => b.version - a.version)[0]
+  if (!latest) throw new Error('暂无核算结果，请先完成碳足迹核算')
+
+  const caliberDef = PCF_CALIBERS.find((item) => item.key === caliber) ?? PCF_CALIBERS[0]
+  const caliberText = caliberDef.label
+  /** 清册数值格式：最多 8 位小数并去尾零（小量级行如 0.000144 不丢有效数字） */
+  const fmt = (value: number) => {
+    if (!Number.isFinite(value)) return '-'
+    if (value === 0) return '0'
+    return String(Number(value.toFixed(8)))
+  }
+  /** 行级口径值：优先取四分量明细；兼容无分量字段的历史结果 */
+  const emissionOf = (d: PcfResultDetail): number => {
+    if (d.emissionBreakdown) return d.emissionBreakdown[caliber]
+    if (caliber === 'fossil') return d.fossilEmission ?? d.emission
+    if (caliber === 'biogenic') return d.biogenicEmission ?? 0
+    if (caliber === 'luluc') return d.lulucEmission ?? 0
+    return d.emission
+  }
+  const factorTextOf = (d: PcfResultDetail) => {
+    const value = d.factorCaliberValues
+      ? d.factorCaliberValues[caliber]
+      : caliber === 'total'
+        ? d.factorValue
+        : null
+    if (value == null) return '-'
+    return `${fmt(value)} ${d.factorUnit ?? ''}`.trim()
+  }
+  /** 清单合计（逐行相加，即该口径下的单位产品碳足迹） */
+  const totalEmission = latest.details.reduce((sum, d) => sum + emissionOf(d), 0)
+  const percentOf = (value: number) => (totalEmission > 0 ? (value / totalEmission) * 100 : 0)
+
+  /** 最末级阶段顺序：步骤①纳入的一级阶段 → 其下二级阶段（无二级时一级本身即最末级） */
+  const includedStages = (project.lifecycleStages ?? []).filter((s) => s.included)
+  const lifecycleOrder: string[] = []
+  includedStages
+    .filter((s) => s.level === 1)
+    .forEach((primary) => {
+      const children = includedStages.filter((s) => s.level === 2 && s.parentName === primary.name)
+      if (children.length > 0) children.forEach((child) => lifecycleOrder.push(`${primary.name}-${child.name}`))
+      else lifecycleOrder.push(primary.name)
+    })
+
+  const groups = new Map<string, PcfResultDetail[]>()
+  latest.details.forEach((d) => {
+    const key = d.stagePath || d.stage
+    const list = groups.get(key)
+    if (list) list.push(d)
+    else groups.set(key, [d])
+  })
+  const orderedPaths = [
+    ...lifecycleOrder,
+    ...[...groups.keys()].filter((key) => !lifecycleOrder.includes(key)),
+  ]
+  const stageTables = orderedPaths.map((path) => {
+    const rows = (groups.get(path) ?? []).slice().sort((a, b) => emissionOf(b) - emissionOf(a))
+    return { path, rows, emission: rows.reduce((sum, d) => sum + emissionOf(d), 0) }
+  })
+
+  /* ---- 总表 ---- */
+  const summaryRows: string[] = []
+  summaryRows.push(
+    smRowXml([{ text: `${project.productName || project.name} 产品碳足迹核算清册`, style: 'sTitle', merge: 4 }]),
+    smRowXml([{ text: `口径：${caliberText}`, style: 'sValue', merge: 4 }]),
+  )
+  const infoRows: Array<[string, string]> = [
+    ['产品名称', [project.productName, project.productSpec].filter(Boolean).join(' ')],
+    ['功能单位', `${project.functionalUnitValue ?? 1} ${project.functionalUnit}`],
+    ['系统边界', boundaryLabelOf(project.boundary)],
+    /** 与步骤⑤报告「五、影响评价」口径一致（IPCC 100 年 GWP，AR6 推荐值） */
+    ['影响评价方法', 'IPCC 2021（GWP100）'],
+    ['影响评价指标', caliberDef.indicatorCn],
+    ['影响评价指标（英文）', caliberDef.indicator],
+    [
+      '结果（kgCO₂e）',
+      `${fmt(totalEmission)} kgCO₂e / ${latest.unit}`,
+    ],
+    ['计算方法', '活动数据 × 排放因子'],
+    ['统计时间', `${project.startDate} ~ ${project.endDate}`],
+    ['结果版本', `V${latest.version}（${latest.calculatedAt}）`],
+  ]
+  infoRows.forEach(([label, value]) => {
+    summaryRows.push(
+      smRowXml([
+        { text: label, style: 'sLabel' },
+        { text: value, style: 'sValue', merge: 3 },
+      ]),
+    )
+  })
+
+  /* 说明：一份清册只对应一个影响评价指标口径（文件头已标注），不再在总表内罗列其他指标结果 */
+
+  summaryRows.push(smRowXml([]))
+  summaryRows.push(smRowXml([{ text: '各生命周期阶段排放及占比', style: 'sHead', merge: 4 }]))
+  summaryRows.push(
+    smRowXml([
+      { text: '生命周期阶段', style: 'sHead' },
+      { text: '排放量（kgCO₂e）', style: 'sHead' },
+      { text: '占比（%）', style: 'sHead' },
+      { text: '数据项', style: 'sHead' },
+      { text: '备注', style: 'sHead' },
+    ]),
+  )
+  stageTables.forEach((stage) => {
+    summaryRows.push(
+      smRowXml([
+        { text: stage.path, style: 'sText' },
+        { text: fmt(stage.emission), type: 'Number', style: 'sNum', format: '0.########' },
+        { text: percentOf(stage.emission).toFixed(4), type: 'Number', style: 'sNum', format: '0.0000' },
+        { text: String(stage.rows.length), type: 'Number', style: 'sNum', format: '0' },
+        { text: stage.rows.length > 0 ? '' : '本期无数据项', style: 'sText' },
+      ]),
+    )
+  })
+  summaryRows.push(
+    smRowXml([
+      { text: '合计', style: 'sSum' },
+      { text: fmt(totalEmission), type: 'Number', style: 'sSumNum', format: '0.########' },
+      { text: totalEmission > 0 ? '100.0000' : '0.0000', type: 'Number', style: 'sSumNum', format: '0.0000' },
+      { text: String(latest.details.length), type: 'Number', style: 'sSumNum', format: '0' },
+      { text: caliberText, style: 'sSum' },
+    ]),
+  )
+
+  /* ---- 每个最末级生命周期阶段一张表 ---- */
+  const stageSheets = stageTables.map((stage) => {
+    const rows: string[] = []
+    rows.push(
+      smRowXml([{ text: `${stage.path} 生命周期碳排放清单`, style: 'sTitle', merge: 4 }]),
+      smRowXml([{ text: `影响评价指标：${caliberDef.indicatorCn}`, style: 'sValue', merge: 4 }]),
+      smRowXml([{ text: `Impact indicator: ${caliberDef.indicator}`, style: 'sValue', merge: 4 }]),
+      smRowXml([
+        { text: '生命周期过程', style: 'sHead' },
+        { text: '排放系数', style: 'sHead' },
+        { text: '背景数据来源', style: 'sHead' },
+        { text: '结果（kgCO₂e）', style: 'sHead' },
+        { text: '占比（%）', style: 'sHead' },
+      ]),
+    )
+    stage.rows.forEach((d) => {
+      rows.push(
+        smRowXml([
+          { text: `${d.flowName}（${d.activityText}）`, style: 'sText' },
+          { text: factorTextOf(d), style: 'sText' },
+          { text: d.factorSource || '-', style: 'sText' },
+          { text: fmt(emissionOf(d)), type: 'Number', style: 'sNum', format: '0.########' },
+          { text: percentOf(emissionOf(d)).toFixed(4), type: 'Number', style: 'sNum', format: '0.0000' },
+        ]),
+      )
+    })
+    if (stage.rows.length === 0) {
+      rows.push(smRowXml([{ text: '该最末级阶段本期无数据项', style: 'sText', merge: 4 }]))
+    }
+    rows.push(
+      smRowXml([
+        { text: '合计', style: 'sSum' },
+        { text: '', style: 'sSum' },
+        { text: '', style: 'sSum' },
+        { text: fmt(stage.emission), type: 'Number', style: 'sSumNum', format: '0.########' },
+        {
+          text: totalEmission > 0 ? percentOf(stage.emission).toFixed(4) : '0.0000',
+          type: 'Number',
+          style: 'sSumNum',
+          format: '0.0000',
+        },
+      ]),
+    )
+    return smSheetXml(stage.path, [220, 150, 300, 140, 90], rows)
+  })
+
+  const content =
+    '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n' +
+    `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">` +
+    SM_STYLES +
+    smSheetXml('总表', [140, 300, 140, 100, 140], summaryRows) +
+    stageSheets.join('') +
+    '</Workbook>'
+
+  return request(
+    {
+      filename: `${project.code || projectId}_碳足迹核算清册_${caliberText}_V${latest.version}.xls`,
+      content,
+      mime: 'application/vnd.ms-excel;charset=utf-8',
+    },
+    150,
   )
 }
 
@@ -4183,11 +6196,7 @@ export function fetchPcfReportTemplates(): Promise<PcfReportTemplate[]> {
   )
 }
 
-/** 报告边界文案（Mock 本地口径，避免 mock 反向依赖页面模块） */
-const REPORT_BOUNDARY_TEXT: Record<PcfBoundary, string> = {
-  gate: '摇篮到大门',
-  grave: '摇篮到坟墓',
-}
+/** 报告边界文案取「数据字典 · 系统边界」字典项名称（boundaryLabelOf） */
 
 /** 保留 4 位小数（报告展示口径） */
 function formatReportNumber(value: number): string {
@@ -4223,33 +6232,6 @@ const REPORT_SECTION_DEFS: Array<{ id: string; code: string; title: string; defa
   { id: 'S06A', code: 'S06A', title: '六、结果解释 · 结果说明', defaultText: REPORT_DEFAULT_TEXT.resultNote },
 ]
 
-/** 演示用封面预置（PJ09「报告编制中」：演示已补充概况信息的状态） */
-const DEMO_REPORT_COVER: Record<string, Partial<PcfReportCover>> = {
-  PJ09: {
-    reportDate: '2026-09-09',
-    issuer: '示例竹制品二厂',
-    address: '福建省南平市工业路 65 号',
-    legalPerson: '周策',
-    contactPerson: '周策',
-    contactPhone: '0599-0000000',
-    companyProfile: '示例竹制品二厂，专注竹制餐具与家居用品生产，年产竹制餐具 1200 万件。',
-    productFunction: '用于餐饮场景的竹制刀叉，可替代一次性塑料餐具。',
-    productIntro: '以竹板材冲压成型、打磨包装制成，规格 175mm。',
-  },
-}
-
-/** 演示用章节预置（PJ09「报告编制中」/ PJ10「已完成」：结果说明已补填，可直接预览与确认完成） */
-const DEMO_REPORT_SECTIONS: Record<string, Record<string, string>> = {
-  PJ09: {
-    S06A:
-      '本期核算覆盖原材料获取、生产制造两个阶段，生产制造阶段排放占比最高，主要来源为电力消耗与竹材加工工序；建议后续优先推进能效改造与清洁能源替代，并完善初级数据采集频次。',
-  },
-  PJ10: {
-    S06A:
-      '本期核算覆盖原材料获取、生产制造、分销与使用阶段，排放集中在生产制造阶段；建议通过设备节能改造、绿色电力采购与包装减量持续降低单位产品碳足迹。',
-  },
-}
-
 /** 项目最近一次核算结果（报告的数据来源） */
 function latestCalcOf(projectId: string): PcfCalcResult | undefined {
   return pcfCalcResultStore
@@ -4270,9 +6252,7 @@ function buildPcfReport(project: PcfProject, templateId: string): PcfReport {
     PCF_REPORT_TEMPLATES.find((item) => item.templateId === templateId) ?? PCF_REPORT_TEMPLATES[0]
   const previous = pcfReportStore.find((item) => item.projectId === project.id)
   const result = latestCalcOf(project.id)
-  const demo = DEMO_REPORT_COVER[project.id] ?? {}
-  const demoSections = DEMO_REPORT_SECTIONS[project.id] ?? {}
-  const reportDate = demo.reportDate ?? NOW.slice(0, 10)
+  const reportDate = NOW.slice(0, 10)
 
   const cover: PcfReportCover = {
     productName: project.productName,
@@ -4280,15 +6260,15 @@ function buildPcfReport(project: PcfProject, templateId: string): PcfReport {
     companyName: project.ownerOrg,
     reportNo: previous?.reportNo ?? nextReportNo(),
     reportDate,
-    issuer: demo.issuer ?? '',
+    issuer: '',
     producerName: project.ownerOrg,
-    address: demo.address ?? '',
-    legalPerson: demo.legalPerson ?? '',
-    contactPerson: demo.contactPerson ?? '',
-    contactPhone: demo.contactPhone ?? '',
-    companyProfile: demo.companyProfile ?? '',
-    productFunction: demo.productFunction ?? '',
-    productIntro: demo.productIntro ?? '',
+    address: '',
+    legalPerson: '',
+    contactPerson: '',
+    contactPhone: '',
+    companyProfile: '',
+    productFunction: '',
+    productIntro: '',
     productImage: '',
   }
 
@@ -4307,16 +6287,17 @@ function buildPcfReport(project: PcfProject, templateId: string): PcfReport {
       code: item.code,
       title: item.title,
       type: 'editable',
-      content: demoSections[item.code] ?? item.defaultText,
+      content: item.defaultText,
     })),
     system: {
       standard: `依据标准：${project.method || 'GB/T 24067《温室气体 产品碳足迹 量化要求和指南》'}`,
       unit: project.functionalUnit,
-      boundaryText: REPORT_BOUNDARY_TEXT[project.boundary],
+      boundaryText: boundaryLabelOf(project.boundary),
       period: `${project.startDate} 到 ${project.endDate}`,
       allocation:
         '优先通过过程细分避免分配，对可明确归属的单元过程直接计入对应环节；对无法避免的共享单元过程，基于物理关系（如质量比例）进行分配；无明确物理关系的共享过程，参考经济价值比例进行分配。',
       unitEmission: result?.unitEmission ?? 0,
+      unitEmissionBreakdown: result?.unitEmissionBreakdown ?? [],
       totalEmission: result?.totalEmission ?? 0,
       resultVersion: result?.version ?? 0,
       stageSummary: result?.stageSummary ?? [],
@@ -4530,7 +6511,7 @@ function buildReportDocHtml(report: PcfReport): string {
     .map((d) => {
       const { qty, unit } = splitActivityText(d.activityText)
       const emission = d.direction === 'output' && !d.emission ? '不重复计算' : formatReportNumber(d.emission)
-      return `<tr><td>${d.opName}</td><td>${d.stage}</td><td>${d.direction === 'input' ? '投入' : '产出'}</td><td>${d.flowName}</td><td>${qty}</td><td>${unit}</td><td>${d.factorName || '—'}</td><td>${emission}</td></tr>`
+      return `<tr><td>${d.processName}</td><td>${d.stage}</td><td>${d.direction === 'input' ? '投入' : '产出'}</td><td>${d.flowName}</td><td>${qty}</td><td>${unit}</td><td>${d.factorName || '—'}</td><td>${emission}</td></tr>`
     })
     .join('')
   const stageRows = [
@@ -4540,6 +6521,11 @@ function buildReportDocHtml(report: PcfReport): string {
     ),
     `<tr><td>总计</td><td>${formatReportNumber(system.totalEmission)}</td><td>100</td></tr>`,
   ].join('')
+
+  // 口径说明：清单按「数量」录入，故结果即「每 1 个声明单位」的单位产品碳足迹
+  const resultSentence = `每声明单位（${system.unit}）碳足迹为 ${formatReportNumber(system.unitEmission)} kgCO₂e`
+  const footprintSentence = `生命周期碳足迹为 ${formatReportNumber(system.unitEmission)} kgCO₂e / ${system.unit}`
+  const stageUnit = `kgCO₂e/${system.unit}`
 
   return `<html><head><meta charset="utf-8"><title>${cover.productName} 产品碳足迹报告</title>
 <style>body{font-family:"Microsoft YaHei",Arial,sans-serif;line-height:1.8;color:#222}
@@ -4574,15 +6560,16 @@ p{margin:6px 0}</style></head><body>
 <p>1. 数据来源说明：${textOf('S04A')}</p>
 <p>2. 分配原则与程序：${system.allocation}</p>
 <p>3. 清单结果及计算</p>
-<table><tr><th>工序</th><th>阶段</th><th>投入/产出</th><th>名称</th><th>数量</th><th>单位</th><th>排放因子</th><th>排放量 kgCO₂e</th></tr>${listRows}</table>
+<table><tr><th>所属过程</th><th>阶段</th><th>投入/产出</th><th>名称</th><th>数量</th><th>单位</th><th>排放因子</th><th>排放量 kgCO₂e</th></tr>${listRows}</table>
 <p>4. 数据质量评价：${textOf('S04D')}</p>
 <h2>五、影响评价</h2>
 <p>1. 影响类型和特征化因子：一般选择 IPCC 给出的 100 年 GWP，采用 IPCC 第六次评估报告推荐值。</p>
-<p>2. 产品碳足迹结果计算：${cover.productName} 每声明单位（${system.unit}）碳足迹为 ${formatReportNumber(system.unitEmission)} kgCO₂e。</p>
+<p>2. 产品碳足迹结果计算：${cover.productName} ${resultSentence}。</p>
+<p>注：本报告清单数据以 1 个声明单位计（数量口径）。</p>
 <h2>六、结果解释</h2>
 <p>${textOf('S06A')}</p>
-<p>${cover.companyName} 生产的 ${cover.productName}，系统边界为 ${system.boundaryText}，生命周期碳足迹为 ${formatReportNumber(system.unitEmission)} kgCO₂e / ${system.unit}。各生命周期阶段排放情况如下：</p>
-<table><tr><th>生命周期阶段</th><th>碳足迹（kgCO₂e/${system.unit}）</th><th>百分比/%</th></tr>${stageRows}</table>
+<p>${cover.companyName} 生产的 ${cover.productName}，系统边界为 ${system.boundaryText}，${footprintSentence}。各生命周期阶段排放情况如下：</p>
+<table><tr><th>生命周期阶段</th><th>碳足迹（${stageUnit}）</th><th>百分比/%</th></tr>${stageRows}</table>
 <p>注：图 2 各生命周期阶段碳排放分布图（本期占位）。</p>
 </body></html>`
 }
@@ -4594,163 +6581,389 @@ export function exportPcfReport(projectId: string): Promise<{ filename: string; 
   return request({ filename: report.fileName, content: buildReportDocHtml(report) }, 150)
 }
 
-/**
- * 报告演示项目：为其补一份核算结果（克隆 PJ07 最近版本），
- * 使「报告编制中 / 已完成」样本的报告表格有数据（原型演示口径，不影响业务规则）。
- */
-const DEMO_REPORT_PROJECTS = ['PJ08', 'PJ09', 'PJ10']
-
-function seedPcfReportDemo(): void {
-  const base = latestCalcOf('PJ07')
-  if (!base) return
-  DEMO_REPORT_PROJECTS.forEach((id) => {
-    const project = pcfProjectStore.find((item) => item.id === id)
-    if (!project) return
-    if (pcfCalcResultStore.some((item) => item.projectId === id)) return
-    pcfCalcResultStore = [
-      ...pcfCalcResultStore,
-      {
-        ...clone(base),
-        projectId: id,
-        version: 1,
-        unit: project.functionalUnit,
-        calculatedAt: project.updatedAt,
-      },
-    ]
-  })
-}
-
-/* ===================== 演示数据预置（仅用于原型演示，不影响业务规则） ===================== */
+/* ===================== 演示数据说明 ===================== */
 
 /**
- * 预置「已填报」活动数据的演示项目：
- * - PJ04（待核算）：橡木实木餐桌，含生产 + 运输与交付两阶段、材料 / 能源 / 废弃物 / 运输四类排放源；
- * - PJ05（核算中）：竹木收纳盒，进入步骤④ 后异步核算完成，结果与 PJ07 V3 同口径；
- * - PJ06（核算失败）：竹制刀叉套装（项目内自定义产品），预置自定义工序后可演示「重新核算」成功。
+ * 演示数据**静态固化在 `./data.ts`**，不在运行时生成：
+ *
+ * - `pcfProjectSeed`：PJ01（摇篮到大门）+ PJ02（摇篮到坟墓），步骤① 目标与范围字段齐备；
+ * - `pcfStageDataSeed`：两个项目的步骤② 阶段数据项（「数量」口径，已匹配排放因子）；
+ * - `pcfCheckStore`（见上）：两个项目的步骤③ 检测结果均预置为「已通过」；
+ * - 步骤④ 核算结果与步骤⑤ 报告**由页面操作实时产出**（点「开始核算」→「生成报告」），
+ *   不做静态预置，以保证结果与引擎当前口径始终一致。
+ *
+ * 说明：早期版本曾为 PJ04–PJ10 在运行时「造」填报数据（走已废弃的
+ * 「产品工艺 → 工序 → 投入产出项」路径，与引擎读取的「阶段数据项」脱节），
+ * 该演示逻辑已随 `pcfProjectSeed` 精简一并移除。
  */
-const DEMO_FILLED_PROJECTS = ['PJ04', 'PJ05', 'PJ06']
 
-/** 演示用「数据项 → 排放因子」匹配规则（模拟填报人在步骤② 手动匹配排放来源） */
-const DEMO_FACTOR_RULES: Array<{ pattern: RegExp; factorCode: string }> = [
-  { pattern: /电力/, factorCode: 'F-001' },
-  { pattern: /橡木/, factorCode: 'F-403' },
-  { pattern: /胶粘剂/, factorCode: 'F-405' },
-  { pattern: /木器漆/, factorCode: 'F-404' },
-  { pattern: /漆渣/, factorCode: 'F-203' },
-  { pattern: /竹板材|竹片|毛竹/, factorCode: 'F-402' },
-  { pattern: /运输/, factorCode: 'F-301' },
-]
+/* ===================== 模型管理（前后台 · 模型库） ===================== */
 
-/** 演示用「数据项 → 活动量单位」覆盖规则（公式因素默认单位为 kg，按数据项口径修正） */
-const DEMO_UNIT_RULES: Array<{ pattern: RegExp; units: string[] }> = [
-  { pattern: /电力/, units: ['kWh'] },
-  { pattern: /橡木/, units: ['m³'] },
-  { pattern: /运输/, units: ['t', 'km'] },
-]
+/** 平台模型（后台维护） */
+let modelStore: CarbonModel[] = clone(modelSeed)
+/** 我的模型（前台组织级：manual 自己新增 + collected 收藏副本） */
+let myModelStore: MyModel[] = clone(myModelSeed)
 
-/** 演示用运输量（[运输重量 t, 运输距离 km]）：多 activity 因素行（运输 t·km 法）无基准数量，按项目给值 */
-const DEMO_TRANSPORT: Record<string, [number, number]> = {
-  PJ04: [0.045, 320],
-  PJ06: [0.02, 260],
+/** 模型内容载入 Payload（后台模型 / 我的模型共用；不含状态与审计字段） */
+export interface ModelPayload {
+  name: string
+  /** 产品信息（与产品核算步骤①「产品」面板一致） */
+  productName: string
+  productSpec: string
+  productIndustry: string
+  functionalUnitValue: string
+  functionalUnit: string
+  /** 产品图片（**必填**，data URL） */
+  productImageUrl: string
+  categoryId: string
+  industries: string[]
+  standardId: string
+  boundary: PcfBoundary
+  lifecycleStages: PcfLifecycleStage[]
+  items: ModelDataItem[]
+  nodes: ModelProcessNode[]
+  remark: string
 }
 
-/** 按流类型兜底的演示因子 */
-const DEMO_FACTOR_FALLBACK: Record<string, string> = {
-  material: 'F-402',
-  energy: 'F-001',
-  transport: 'F-301',
-  waste: 'F-201',
-  eol: 'F-601',
-  biocarbon: 'F-501',
+let modelSeq = 0
+function nextModelId(): string {
+  modelSeq += 1
+  return `MDL${String(Date.now()).slice(-6)}${String(modelSeq).padStart(2, '0')}`
+}
+function nextModelCode(): string {
+  const max = modelStore.reduce((acc, item) => {
+    const num = Number(item.code.replace(/[^0-9]/g, ''))
+    return Number.isFinite(num) ? Math.max(acc, num) : acc
+  }, 0)
+  return `MDL-${String(max + 1).padStart(3, '0')}`
+}
+let myModelSeq = 0
+function nextMyModelId(): string {
+  myModelSeq += 1
+  return `MYM${String(Date.now()).slice(-6)}${String(myModelSeq).padStart(2, '0')}`
+}
+function nextMyModelCode(): string {
+  const max = myModelStore.reduce((acc, item) => {
+    const num = Number(item.code.replace(/[^0-9]/g, ''))
+    return Number.isFinite(num) ? Math.max(acc, num) : acc
+  }, 0)
+  return `MYM-${String(max + 1).padStart(3, '0')}`
 }
 
-function demoFactorOf(row: PcfActivityData): FactorItem | undefined {
-  const enabled = factorStore.filter((item) => item.status === 'enabled')
-  const rule = DEMO_FACTOR_RULES.find((item) => item.pattern.test(row.flowName))
-  if (rule) return enabled.find((item) => item.code === rule.factorCode)
-  const code = DEMO_FACTOR_FALLBACK[row.flowType]
-  return code ? enabled.find((item) => item.code === code) : undefined
+/** 模型内容校验：名称 / 产品名称 / 产品图片 / 产品分类 / 核算标准 / 系统边界必填，且标准须为「现行」 */
+function validateModelPayload(payload: ModelPayload): void {
+  if (!payload.name.trim()) throw new Error('请填写模型名称')
+  if (!payload.productName.trim()) throw new Error('请填写产品名称')
+  if (!payload.productImageUrl) throw new Error('请上传产品图片')
+  if (!payload.categoryId) throw new Error('请选择产品分类')
+  if (!payload.standardId) throw new Error('请选择核算标准')
+  const standard = standardStore.find((item) => item.id === payload.standardId)
+  if (!standard) throw new Error('核算标准不存在')
+  if (standard.status !== '现行') throw new Error('核算标准须为「现行」状态')
+  if (!payload.boundary) throw new Error('请选择系统边界')
 }
 
-/** 单行演示填值：活动量取工艺基准数量（运输行按「重量 × 距离」），并匹配排放因子 */
-function fillDemoRow(row: PcfActivityData): void {
-  const formula = calcFormulaStore.find((item) => item.id === row.formulaId)
-  const activityCount = (formula?.factors ?? []).filter((item) => item.sourceType === 'activity').length
-  const transport = DEMO_TRANSPORT[row.projectId]
-
-  const unitRule = DEMO_UNIT_RULES.find((item) => item.pattern.test(row.flowName))
-
-  row.activityValues = row.activityValues.map((item, index) => {
-    if (activityCount > 1) {
-      // 多 activity 因素：运输重量 × 运输距离
-      const value = transport ? transport[index] ?? 1 : index === 0 ? (item.refQty ?? 0.04) : 320
-      return { ...item, value, unit: unitRule?.units[index] ?? item.unit }
-    }
-    return { ...item, value: item.refQty ?? 1, unit: unitRule?.units[0] ?? item.unit }
-  })
-
-  if (row.requiresFactor && !row.factorId) {
-    const factor = demoFactorOf(row)
-    if (factor) {
-      row.factorId = factor.id
-      row.factorName = factor.name
-      row.factorValue = factor.value
-    }
+/** 归一化模型内容（核算标准以标准号落库快照；数组深拷贝避免共享引用） */
+function normalizeModelContent(payload: ModelPayload): {
+  name: string
+  productName: string
+  productSpec: string
+  productIndustry: string
+  functionalUnitValue: string
+  functionalUnit: string
+  productImageUrl: string
+  categoryId: string
+  industries: string[]
+  standardId: string
+  standardName: string
+  boundary: PcfBoundary
+  lifecycleStages: PcfLifecycleStage[]
+  items: ModelDataItem[]
+  nodes: ModelProcessNode[]
+  remark: string
+} {
+  const standard = standardStore.find((item) => item.id === payload.standardId) as StandardItem
+  return {
+    name: payload.name.trim(),
+    productName: payload.productName.trim(),
+    productSpec: payload.productSpec.trim(),
+    productIndustry: payload.productIndustry,
+    functionalUnitValue: payload.functionalUnitValue.trim() || '1',
+    functionalUnit: payload.functionalUnit,
+    productImageUrl: payload.productImageUrl,
+    categoryId: payload.categoryId,
+    industries: [...payload.industries],
+    standardId: payload.standardId,
+    standardName: standard.code,
+    boundary: payload.boundary,
+    lifecycleStages: clone(payload.lifecycleStages),
+    items: clone(payload.items),
+    nodes: clone(payload.nodes),
+    remark: payload.remark.trim(),
   }
 }
 
-/** 多产出工序的分配比例：单行填 100%，多行均分并补齐 100% */
-function fillDemoRatio(rows: PcfActivityData[]): void {
-  const grouped = new Map<string, PcfActivityData[]>()
-  rows
-    .filter((row) => row.direction === 'output' && row.allocateRatio == null)
-    .forEach((row) => {
-      const list = grouped.get(row.operationId) ?? []
-      list.push(row)
-      grouped.set(row.operationId, list)
-    })
+/* ---------- 后台 · 平台模型 ---------- */
 
-  grouped.forEach((list) => {
-    if (list.length === 1) {
-      list[0].allocateRatio = 100
-      return
-    }
-    const base = Math.floor(100 / list.length)
-    list.forEach((row, index) => {
-      row.allocateRatio = index === list.length - 1 ? 100 - base * (list.length - 1) : base
-    })
-  })
+/** 后台 · 模型列表（更新时间倒序） */
+export function fetchModels(): Promise<CarbonModel[]> {
+  return request([...modelStore].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)))
+}
+
+/** 后台 · 模型详情 */
+export function fetchModel(id: string): Promise<CarbonModel> {
+  const model = modelStore.find((item) => item.id === id)
+  if (!model) throw new Error('模型不存在')
+  return request(model)
+}
+
+/** 后台 · 新建模型（默认草稿） */
+export function createModel(payload: ModelPayload): Promise<CarbonModel> {
+  validateModelPayload(payload)
+  const model: CarbonModel = {
+    id: nextModelId(),
+    code: nextModelCode(),
+    scope: 'platform',
+    status: 'draft',
+    maintainer: '平台运营',
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...normalizeModelContent(payload),
+  }
+  modelStore = [model, ...modelStore]
+  return request(model)
+}
+
+/** 后台 · 编辑模型（已发布需先停用） */
+export function updateModel(id: string, payload: ModelPayload): Promise<CarbonModel> {
+  const target = modelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.status === 'published') throw new Error('已发布模型不可直接编辑，请先停用后再编辑')
+  validateModelPayload(payload)
+  const next: CarbonModel = { ...target, ...normalizeModelContent(payload), updatedAt: NOW }
+  modelStore = modelStore.map((item) => (item.id === id ? next : item))
+  return request(next)
+}
+
+/** 后台 · 删除模型（仅草稿 / 已停用可删） */
+export function deleteModel(id: string): Promise<void> {
+  const target = modelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.status === 'published') throw new Error('已发布模型不可删除，请先停用')
+  modelStore = modelStore.filter((item) => item.id !== id)
+  return new Promise<void>((resolve) => setTimeout(resolve, 260))
+}
+
+/** 后台 · 发布模型（草稿 / 已停用 → 已发布，前台模型库可见） */
+export function publishModel(id: string): Promise<CarbonModel> {
+  const target = modelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.status === 'published') throw new Error('模型已处于发布状态')
+  const next: CarbonModel = { ...target, status: 'published', publishedAt: NOW, updatedAt: NOW }
+  modelStore = modelStore.map((item) => (item.id === id ? next : item))
+  return request(next)
+}
+
+/** 后台 · 停用模型（已发布 → 已停用，前台不可见） */
+export function disableModel(id: string): Promise<CarbonModel> {
+  const target = modelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.status !== 'published') throw new Error('仅已发布模型可停用')
+  const next: CarbonModel = { ...target, status: 'disabled', updatedAt: NOW }
+  modelStore = modelStore.map((item) => (item.id === id ? next : item))
+  return request(next)
+}
+
+/** 后台 · 重新启用模型（已停用 → 已发布） */
+export function enableModel(id: string): Promise<CarbonModel> {
+  const target = modelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.status !== 'disabled') throw new Error('仅已停用模型可重新启用')
+  const next: CarbonModel = { ...target, status: 'published', publishedAt: NOW, updatedAt: NOW }
+  modelStore = modelStore.map((item) => (item.id === id ? next : item))
+  return request(next)
+}
+
+/* ---------- 前台 · 模型库（只读） ---------- */
+
+/** 前台 · 模型库列表（仅「已发布」） */
+export function fetchPublishedModels(): Promise<CarbonModel[]> {
+  return request(
+    [...modelStore].filter((item) => item.status === 'published').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+  )
+}
+
+/** 前台 · 模型库详情（仅「已发布」） */
+export function fetchPublishedModel(id: string): Promise<CarbonModel> {
+  const model = modelStore.find((item) => item.id === id && item.status === 'published')
+  if (!model) throw new Error('模型不存在或未发布')
+  return request(model)
+}
+
+/* ---------- 前台 · 我的模型 ---------- */
+
+/** 我的模型列表（更新时间倒序） */
+export function fetchMyModels(): Promise<MyModel[]> {
+  return request([...myModelStore].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)))
+}
+
+/** 我的模型详情 */
+export function fetchMyModel(id: string): Promise<MyModel> {
+  const model = myModelStore.find((item) => item.id === id)
+  if (!model) throw new Error('模型不存在')
+  return request(model)
+}
+
+/** 新建我的模型（来源 = 自己新增） */
+export function createMyModel(payload: ModelPayload): Promise<MyModel> {
+  validateModelPayload(payload)
+  const model: MyModel = {
+    id: nextMyModelId(),
+    code: nextMyModelCode(),
+    scope: 'org',
+    origin: 'manual',
+    updatedAt: NOW,
+    ...normalizeModelContent(payload),
+  }
+  myModelStore = [model, ...myModelStore]
+  return request(model)
+}
+
+/** 编辑我的模型（收藏副本为只读，不可编辑） */
+export function updateMyModel(id: string, payload: ModelPayload): Promise<MyModel> {
+  const target = myModelStore.find((item) => item.id === id)
+  if (!target) throw new Error('模型不存在')
+  if (target.origin === 'collected') throw new Error('收藏副本为只读，不可编辑')
+  validateModelPayload(payload)
+  const next: MyModel = { ...target, ...normalizeModelContent(payload), updatedAt: NOW }
+  myModelStore = myModelStore.map((item) => (item.id === id ? next : item))
+  return request(next)
+}
+
+/** 删除我的模型 */
+export function deleteMyModel(id: string): Promise<void> {
+  if (!myModelStore.some((item) => item.id === id)) throw new Error('模型不存在')
+  myModelStore = myModelStore.filter((item) => item.id !== id)
+  return new Promise<void>((resolve) => setTimeout(resolve, 260))
 }
 
 /**
- * 预置演示数据：生成工序与填报行，并填入演示用的活动量、排放因子与分配比例，
- * 使「碳足迹核算」可直接算出跨阶段 / 跨工序 / 跨排放源的结果。
- * **仅影响 `DEMO_FILLED_PROJECTS` 中的项目**，其余项目仍按填报流程留空。
+ * 收藏平台模型 → 我的模型。
+ * **复制式快照**（不与源模型联动），来源记为 `collected`，仅允许只读预览。
  */
-function seedPcfDemoData(): void {
-  // ① 项目内自定义产品的工序（PJ06 无产品工艺可复制，模拟填报人手工新增工序）
-  const demoOps = clone(pcfDemoOperationSeed).map((op) => ({
-    ...op,
-    inputs: op.inputs.map(decorateProductFlow),
-    outputs: op.outputs.map(decorateProductFlow),
-  }))
-  pcfOperationStore = [...pcfOperationStore, ...demoOps]
-
-  // ② 生成工序副本 + 填报行 → ③ 填入演示值
-  DEMO_FILLED_PROJECTS.forEach((projectId) => {
-    const ops = ensureOperations(projectId)
-    let rows = pcfActivityStore.filter((item) => item.projectId === projectId)
-    const withRows = new Set(rows.map((row) => row.operationId))
-    const missing = ops.filter((op) => !withRows.has(op.id))
-    if (missing.length > 0) {
-      const generated = missing.flatMap((op) => buildActivityRows(projectId, op))
-      pcfActivityStore = [...pcfActivityStore, ...generated]
-      rows = [...rows, ...generated]
-    }
-    rows.forEach(fillDemoRow)
-    fillDemoRatio(rows)
-  })
+export function collectModelToMy(modelId: string): Promise<MyModel> {
+  const source = modelStore.find((item) => item.id === modelId)
+  if (!source) throw new Error('模型不存在')
+  if (source.status !== 'published') throw new Error('仅已发布模型可收藏')
+  const model: MyModel = {
+    id: nextMyModelId(),
+    code: nextMyModelCode(),
+    scope: 'org',
+    origin: 'collected',
+    name: `${source.name}（收藏）`,
+    productName: source.productName,
+    productSpec: source.productSpec,
+    productIndustry: source.productIndustry,
+    functionalUnitValue: source.functionalUnitValue,
+    functionalUnit: source.functionalUnit,
+    productImageUrl: source.productImageUrl,
+    categoryId: source.categoryId,
+    industries: [...source.industries],
+    standardId: source.standardId,
+    standardName: source.standardName,
+    boundary: source.boundary,
+    lifecycleStages: clone(source.lifecycleStages),
+    items: clone(source.items),
+    nodes: clone(source.nodes),
+    remark: `收藏自平台模型库（${source.code}），复制式快照、只读预览。`,
+    updatedAt: NOW,
+    sourceModelId: source.id,
+    sourceModelName: source.name,
+  }
+  myModelStore = [model, ...myModelStore]
+  return request(model)
 }
 
-seedPcfDemoData()
-seedPcfReportDemo()
+/* ---------- PCF 集成：新建核算引用模型 ---------- */
+
+/** PCF 新建核算的模型候选项（平台已发布模型 + 我的模型） */
+export function fetchPcfModelOptions(): Promise<PcfModelOption[]> {
+  const toOption = (model: CarbonModel | MyModel, source: 'platform' | 'my'): PcfModelOption => ({
+    id: model.id,
+    code: model.code,
+    name: model.name,
+    source,
+    standardId: model.standardId,
+    standardName: model.standardName,
+    categoryId: model.categoryId,
+    industries: [...model.industries],
+    boundary: model.boundary,
+    stageCount: model.lifecycleStages.filter((stage) => stage.included).length,
+    itemCount: model.items.length,
+    updatedAt: model.updatedAt,
+    origin: source === 'my' ? (model as MyModel).origin : undefined,
+  })
+  const platform = modelStore.filter((item) => item.status === 'published').map((item) => toOption(item, 'platform'))
+  const mine = myModelStore.map((item) => toOption(item, 'my'))
+  return request([...platform, ...mine])
+}
+
+/** PCF 引用模型的解析结果（新建核算时带入草稿的「目标与范围」） */
+export interface PcfSourceModel {
+  id: string
+  code: string
+  name: string
+  source: 'platform' | 'my'
+  standardId: string
+  standardName: string
+  boundary: PcfBoundary
+  categoryId: string
+  industries: string[]
+  lifecycleStages: PcfLifecycleStage[]
+}
+
+/** 按模型 id 解析可引用模型（先查平台已发布，再查我的模型） */
+export function fetchPcfSourceModel(id: string): Promise<PcfSourceModel> {
+  const resolve = (model: CarbonModel | MyModel, source: 'platform' | 'my'): PcfSourceModel => ({
+    id: model.id,
+    code: model.code,
+    name: model.name,
+    source,
+    standardId: model.standardId,
+    standardName: model.standardName,
+    boundary: model.boundary,
+    categoryId: model.categoryId,
+    industries: [...model.industries],
+    lifecycleStages: clone(model.lifecycleStages),
+  })
+  const platform = modelStore.find((item) => item.id === id && item.status === 'published')
+  if (platform) return request(resolve(platform, 'platform'))
+  const mine = myModelStore.find((item) => item.id === id)
+  if (mine) return request(resolve(mine, 'my'))
+  throw new Error('模型不存在或不可用')
+}
+
+/**
+ * 引用即复制：把模型的数据项 / 过程节点复制进核算项目。
+ * 在项目步骤①保存落库后调用（草稿阶段不落库，沿用现有口径）。
+ */
+export function applyModelToProject(projectId: string, modelId: string): Promise<void> {
+  const model = modelStore.find((item) => item.id === modelId) ?? myModelStore.find((item) => item.id === modelId)
+  if (!model) throw new Error('模型不存在')
+  const idMap = new Map<string, string>()
+  const items: PcfStageDataItem[] = model.items.map((item, index) => {
+    const nextId = `${projectId}-MD-${String(index + 1).padStart(2, '0')}`
+    idMap.set(item.id, nextId)
+    return { ...clone(item), id: nextId, projectId }
+  })
+  const nodes: PcfProcessNode[] = model.nodes.map((node, index) => ({
+    ...clone(node),
+    id: `${projectId}-MN-${String(index + 1).padStart(2, '0')}`,
+    projectId,
+    sourceItemId: node.sourceItemId ? idMap.get(node.sourceItemId) ?? null : null,
+  }))
+  pcfStageDataStore = [...pcfStageDataStore.filter((item) => item.projectId !== projectId), ...items]
+  pcfProcessNodeStore = [...pcfProcessNodeStore.filter((node) => node.projectId !== projectId), ...nodes]
+  return new Promise<void>((resolve) => setTimeout(resolve, 260))
+}

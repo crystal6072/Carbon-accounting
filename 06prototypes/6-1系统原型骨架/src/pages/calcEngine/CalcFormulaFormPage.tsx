@@ -1,23 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, FormField, Input, MultiSelect, PageHeader, Select, Textarea, useToast } from '@/shared/components'
+import { Button, FormField, Input, PageHeader, Select, Textarea, useToast } from '@/shared/components'
 import type { SelectOption } from '@/shared/components'
 import {
   CALC_FORMULA_DESCRIPTION_MAX,
   createCalcFormula,
-  fetchCalcEngineOptions,
   fetchCalcFormula,
   updateCalcFormula,
   validateFormulaExpression,
 } from '@/mock'
-import type { CalcEngineOptions, CalcFormulaPayload } from '@/mock'
+import type { CalcFormulaPayload } from '@/mock'
 import type { FormulaFactor, FormulaType } from '@/types'
 import FormulaExpressionModal from './FormulaExpressionModal'
 import FormulaFactorEditor from './FormulaFactorEditor'
 import { formulaTypeOrder, formulaTypeText } from './calcEngineMeta'
 import './CalcEngine.css'
-
-const EMPTY_OPTIONS: CalcEngineOptions = { industries: [] }
 
 const createInitialFactors = (): FormulaFactor[] => [
   {
@@ -28,7 +25,7 @@ const createInitialFactors = (): FormulaFactor[] => [
     sourceCode: '',
     sourceName: '',
     value: '',
-    unit: 'kg',
+    unit: '',
   },
 ]
 
@@ -45,13 +42,11 @@ export default function CalcFormulaFormPage() {
   const toast = useToast()
 
   const [name, setName] = useState('')
-  const [industries, setIndustries] = useState<string[]>([])
   const [formulaType, setFormulaType] = useState<'' | FormulaType>('')
   const [supportsNegativeResult, setSupportsNegativeResult] = useState(false)
   const [description, setDescription] = useState('')
   const [expression, setExpression] = useState('')
   const [factors, setFactors] = useState<FormulaFactor[]>(createInitialFactors())
-  const [options, setOptions] = useState<CalcEngineOptions>(EMPTY_OPTIONS)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -60,11 +55,9 @@ export default function CalcFormulaFormPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setOptions(await fetchCalcEngineOptions())
       if (isEdit && id) {
         const detail = await fetchCalcFormula(id)
         setName(detail.name)
-        setIndustries(detail.industries)
         setFormulaType(detail.formulaType)
         setSupportsNegativeResult(detail.supportsNegativeResult)
         setDescription(detail.description)
@@ -83,12 +76,10 @@ export default function CalcFormulaFormPage() {
   }, [load])
 
   const typeOptions: SelectOption[] = formulaTypeOrder.map((item) => ({ label: formulaTypeText[item], value: item }))
-  const industryOptions = options.industries.map((item) => ({ label: item, value: item }))
 
   const validate = (): string => {
     const next: Record<string, string> = {}
     if (!name.trim()) next.name = '请输入公式名称'
-    else if (industries.length === 0) next.industries = '请选择适用行业（至少 1 项）'
     else if (!formulaType) next.formulaType = '请选择公式类型'
     else if (description.length > CALC_FORMULA_DESCRIPTION_MAX) {
       next.description = `描述最长 ${CALC_FORMULA_DESCRIPTION_MAX} 字符`
@@ -99,12 +90,8 @@ export default function CalcFormulaFormPage() {
     else if (factors.some((item) => !item.name.trim())) factorError = '存在未命名的字段'
     else if (new Set(factors.map((item) => item.name.trim())).size !== factors.length) {
       factorError = '字段名称不得重复'
-    } else if (factors.some((item) => item.sourceType === 'factor' && !item.sourceCode)) {
-      factorError = `因子「${factors.find((item) => item.sourceType === 'factor' && !item.sourceCode)?.name}」请在因子库中选择对应因子`
     } else if (factors.some((item) => item.sourceType === 'constant' && !item.value.trim())) {
       factorError = `常量「${factors.find((item) => item.sourceType === 'constant' && !item.value.trim())?.name}」必须填写常量值`
-    } else if (factors.some((item) => item.sourceType !== 'factor' && !item.unit.trim())) {
-      factorError = `字段「${factors.find((item) => item.sourceType !== 'factor' && !item.unit.trim())?.name}」必须填写单位`
     }
     if (!factorError) {
       const exprError = validateFormulaExpression(expression, factors.map((item) => item.name.trim()))
@@ -120,7 +107,6 @@ export default function CalcFormulaFormPage() {
   const buildPayload = (): CalcFormulaPayload => ({
     name: name.trim(),
     formulaType: formulaType as FormulaType,
-    industries,
     expression: expression.trim(),
     resultName: '碳排放量',
     resultUnit: 'kgCO₂e',
@@ -158,7 +144,7 @@ export default function CalcFormulaFormPage() {
   if (loading) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '核算配置', '计算公式']} title={isEdit ? '编辑公式' : '新增公式'} />
+        <PageHeader breadcrumb={['系统管理', '核算配置', '计算公式']} title={isEdit ? '编辑公式' : '新增公式'} />
         <div className="card">
           <div className="empty">加载中…</div>
         </div>
@@ -169,7 +155,7 @@ export default function CalcFormulaFormPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '核算配置', '计算公式', isEdit ? '编辑公式' : '新增公式']}
+        breadcrumb={['系统管理', '核算配置', '计算公式', isEdit ? '编辑公式' : '新增公式']}
         title={isEdit ? '编辑公式' : '新增公式'}
         description={
           isEdit
@@ -196,14 +182,6 @@ export default function CalcFormulaFormPage() {
                   placeholder="如：因子法"
                   invalid={!!errors.name}
                   onChange={(e) => setName(e.target.value)}
-                />
-              </FormField>
-              <FormField label="适用行业" required error={errors.industries}>
-                <MultiSelect
-                  value={industries}
-                  options={industryOptions}
-                  placeholder="请选择行业"
-                  onChange={setIndustries}
                 />
               </FormField>
               <FormField label="公式类型" required error={errors.formulaType}>
@@ -265,14 +243,14 @@ export default function CalcFormulaFormPage() {
             </FormField>
 
             <div className="ce-section-tip" style={{ borderTop: 'none', padding: 'var(--space-xs) 0 var(--space-md)' }}>
-              下列为计算公式用到的字段，字段名称可自定义；因子类字段在因子库中选择对应因子后自动带出数值与单位，
-              常量 / 变量可直接维护数值与单位。
+              下列为计算公式用到的字段，字段名称可自定义；活动数据 / 变量运行时取值（无需维护单位），
+              因子只维护名称、数值与单位在建模绑定后按因子库带出，常量直接维护数值。
             </div>
 
             <FormulaFactorEditor value={factors} onChange={setFactors} />
           </div>
           <div className="ce-section-body ce-section-tip">
-            字段分三类：<strong>变量</strong>（自定义名称、运行时取值）、<strong>因子</strong>（在因子库中选择对应因子，数值与单位由库带出）、
+            字段分三类：<strong>变量</strong>（自定义名称、运行时取值）、<strong>因子</strong>（只维护名称，数值与单位在建模绑定后按因子库带出）、
             <strong>常量</strong>（44/12、方向系数等固定值）；计算公式只能使用活动数据、上述字段与运算符。
             公式不做审核与版本化，保存后即可在建模时被绑定；阶段归属与排放源绑定在建模时配置。
           </div>

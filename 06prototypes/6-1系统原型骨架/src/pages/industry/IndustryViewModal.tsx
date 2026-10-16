@@ -29,8 +29,8 @@ export default function IndustryViewModal({ open, item, parentName, onClose, onE
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>关闭</Button>
-          <Button variant="primary" onClick={() => item && onEdit(item)}>
+          <Button data-ann-target="industry.view.close" onClick={onClose}>关闭</Button>
+          <Button variant="primary" data-ann-target="industry.view.edit" onClick={() => item && onEdit(item)}>
             编辑
           </Button>
         </>
@@ -38,7 +38,7 @@ export default function IndustryViewModal({ open, item, parentName, onClose, onE
     >
       {item && (
         <>
-          <div className="detail-list">
+          <div className="detail-list" data-ann-target="industry.view.body">
             <Row label="行业编码">
               <span className="mono">{item.code}</span>
             </Row>

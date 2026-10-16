@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { Button, CascaderSelect, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
+import { collectTreeValues } from '@/shared/components'
 import {
   deleteProcess,
   fetchCategories,
-  fetchIndustryOptions,
+  fetchCategoryTreeOptions,
+  fetchIndustryTreeOptions,
   fetchLifecycleOptions,
   fetchProcesses,
   fetchProducts,
   updateProcessUseStatus,
 } from '@/mock'
-import type { CategoryItem, EnableStatus, ProcessItem } from '@/types'
+import type { CategoryItem, EnableStatus, ProcessItem, TreeOption } from '@/types'
 import ProcessConfirmModal from './ProcessConfirmModal'
 import type { ProcessConfirmMode } from './ProcessConfirmModal'
 import { useStatusText, useStatusTone } from './processMeta'
@@ -43,7 +45,9 @@ export default function ProcessListPage() {
 
   const [list, setList] = useState<ProcessItem[]>([])
   const [categories, setCategories] = useState<CategoryItem[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
+  /** 多级下拉选项：产品分类（三级）/ 所属行业（行业四级），供筛选使用 */
+  const [categoryTree, setCategoryTree] = useState<TreeOption[]>([])
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [lifecycles, setLifecycles] = useState<string[]>([])
   /** 工艺流程编码 → 已复制产品数（只读反查，由产品侧引用关系反推） */
   const [copiedMap, setCopiedMap] = useState<Map<string, number>>(new Map())
@@ -55,16 +59,18 @@ export default function ProcessListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [processes, categoryList, products, industryList, lifecycleList] = await Promise.all([
+      const [processes, categoryList, products, categoryTreeList, industryTreeList, lifecycleList] = await Promise.all([
         fetchProcesses(),
         fetchCategories(),
         fetchProducts(),
-        fetchIndustryOptions(),
+        fetchCategoryTreeOptions(),
+        fetchIndustryTreeOptions(),
         fetchLifecycleOptions(),
       ])
       setList(processes)
       setCategories(categoryList)
-      setIndustries(industryList)
+      setCategoryTree(categoryTreeList)
+      setIndustryTree(industryTreeList)
       setLifecycles(lifecycleList)
 
       const counter = new Map<string, number>()
@@ -89,17 +95,7 @@ export default function ProcessListPage() {
     return map
   }, [categories])
 
-  const categoryOptions = useMemo<SelectOption[]>(
-    () =>
-      categories
-        .slice()
-        .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-        .map((item) => ({
-          label: `${'　'.repeat(item.level - 1)}${item.name}${item.status === 'disabled' ? '（已禁用）' : ''}`,
-          value: item.id,
-        })),
-    [categories],
-  )
+  const categoryOptions = useMemo<TreeOption[]>(() => categoryTree, [categoryTree])
 
   const rows = useMemo(() => {
     let data = list
@@ -111,7 +107,9 @@ export default function ProcessListPage() {
       data = data.filter((item) => item.name.includes(query.name.trim()))
     }
     if (query.categoryId) {
-      data = data.filter((item) => item.categoryId === query.categoryId)
+      /** 选中父级分类时，命中其下所有子级分类 */
+      const matched = new Set(collectTreeValues(categoryOptions, query.categoryId))
+      data = data.filter((item) => matched.has(item.categoryId))
     }
     if (query.industry) {
       data = data.filter((item) => item.industry === query.industry)
@@ -123,7 +121,7 @@ export default function ProcessListPage() {
       data = data.filter((item) => item.useStatus === query.useStatus)
     }
     return data
-  }, [list, query])
+  }, [list, query, categoryOptions])
 
   useEffect(() => {
     setPage(1)
@@ -152,7 +150,7 @@ export default function ProcessListPage() {
   const columns: Column<ProcessItem>[] = [
     {
       key: 'code',
-      title: '工艺流程编码',
+      title: <span data-ann-target="process.col.code">工艺流程编码</span>,
       width: 140,
       render: (row) => (
         <button className="link mono nowrap" onClick={() => navigate(`/basic/process/${row.id}`)}>
@@ -162,7 +160,7 @@ export default function ProcessListPage() {
     },
     {
       key: 'name',
-      title: '工艺流程名称',
+      title: <span data-ann-target="process.col.name">工艺流程名称</span>,
       width: 170,
       render: (row) => (
         <span className="cell-ellipsis" title={row.name}>
@@ -172,7 +170,7 @@ export default function ProcessListPage() {
     },
     {
       key: 'categoryId',
-      title: '适用产品分类',
+      title: <span data-ann-target="process.col.category">适用产品分类</span>,
       width: 140,
       render: (row) => {
         const category = categoryName.get(row.categoryId)
@@ -189,19 +187,19 @@ export default function ProcessListPage() {
     },
     {
       key: 'industry',
-      title: '所属行业',
+      title: <span data-ann-target="process.col.industry">所属行业</span>,
       width: 130,
       render: (row) => <span className="nowrap">{row.industry || '-'}</span>,
     },
     {
       key: 'lifecycleStage',
-      title: '所属生命周期阶段',
+      title: <span data-ann-target="process.col.lifecycle">所属生命周期阶段</span>,
       width: 140,
       render: (row) => <span className="nowrap">{row.lifecycleStage || '-'}</span>,
     },
     {
       key: 'useStatus',
-      title: '使用状态',
+      title: <span data-ann-target="process.col.status">使用状态</span>,
       width: 100,
       render: (row) => <Tag tone={useStatusTone[row.useStatus]}>{useStatusText[row.useStatus]}</Tag>,
     },
@@ -213,7 +211,7 @@ export default function ProcessListPage() {
     },
     {
       key: 'copied',
-      title: '已复制产品数',
+      title: <span data-ann-target="process.col.copyCount">已复制产品数</span>,
       width: 120,
       render: (row) => {
         const count = copiedMap.get(row.code) ?? 0
@@ -232,23 +230,23 @@ export default function ProcessListPage() {
       width: 170,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => navigate(`/basic/process/${row.id}`)}>
+          <button className="link" data-ann-target="process.row.view" onClick={() => navigate(`/basic/process/${row.id}`)}>
             查看
           </button>
-          <button className="link" onClick={() => navigate(`/basic/process/${row.id}/edit`)}>
+          <button className="link" data-ann-target="process.row.edit" onClick={() => navigate(`/basic/process/${row.id}/edit`)}>
             编辑
           </button>
           {row.useStatus === 'disabled' ? (
             <>
-              <button className="link" onClick={() => setConfirm({ process: row, mode: 'enable' })}>
+              <button className="link" data-ann-target="process.row.enable" onClick={() => setConfirm({ process: row, mode: 'enable' })}>
                 启用
               </button>
-              <button className="link link-danger" onClick={() => setConfirm({ process: row, mode: 'delete' })}>
+              <button className="link link-danger" data-ann-target="process.row.delete" onClick={() => setConfirm({ process: row, mode: 'delete' })}>
                 删除
               </button>
             </>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ process: row, mode: 'disable' })}>
+            <button className="link link-danger" data-ann-target="process.row.disable" onClick={() => setConfirm({ process: row, mode: 'disable' })}>
               禁用
             </button>
           )}
@@ -260,18 +258,18 @@ export default function ProcessListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工艺流程']}
-        title="工艺流程"
+        breadcrumb={['系统管理', '工艺流程管理', '工艺流程']}
+        title={<span data-ann-target="process.page.global">工艺流程</span>}
         description="工艺流程把工序装配为有序工序链：模板间引用工序、被产品引用时复制并冻结（R-010）；不做版本化，通过启用 / 禁用控制能否被产品引用"
         actions={
-          <Button variant="primary" onClick={() => navigate('/basic/process/new')}>
+          <Button variant="primary" data-ann-target="process.add" onClick={() => navigate('/basic/process/new')}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="process.query.bar">
           <div className="query-item">
             <span className="query-label">工艺流程编码</span>
             <Input
@@ -290,20 +288,23 @@ export default function ProcessListPage() {
           </div>
           <div className="query-item">
             <span className="query-label">适用产品分类</span>
-            <Select
+            <CascaderSelect
               value={query.categoryId}
               placeholder="全部"
               options={categoryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, categoryId: e.target.value }))}
+              allowParent
+              searchPlaceholder="搜索分类名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, categoryId: value }))}
             />
           </div>
           <div className="query-item">
             <span className="query-label">所属行业</span>
-            <Select
+            <CascaderSelect
               value={query.industry}
               placeholder="全部"
-              options={industries.map((item) => ({ label: item, value: item }))}
-              onChange={(e) => setQuery((prev) => ({ ...prev, industry: e.target.value }))}
+              options={industryTree}
+              searchPlaceholder="搜索行业名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, industry: value }))}
             />
           </div>
           <div className="query-item">
@@ -345,7 +346,7 @@ export default function ProcessListPage() {
           <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟，含工序明细）`)}>导出</Button>
         </div>
 
-        <div className="process-table-wrap">
+        <div className="process-table-wrap" data-ann-target="process.page.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
         </div>
 

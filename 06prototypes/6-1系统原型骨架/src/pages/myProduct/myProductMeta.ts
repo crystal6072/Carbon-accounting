@@ -21,7 +21,7 @@ export const myProductSourceTip: Record<MyProductSource, string> = {
   custom: '自己新增：组织自建产品，可编辑与上下架，归属组织自动带出不可改',
 }
 
-/** 使用状态（上架 / 下架，产品级；引用标准产品只读展示后台状态） */
+/** 使用状态（上架 / 下架，产品级；引用副本与自建同等可控） */
 export const myProductUseStatusText: Record<ProductUseStatus, string> = {
   on: '上架',
   off: '下架',
@@ -32,5 +32,5 @@ export const myProductUseStatusTone: Record<ProductUseStatus, TagTone> = {
   off: 'default',
 }
 
-/** 面包屑（前台业务平台 → 我的产品库） */
-export const MY_PRODUCT_BREADCRUMB = ['前台业务平台', '我的产品库']
+/** 面包屑（产品碳足迹 → 产品库 → 我的产品库） */
+export const MY_PRODUCT_BREADCRUMB = ['产品碳足迹', '产品库', '我的产品库']

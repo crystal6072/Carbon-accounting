@@ -26,8 +26,10 @@ export default function CategoryConfirmModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" onClick={onConfirm}>
+          <Button data-ann-target="category.confirm.cancel" onClick={onClose}>
+            取消
+          </Button>
+          <Button variant="primary" data-ann-target="category.confirm.ok" onClick={onConfirm}>
             {isEnable ? '确认启用' : '确认禁用'}
           </Button>
         </>

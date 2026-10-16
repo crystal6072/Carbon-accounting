@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Modal, Tag, useToast } from '@/shared/components'
-import { fetchLifecycleStages } from '@/mock'
+import { boundaryLabelOf, fetchLifecycleStages } from '@/mock'
 import type { LifecycleStageItem } from '@/types'
 import {
-  inclusionHint,
-  inclusionText,
-  inclusionTone,
-  industriesText,
+  isCommonBoundary,
   levelText,
   levelTone,
   useStatusText,
@@ -56,8 +53,8 @@ export default function LifecycleViewModal({ open, stageId, onClose, onEdit }: L
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>关闭</Button>
-          <Button variant="primary" disabled={!stage} onClick={() => stage && onEdit(stage.id)}>
+          <Button data-ann-target="lifecycle.view.close" onClick={onClose}>关闭</Button>
+          <Button variant="primary" data-ann-target="lifecycle.view.edit" disabled={!stage} onClick={() => stage && onEdit(stage.id)}>
             编辑
           </Button>
         </>
@@ -67,7 +64,7 @@ export default function LifecycleViewModal({ open, stageId, onClose, onEdit }: L
       {!loading && !stage && <div className="empty">生命周期阶段不存在或已被删除</div>}
       {!loading && stage && (
         <>
-          <div className="view-block">
+          <div className="view-block" data-ann-target="lifecycle.view.body">
             <div className="view-block-title">基本信息</div>
             <div className="detail-list">
               <div className="detail-item">
@@ -93,10 +90,6 @@ export default function LifecycleViewModal({ open, stageId, onClose, onEdit }: L
                 <span className="detail-value">{stage.order}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">适用行业</span>
-                <span className="detail-value">{industriesText(stage)}</span>
-              </div>
-              <div className="detail-item">
                 <span className="detail-label">使用状态</span>
                 <span className="detail-value">
                   <Tag tone={useStatusTone[stage.status]}>{useStatusText[stage.status]}</Tag>
@@ -110,26 +103,29 @@ export default function LifecycleViewModal({ open, stageId, onClose, onEdit }: L
           </div>
 
           <div className="view-block">
-            <div className="view-block-title">默认纳入规则</div>
+            <div className="view-block-title">适用系统边界</div>
             <div className="rule-list">
               <div className="rule-item">
-                <span className="rule-label">摇篮到大门</span>
+                <span className="rule-label">系统边界</span>
                 <span className="rule-value">
-                  <Tag tone={inclusionTone[stage.gateRule]}>{inclusionText[stage.gateRule]}</Tag>
-                  <span className="form-tip">{inclusionHint[stage.gateRule]}</span>
-                </span>
-              </div>
-              <div className="rule-item">
-                <span className="rule-label">摇篮到坟墓</span>
-                <span className="rule-value">
-                  <Tag tone={inclusionTone[stage.graveRule]}>{inclusionText[stage.graveRule]}</Tag>
-                  <span className="form-tip">{inclusionHint[stage.graveRule]}</span>
+                  {isCommonBoundary(stage) ? (
+                    <Tag>全边界通用</Tag>
+                  ) : (
+                    <span className="boundary-cell">
+                      {stage.boundaries.map((code) => (
+                        <Tag key={code} tone="info">
+                          {boundaryLabelOf(code)}
+                        </Tag>
+                      ))}
+                    </span>
+                  )}
+                  <span className="form-tip">引用「平台支撑 · 数据字典 · 系统边界」；为空表示适用于全部系统边界</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="view-block">
+          <div className="view-block" data-ann-target="lifecycle.view.meta">
             <div className="view-block-title">制单信息</div>
             <div className="detail-list">
               <div className="detail-item">

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { Button, CascaderSelect, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
 import {
   batchUpdateMaterialStatus,
   deleteMaterial,
-  fetchIndustryOptions,
+  fetchIndustryTreeOptions,
   fetchMaterials,
   updateMaterialStatus,
 } from '@/mock'
 import type { MaterialBatchResult } from '@/mock'
-import type { EnableStatus, MaterialFlowType, MaterialItem, MaterialSubCategory } from '@/types'
+import type { EnableStatus, MaterialFlowType, MaterialItem, MaterialSubCategory, TreeOption } from '@/types'
 import MaterialBatchConfirmModal from './MaterialBatchConfirmModal'
 import MaterialBatchResultModal from './MaterialBatchResultModal'
 import MaterialConfirmModal from './MaterialConfirmModal'
@@ -53,7 +53,8 @@ export default function MaterialListPage() {
   const toast = useToast()
 
   const [list, setList] = useState<MaterialItem[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
+  /** 适用行业多级选项（行业库四级） */
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState<QueryState>(EMPTY_QUERY)
   const [page, setPage] = useState(1)
@@ -72,9 +73,9 @@ export default function MaterialListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [materials, industryList] = await Promise.all([fetchMaterials(), fetchIndustryOptions()])
+      const [materials, industryTreeList] = await Promise.all([fetchMaterials(), fetchIndustryTreeOptions()])
       setList(materials)
-      setIndustries(industryList)
+      setIndustryTree(industryTreeList)
     } finally {
       setLoading(false)
     }
@@ -98,10 +99,7 @@ export default function MaterialListPage() {
     [],
   )
 
-  const industryOptions: SelectOption[] = useMemo(
-    () => industries.map((industry) => ({ label: industry, value: industry })),
-    [industries],
-  )
+  const industryOptions: TreeOption[] = useMemo(() => industryTree, [industryTree])
 
   const rows = useMemo(() => {
     let data = list
@@ -242,17 +240,17 @@ export default function MaterialListPage() {
     },
     {
       key: 'code',
-      title: '物料编码',
+      title: <span data-ann-target="material.col.code">物料编码</span>,
       width: 120,
       render: (row) => (
-        <button className="link mono nowrap" onClick={() => openView(row.id)}>
+        <button className="link mono nowrap" data-ann-target="material.row.code" onClick={() => openView(row.id)}>
           {row.code}
         </button>
       ),
     },
     {
       key: 'name',
-      title: '物料名称',
+      title: <span data-ann-target="material.col.name">物料名称</span>,
       width: 160,
       render: (row) => (
         <span className="cell-ellipsis" title={row.name}>
@@ -262,7 +260,7 @@ export default function MaterialListPage() {
     },
     {
       key: 'flowType',
-      title: '物料类型',
+      title: <span data-ann-target="material.col.flowType">物料类型</span>,
       width: 170,
       render: (row) => (
         <span className="flex gap-xs">
@@ -273,7 +271,7 @@ export default function MaterialListPage() {
     },
     {
       key: 'industries',
-      title: '适用行业',
+      title: <span data-ann-target="material.col.industries">适用行业</span>,
       width: 180,
       render: (row) => (
         <span className="cell-ellipsis" title={industriesText(row.industries)}>
@@ -283,7 +281,7 @@ export default function MaterialListPage() {
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="material.col.status">使用状态</span>,
       width: 90,
       render: (row) => <Tag tone={useStatusTone[row.status]}>{useStatusText[row.status]}</Tag>,
     },
@@ -299,24 +297,24 @@ export default function MaterialListPage() {
       width: 180,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => openView(row.id)}>
+          <button className="link" data-ann-target="material.row.view" onClick={() => openView(row.id)}>
             查看
           </button>
-          <button className="link" onClick={() => openEdit(row.id)}>
+          <button className="link" data-ann-target="material.row.edit" onClick={() => openEdit(row.id)}>
             编辑
           </button>
           {row.status === 'disabled' ? (
-            <button className="link" onClick={() => setConfirm({ material: row, mode: 'enable' })}>
+            <button className="link" data-ann-target="material.row.enable" onClick={() => setConfirm({ material: row, mode: 'enable' })}>
               启用
             </button>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ material: row, mode: 'disable' })}>
+            <button className="link link-danger" data-ann-target="material.row.disable" onClick={() => setConfirm({ material: row, mode: 'disable' })}>
               禁用
             </button>
           )}
           {/* 删除仅对「已禁用」的物料开放，启用态隐藏入口 */}
           {canDeleteMaterial(row) && (
-            <button className="link link-danger" onClick={() => setConfirm({ material: row, mode: 'delete' })}>
+            <button className="link link-danger" data-ann-target="material.row.delete" onClick={() => setConfirm({ material: row, mode: 'delete' })}>
               删除
             </button>
           )}
@@ -328,17 +326,17 @@ export default function MaterialListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '物料库']}
-        title="物料库"
+        breadcrumb={['系统管理', '基础库', '物料库']}
+        title={<span data-ann-target="material.page.global">物料库</span>}
         actions={
-          <Button variant="primary" onClick={() => openEdit(null)}>
+          <Button variant="primary" data-ann-target="material.add" onClick={() => openEdit(null)}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="material.query.bar">
           <div className="query-item">
             <span className="query-label">物料编码</span>
             <Input
@@ -377,11 +375,12 @@ export default function MaterialListPage() {
           </div>
           <div className="query-item">
             <span className="query-label">适用行业</span>
-            <Select
+            <CascaderSelect
               value={query.industry}
               placeholder="全部"
               options={industryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, industry: e.target.value }))}
+              searchPlaceholder="搜索行业名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, industry: value }))}
             />
           </div>
           <div className="query-item">
@@ -397,8 +396,8 @@ export default function MaterialListPage() {
             />
           </div>
           <div className="query-actions">
-            <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-            <Button variant="primary" onClick={() => toast('查询完成')}>
+            <Button data-ann-target="material.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
+            <Button variant="primary" data-ann-target="material.query.search" onClick={() => toast('查询完成')}>
               搜索
             </Button>
           </div>
@@ -414,6 +413,7 @@ export default function MaterialListPage() {
           <div className="flex gap-xs">
             <Button
               size="small"
+              data-ann-target="material.batch.enable"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchStatus('enabled')}
             >
@@ -421,16 +421,16 @@ export default function MaterialListPage() {
             </Button>
             <Button
               size="small"
+              data-ann-target="material.batch.disable"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchStatus('disabled')}
             >
               批量停用
             </Button>
-            <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>
           </div>
         </div>
 
-        <div className="material-table-wrap">
+        <div className="material-table-wrap" data-ann-target="material.page.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
         </div>
 

@@ -160,12 +160,12 @@
   border-radius: var(--radius-base);
 }
 .flow-row-input {
-  grid-template-columns: 40px 118px minmax(200px, 1.5fr) 100px 200px minmax(160px, 1fr) 56px;
-  min-width: 900px;
+  grid-template-columns: 40px 118px minmax(200px, 1.5fr) 100px minmax(160px, 1fr) 56px;
+  min-width: 720px;
 }
 .flow-row-output {
-  grid-template-columns: 40px 112px minmax(180px, 1.4fr) 96px 104px 200px minmax(150px, 1fr) 56px;
-  min-width: 1080px;
+  grid-template-columns: 40px 112px minmax(180px, 1.4fr) 96px 104px minmax(150px, 1fr) 56px;
+  min-width: 840px;
 }
 .flow-row-head {
   font-size: var(--font-size-xs);

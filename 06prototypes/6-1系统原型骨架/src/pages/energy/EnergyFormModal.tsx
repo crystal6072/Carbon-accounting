@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, FormField, Input, Modal, MultiSelect, Select, Textarea, useToast } from '@/shared/components'
-import type { MultiSelectOption, SelectOption } from '@/shared/components'
+import { Button, FormField, Input, Modal, MultiCascaderSelect, Select, Textarea, useToast } from '@/shared/components'
+import type { SelectOption } from '@/shared/components'
 import {
   ENERGY_DESCRIPTION_MAX,
   createEnergy,
   fetchEnergy,
-  fetchIndustryOptions,
+  fetchIndustryTreeOptions,
   updateEnergy,
 } from '@/mock'
 import type { EnergyPayload } from '@/mock'
-import type { EnergyItem, EnergyType } from '@/types'
+import type { EnergyItem, EnergyType, TreeOption } from '@/types'
 import { energyTypeOrder, energyTypeText, energyTypeTip } from './energyMeta'
 
 interface EnergyFormModalProps {
@@ -42,7 +42,8 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
   const isEdit = !!energyId
   const toast = useToast()
 
-  const [industryList, setIndustryList] = useState<string[]>([])
+  /** 适用行业多级选项（行业库四级） */
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -53,8 +54,8 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
     setLoading(true)
     setErrors({})
     try {
-      const industries = await fetchIndustryOptions()
-      setIndustryList(industries)
+      const industries = await fetchIndustryTreeOptions()
+      setIndustryTree(industries)
 
       if (energyId) {
         const detail = await fetchEnergy(energyId)
@@ -84,10 +85,7 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
     [],
   )
 
-  const industryOptions = useMemo<MultiSelectOption[]>(
-    () => industryList.map((industry) => ({ label: industry, value: industry })),
-    [industryList],
-  )
+  const industryOptions = useMemo<TreeOption[]>(() => industryTree, [industryTree])
 
   const updateForm = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -139,8 +137,8 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" disabled={submitting || loading} onClick={handleSubmit}>
+          <Button data-ann-target="energy.form.cancel" onClick={onClose}>取消</Button>
+          <Button variant="primary" data-ann-target="energy.form.save" disabled={submitting || loading} onClick={handleSubmit}>
             {submitting ? '保存中…' : '保存'}
           </Button>
         </>
@@ -150,7 +148,7 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
         <div className="empty">加载中…</div>
       ) : (
         <div className="form-grid">
-          <FormField label="能源编码" required error={errors.code}>
+          <FormField label="能源编码" required error={errors.code} annTarget="energy.form.code">
             <Input
               value={form.code}
               placeholder="如 E-011"
@@ -159,7 +157,7 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
               onChange={(e) => updateForm({ code: e.target.value })}
             />
           </FormField>
-          <FormField label="能源名称" required error={errors.name}>
+          <FormField label="能源名称" required error={errors.name} annTarget="energy.form.name">
             <Input
               value={form.name}
               placeholder="请输入具体品名，如「柴油」「外购电力」"
@@ -167,7 +165,7 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
               onChange={(e) => updateForm({ name: e.target.value })}
             />
           </FormField>
-          <FormField label="能源类型" required error={errors.energyType} full>
+          <FormField label="能源类型" required error={errors.energyType} full annTarget="energy.form.energyType">
             <Select
               value={form.energyType}
               placeholder="请选择能源类型"
@@ -180,15 +178,16 @@ export default function EnergyFormModal({ open, energyId, onClose, onSaved }: En
               {form.energyType ? energyTypeTip[form.energyType] : '类型只取「燃料 / 电力 / 热力」，具体品名填在「能源名称」'}
             </div>
           </FormField>
-          <FormField label="适用行业" full>
-            <MultiSelect
+          <FormField label="适用行业" full annTarget="energy.form.industries">
+            <MultiCascaderSelect
               value={form.industries}
               options={industryOptions}
               placeholder="请选择适用行业"
+              searchPlaceholder="搜索行业名称 / 编码"
               onChange={(industries) => updateForm({ industries })}
             />
           </FormField>
-          <FormField label="能源描述" full error={errors.description}>
+          <FormField label="能源描述" full error={errors.description} annTarget="energy.form.description">
             <Textarea
               value={form.description}
               rows={3}

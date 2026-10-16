@@ -9,24 +9,70 @@ export interface MenuNode {
 
 /**
  * 菜单结构对齐《整体设计方案》§8 页面清单 + §2 功能架构。
- * 2026-09-29 整理：产品库 / 工艺流程管理 / 平台支撑归并到「后台管理」下（后台管理为一级分组）。
+ * 2026-09-29 整理：产品库 / 工艺流程管理 / 平台支撑归并到「系统管理」下（系统管理为一级分组）。
+ * 2026-10-09 整理：前台业务归入「产品碳足迹」一级分组，下设 产品碳足迹 / 产品库 / 工艺库 / 因子管理 四个二级分组，并补齐各级图标。
+ * 2026-10-12 整理：
+ * - 「工作台」从一级入口迁移到「产品碳足迹」下（顶栏只保留 产品碳足迹 / 系统管理 两个一级分组）；
+ * - 产品碳足迹新增二级分组「报告管理」（企业信息维护 / 报告编制 / 敏感性分析 / 数据质量评价，暂占位）；
+ * - 核算流程去掉「报告」环节（核算结果为最后一个节点），报告能力改由「报告管理」承载；
+ * - 系统管理 · 核算配置去掉「分配规则管理」。
+ * 2026-10-13 整理：前后台各新增一级「模型管理」——
+ * 前台（模型库 / 我的模型）承载模型浏览 · 收藏 · 自定义，后台（核算模型）承载配置与发布。
  */
 export const menuConfig: MenuNode[] = [
-  { key: '/dashboard', label: '工作台', icon: 'dashboard' },
   {
     key: 'group-frontend',
-    label: '前台业务平台',
+    label: '产品碳足迹',
     icon: 'layers',
     children: [
-      { key: '/pcf/project', label: '产品碳足迹核算' },
-      { key: '/pcf/my-product', label: '我的产品库' },
-      { key: '/pcf/my-process', label: '我的工艺库' },
-      { key: '/pcf/my-factor', label: '我的因子库' },
+      { key: '/dashboard', label: '工作台', icon: 'dashboard' },
+      { key: '/pcf/project', label: '碳足迹核算', icon: 'calculator' },
+      {
+        key: 'group-report',
+        label: '报告管理',
+        icon: 'file',
+        children: [
+          { key: '/report/enterprise', label: '企业信息维护' },
+          { key: '/report/prepare', label: '报告编制' },
+          { key: '/report/sensitivity', label: '敏感性分析' },
+          { key: '/report/quality', label: '数据质量评价' },
+        ],
+      },
+      {
+        key: 'group-my-product',
+        label: '产品库',
+        icon: 'package',
+        children: [{ key: '/pcf/my-product', label: '我的产品库', icon: 'package' }],
+      },
+      {
+        key: 'group-my-process',
+        label: '工艺库',
+        icon: 'factory',
+        children: [{ key: '/pcf/my-process', label: '我的工艺库', icon: 'factory' }],
+      },
+      {
+        key: 'group-factor',
+        label: '因子管理',
+        icon: 'database',
+        children: [
+          { key: '/pcf/factor-libraries', label: '背景数据库', icon: 'database' },
+          { key: '/pcf/my-factor', label: '我的因子库', icon: 'bookmark' },
+        ],
+      },
+      {
+        key: 'group-model-mgmt',
+        label: '模型管理',
+        icon: 'sliders',
+        children: [
+          { key: '/pcf/model-libraries', label: '模型库', icon: 'layers' },
+          { key: '/pcf/my-model', label: '我的模型', icon: 'bookmark' },
+        ],
+      },
     ],
   },
   {
     key: 'group-backend',
-    label: '后台管理',
+    label: '系统管理',
     icon: 'settings',
     children: [
       {
@@ -66,9 +112,15 @@ export const menuConfig: MenuNode[] = [
         icon: 'sliders',
         children: [
           { key: '/model/calc-engine', label: '计算公式' },
-          { key: '/model/factor', label: '排放因子库' },
-          { key: '/model/allocation', label: '分配规则管理' },
+          { key: '/model/formula', label: '公式管理' },
+          { key: '/model/factor-lib', label: '因子库管理' },
         ],
+      },
+      {
+        key: 'group-model-admin',
+        label: '模型管理',
+        icon: 'calculator',
+        children: [{ key: '/model/library', label: '核算模型', icon: 'layers' }],
       },
       {
         key: 'group-system',

@@ -43,8 +43,8 @@ export default function EnergyViewModal({ open, energyId, onClose, onEdit }: Ene
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>关闭</Button>
-          <Button variant="primary" disabled={!energy} onClick={() => energy && onEdit(energy.id)}>
+          <Button data-ann-target="energy.view.close" onClick={onClose}>关闭</Button>
+          <Button variant="primary" data-ann-target="energy.view.edit" disabled={!energy} onClick={() => energy && onEdit(energy.id)}>
             编辑
           </Button>
         </>
@@ -54,7 +54,7 @@ export default function EnergyViewModal({ open, energyId, onClose, onEdit }: Ene
       {!loading && !energy && <div className="empty">能源不存在或已被删除</div>}
       {!loading && energy && (
         <>
-          <div className="view-block">
+          <div className="view-block" data-ann-target="energy.view.body">
             <div className="view-block-title">基本信息</div>
             <div className="detail-list">
               <div className="detail-item">
@@ -88,7 +88,7 @@ export default function EnergyViewModal({ open, energyId, onClose, onEdit }: Ene
             </div>
           </div>
 
-          <div className="view-block">
+          <div className="view-block" data-ann-target="energy.view.meta">
             <div className="view-block-title">制单信息</div>
             <div className="detail-list">
               <div className="detail-item">

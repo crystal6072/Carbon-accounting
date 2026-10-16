@@ -1,21 +1,22 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, FormField, Icon, Input, PageHeader, Select, Table, Tag, Textarea, useToast } from '@/shared/components'
+import { Button, CascaderSelect, FormField, Icon, Input, PageHeader, Select, Table, Tag, Textarea, useToast } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
-import { buildFormulaLines } from '@/shared/formulaMeta'
 import {
+  createMyProcess,
   createProcess,
-  fetchCategories,
-  fetchIndustryOptions,
+  fetchCategoryTreeOptions,
+  fetchIndustryTreeOptions,
   fetchLifecycleOptions,
+  fetchMyProcess,
   fetchOperations,
   fetchProcess,
-  fetchUnitOptions,
+  updateMyProcess,
   updateProcess,
 } from '@/mock'
 import type { ProcessPayload } from '@/mock'
-import type { CategoryItem, OperationItem, ProcessOperationItem } from '@/types'
+import type { OperationItem, ProcessOperationItem, TreeOption } from '@/types'
 import ProcessOperationViewModal from './ProcessOperationViewModal'
 import {
   buildChainChecks,
@@ -40,17 +41,44 @@ const emptyRow = (): ProcessOperationItem => ({
 const reseq = (rows: ProcessOperationItem[]): ProcessOperationItem[] =>
   rows.map((row, index) => ({ ...row, seq: index + 1, order: index + 1 }))
 
-export default function ProcessFormPage() {
+/** 表单归属：「backend」后台工艺流程 / 「frontend」前台我的工艺库 */
+export type ProcessFormScope = 'backend' | 'frontend'
+
+interface ProcessFormPageProps {
+  /**
+   * 表单归属范围，默认 `backend`。
+   * 前台我的工艺库复用同一表单组件，保证「新增工艺流程」操作与后台完全一致。
+   */
+  scope?: ProcessFormScope
+}
+
+export default function ProcessFormPage({ scope = 'backend' }: ProcessFormPageProps) {
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
 
+  const isFrontend = scope === 'frontend'
   const isEdit = !!id
 
-  const [categories, setCategories] = useState<CategoryItem[]>([])
+  /** 面包屑 / 路由 / 文案按归属范围切换 */
+  const scopeConfig = isFrontend
+    ? {
+        breadcrumb: ['产品碳足迹', '工艺库', '我的工艺库'],
+        detailPath: (pid: string) => `/pcf/my-process/${pid}`,
+        description:
+          '我的工艺库 · 组织自建工艺 = 基本信息 + 有序的工序链；新增 / 编辑操作口径与后台「工艺流程」一致，不做版本化',
+      }
+    : {
+        breadcrumb: ['系统管理', '工艺流程管理', '工艺流程'],
+        detailPath: (pid: string) => `/basic/process/${pid}`,
+        description:
+          '工艺流程 = 基本信息 + 有序的工序链（不做版本化）：模板间引用工序、被产品引用时复制并冻结（R-010）',
+      }
+
+  /** 多级下拉选项：产品分类（三级）/ 所属行业（行业四级） */
+  const [categoryTree, setCategoryTree] = useState<TreeOption[]>([])
   const [operations, setOperations] = useState<OperationItem[]>([])
-  const [units, setUnits] = useState<string[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [lifecycles, setLifecycles] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -61,8 +89,6 @@ export default function ProcessFormPage() {
     categoryId: '',
     industry: '',
     lifecycleStage: '',
-    baseQty: '',
-    baseUnit: '',
     description: '',
   })
   const [rows, setRows] = useState<ProcessOperationItem[]>([])
@@ -82,17 +108,15 @@ export default function ProcessFormPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [categoryList, operationList, unitList, industryList, lifecycleList] = await Promise.all([
-        fetchCategories(),
+      const [categoryTreeList, operationList, industryTreeList, lifecycleList] = await Promise.all([
+        fetchCategoryTreeOptions(),
         fetchOperations(),
-        fetchUnitOptions(),
-        fetchIndustryOptions(),
+        fetchIndustryTreeOptions(),
         fetchLifecycleOptions(),
       ])
-      setCategories(categoryList)
+      setCategoryTree(categoryTreeList)
       setOperations(operationList)
-      setUnits(unitList)
-      setIndustries(industryList)
+      setIndustryTree(industryTreeList)
       setLifecycles(lifecycleList)
 
       if (!id) {
@@ -100,15 +124,16 @@ export default function ProcessFormPage() {
         return
       }
 
-      const detail = await fetchProcess(id)
+      const detail = isFrontend ? await fetchMyProcess(id) : await fetchProcess(id)
+      if (isFrontend && 'source' in detail && detail.source !== 'custom') {
+        throw new Error('引用后台工艺为只读项，不可编辑；如需调整请在「我的工艺库」新增组织自建工艺')
+      }
       setForm({
         code: detail.code,
         name: detail.name,
         categoryId: detail.categoryId,
         industry: detail.industry,
         lifecycleStage: detail.lifecycleStage,
-        baseQty: detail.baseQty === null ? '' : String(detail.baseQty),
-        baseUnit: detail.baseUnit,
         description: detail.description,
       })
       setRows(
@@ -126,7 +151,7 @@ export default function ProcessFormPage() {
     } finally {
       setLoading(false)
     }
-  }, [id, toast])
+  }, [id, isFrontend, toast])
 
   useEffect(() => {
     void load()
@@ -143,23 +168,9 @@ export default function ProcessFormPage() {
     [operations],
   )
 
-  const categoryOptions = useMemo<SelectOption[]>(
-    () =>
-      categories
-        .slice()
-        .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-        .map((item) => ({
-          label: `${'　'.repeat(item.level - 1)}${item.name}${item.status === 'disabled' ? '（已禁用）' : ''}`,
-          value: item.id,
-        })),
-    [categories],
-  )
+  const categoryOptions = useMemo<TreeOption[]>(() => categoryTree, [categoryTree])
 
-  const unitOptions = useMemo<SelectOption[]>(() => units.map((unit) => ({ label: unit, value: unit })), [units])
-  const industryOptions = useMemo<SelectOption[]>(
-    () => industries.map((item) => ({ label: item, value: item })),
-    [industries],
-  )
+  const industryOptions = useMemo<TreeOption[]>(() => industryTree, [industryTree])
   const lifecycleOptions = useMemo<SelectOption[]>(
     () => lifecycles.map((item) => ({ label: item, value: item })),
     [lifecycles],
@@ -238,7 +249,7 @@ export default function ProcessFormPage() {
     updateRow(rowId, { opCode, opName: op?.name ?? '' })
   }
 
-  /** 列表视图（与产品信息库列表列一致）：工序 / 工序类型 / 投入项 / 产出项 / 计算公式 */
+  /** 列表视图（与产品信息库列表列一致）：工序 / 工序类型 / 投入项 / 产出项 */
   const listColumns: Column<ProcessOperationItem>[] = [
     {
       key: 'opCode',
@@ -304,40 +315,6 @@ export default function ProcessFormPage() {
       },
     },
     {
-      key: 'formula',
-      title: '计算公式',
-      render: (row) => {
-        const op = operations.find((item) => item.code === row.opCode)
-        if (!op) return '-'
-        const lines = buildFormulaLines([
-          ...op.inputs.map((item) => ({
-            name: item.refName,
-            flowType: item.flowType,
-            formulaName: item.formulaName,
-            formulaCode: item.formulaCode,
-            disposal: item.disposal,
-          })),
-          ...op.outputs.map((item) => ({
-            name: item.refName,
-            flowType: item.flowType,
-            formulaName: item.formulaName,
-            formulaCode: item.formulaCode,
-            disposal: item.disposal,
-          })),
-        ])
-        if (lines.length === 0) return '-'
-        return (
-          <div className="flow-detail">
-            {lines.map((line) => (
-              <span key={line} className="flow-detail-line">
-                {line}
-              </span>
-            ))}
-          </div>
-        )
-      },
-    },
-    {
       key: 'action',
       title: '',
       width: 64,
@@ -387,8 +364,6 @@ export default function ProcessFormPage() {
       industry: form.industry,
       lifecycleStage: form.lifecycleStage,
       description: form.description.trim(),
-      baseQty: form.baseQty.trim() === '' ? null : Number(form.baseQty),
-      baseUnit: form.baseUnit,
       operations: sorted.map((row, index) => ({
         order: index + 1,
         opCode: row.opCode,
@@ -400,13 +375,14 @@ export default function ProcessFormPage() {
     setSubmitting(true)
     try {
       if (isEdit && id) {
-        await updateProcess(id, payload)
+        if (isFrontend) await updateMyProcess(id, payload)
+        else await updateProcess(id, payload)
         toast('保存成功')
-        navigate(`/basic/process/${id}`)
+        navigate(scopeConfig.detailPath(id))
       } else {
-        const created = await createProcess(payload)
+        const created = isFrontend ? await createMyProcess(payload) : await createProcess(payload)
         toast('保存成功')
-        navigate(`/basic/process/${created.id}`)
+        navigate(scopeConfig.detailPath(created.id))
       }
     } catch (error) {
       toast(error instanceof Error ? error.message : '保存失败', 'error')
@@ -424,9 +400,11 @@ export default function ProcessFormPage() {
         <Button size="small" onClick={handleViewSelected} disabled={!selectedOperation}>
           查看工序
         </Button>
-        <span className="toolbar-tip">
-          拖拽节点左上角手柄可调整顺序，点击节点间「+」插入工序；双击节点或点「查看工序」查看详情 · 共 {rows.length} 道工序
-        </span>
+        {!isFrontend && (
+          <span className="toolbar-tip">
+            拖拽节点左上角手柄可调整顺序，点击节点间「+」插入工序；双击节点或点「查看工序」查看详情 · 共 {rows.length} 道工序
+          </span>
+        )}
       </div>
 
       <div className="flow-canvas-stage">
@@ -552,7 +530,7 @@ export default function ProcessFormPage() {
   if (loading) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '工艺流程管理', '工艺流程']} title={title} />
+        <PageHeader breadcrumb={scopeConfig.breadcrumb} title={title} />
         <div className="card">
           <div className="empty">加载中…</div>
         </div>
@@ -563,18 +541,20 @@ export default function ProcessFormPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工艺流程', title]}
-        title={title}
-        description="工艺流程 = 基本信息 + 有序的工序链（不做版本化）：模板间引用工序、被产品引用时复制并冻结（R-010）"
+        breadcrumb={[...scopeConfig.breadcrumb, title]}
+        title={<span data-ann-target="process.page.global">{title}</span>}
+        description={isFrontend ? undefined : scopeConfig.description}
         actions={<Button onClick={() => navigate(-1)}>取消</Button>}
       />
 
-      <div className="stack">
-        {isEdit && (
+      <div className="stack" data-ann-target="process.form.root">
+        {isEdit && !isFrontend && (
           <div className="notice notice-info">
             <Icon name="warning" size={16} />
             <span>
-              模板可自由编辑（R-008）：即使本工艺流程已被产品复制，编辑保存也「不回写」已建副本；副本仅标记「模板已更新」。
+              {isFrontend
+                ? '组织自建工艺可自由编辑：被产品引用时按引用时点复制副本，编辑保存「不回写」已建副本。'
+                : '模板可自由编辑（R-008）：即使本工艺流程已被产品复制，编辑保存也「不回写」已建副本；副本仅标记「模板已更新」。'}
             </span>
           </div>
         )}
@@ -582,14 +562,17 @@ export default function ProcessFormPage() {
         <section className="card">
           <div className="section-header">
             <span className="section-title">基本信息</span>
-            <span className="toolbar-tip">
-              编码唯一（【待确认 Q07】唯一范围）；标注「引用」的字段选项来自对应基础库；使用状态不在表单内编辑
-            </span>
+            {!isFrontend && (
+              <span className="toolbar-tip">
+                编码唯一（【待确认 Q07】唯一范围）；标注「引用」的字段选项来自对应基础库；使用状态不在表单内编辑
+              </span>
+            )}
           </div>
           <div className="form-block">
             <div className="form-grid">
               <FormField label="工艺流程编码" required error={errors.code}>
                 <Input
+                  data-ann-target="process.form.code"
                   value={form.code}
                   placeholder="如 GY-08"
                   readOnly={isEdit}
@@ -599,6 +582,7 @@ export default function ProcessFormPage() {
               </FormField>
               <FormField label="工艺流程名称" required error={errors.name}>
                 <Input
+                  data-ann-target="process.form.name"
                   value={form.name}
                   placeholder="请输入工艺流程名称"
                   invalid={!!errors.name}
@@ -606,25 +590,30 @@ export default function ProcessFormPage() {
                 />
               </FormField>
               <FormField label="适用产品分类" required error={errors.categoryId}>
-                <Select
+                <CascaderSelect
+                  data-ann-target="process.form.category"
                   value={form.categoryId}
                   placeholder="请选择（引用产品分类库）"
                   options={categoryOptions}
+                  searchPlaceholder="搜索分类名称 / 编码"
                   invalid={!!errors.categoryId}
-                  onChange={(e) => updateForm({ categoryId: e.target.value })}
+                  onChange={(value) => updateForm({ categoryId: value })}
                 />
               </FormField>
               <FormField label="所属行业" required error={errors.industry}>
-                <Select
+                <CascaderSelect
+                  data-ann-target="process.form.industry"
                   value={form.industry}
                   placeholder="请选择（引用行业库）"
                   options={industryOptions}
+                  searchPlaceholder="搜索行业名称 / 编码"
                   invalid={!!errors.industry}
-                  onChange={(e) => updateForm({ industry: e.target.value })}
+                  onChange={(value) => updateForm({ industry: value })}
                 />
               </FormField>
               <FormField label="所属生命周期阶段" required error={errors.lifecycleStage}>
                 <Select
+                  data-ann-target="process.form.lifecycle"
                   value={form.lifecycleStage}
                   placeholder="请选择（引用生命周期阶段库）"
                   options={lifecycleOptions}
@@ -632,25 +621,9 @@ export default function ProcessFormPage() {
                   onChange={(e) => updateForm({ lifecycleStage: e.target.value })}
                 />
               </FormField>
-              <FormField label="基准单位">
-                <Select
-                  value={form.baseUnit}
-                  placeholder="请选择（引用计量单位库）"
-                  options={unitOptions}
-                  onChange={(e) => updateForm({ baseUnit: e.target.value })}
-                />
-              </FormField>
-              <FormField label="基准数量">
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.baseQty}
-                  placeholder="选填"
-                  onChange={(e) => updateForm({ baseQty: e.target.value })}
-                />
-              </FormField>
               <FormField label="工艺流程描述" full>
                 <Textarea
+                  data-ann-target="process.form.description"
                   value={form.description}
                   rows={2}
                   placeholder="选填"
@@ -659,22 +632,26 @@ export default function ProcessFormPage() {
               </FormField>
             </div>
           </div>
-          <div className="form-block">
-            <div className="form-tip">
-              「所属行业」「所属生命周期阶段」为必填（引用对应基础库）；「基准数量 / 基准单位」按「单位产品」口径（已确认 Q04）；
-              「是否主工艺」已取消（Q06）；不做版本化，故无版本号 / 版本状态 / 生效日期字段（Q05）。
-              「适用产品分类」仅作说明性字段用于检索与分类展示、不构成引用约束（A14）；「适用产品」按业务确认不在任何页面展示只读反查（A13）。
+          {!isFrontend && (
+            <div className="form-block">
+              <div className="form-tip">
+                「所属行业」「所属生命周期阶段」为必填（引用对应基础库）；
+                「是否主工艺」已取消（Q06）；不做版本化，故无版本号 / 版本状态 / 生效日期字段（Q05）。
+                「适用产品分类」仅作说明性字段用于检索与分类展示、不构成引用约束（A14）；「适用产品」按业务确认不在任何页面展示只读反查（A13）。
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="process.form.canvas">
           <div className="section-header">
             <span className="section-title">工序明细</span>
             <span className="section-extra">
-              <span className="toolbar-tip">
-                节点自左向右即工序顺序（自动连续不重复）；仅可选「启用」状态的工序（A1）；首道投入 / 末道产出 / 中间衔接三条校验均为提示级
-              </span>
+              {!isFrontend && (
+                <span className="toolbar-tip">
+                  节点自左向右即工序顺序（自动连续不重复）；仅可选「启用」状态的工序（A1）；首道投入 / 末道产出 / 中间衔接三条校验均为提示级
+                </span>
+              )}
               <div className="pcf-view-switch" role="tablist" aria-label="展示方式">
                 <button
                   type="button"
@@ -720,10 +697,12 @@ export default function ProcessFormPage() {
           )}
 
           <div className="form-block">
-            <div className="form-tip">
-              本模块只做工序的「引用与排序」，不在此新增工序定义、不维护工序投入产出流（A3 / A4）；
-              同一工序允许重复出现，以节点序号区分（A6 / 已确认 Q02）。节点内「投入 / 产出」为工序的只读投影，维护归属「工序管理」。
-            </div>
+            {!isFrontend && (
+              <div className="form-tip">
+                本模块只做工序的「引用与排序」，不在此新增工序定义、不维护工序投入产出流（A3 / A4）；
+                同一工序允许重复出现，以节点序号区分（A6 / 已确认 Q02）。节点内「投入 / 产出」为工序的只读投影，维护归属「工序管理」。
+              </div>
+            )}
             {firstCheck && !firstCheck.firstInputOk && (
               <div className="form-tip form-tip-warning">
                 提示（不阻断保存）：首道工序「{firstRowName}」的投入全部为中间品，建议含原辅料 / 能源 / 自然资源输入（D05 提示级）。
@@ -753,8 +732,8 @@ export default function ProcessFormPage() {
 
         <section className="card">
           <div className="form-page-footer">
-            <Button onClick={() => navigate(-1)}>取消</Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button data-ann-target="process.form.cancel" onClick={() => navigate(-1)}>取消</Button>
+            <Button data-ann-target="process.form.save" variant="primary" onClick={handleSubmit} disabled={submitting}>
               {submitting ? '保存中…' : '保存'}
             </Button>
           </div>

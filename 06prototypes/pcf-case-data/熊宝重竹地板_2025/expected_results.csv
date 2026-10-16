@@ -1,0 +1,17 @@
+result_id,scope,metric,unit,expected_value,tolerance,calculation_note
+R-001,A1-A3,fossil_total,kgCO2e/块,7.4043738139,0.0001,SUM(A1:A3 fossil)
+R-002,A1-A3,net_biogenic_total,kgCO2e/块,0.3522356658,0.0001,SUM(A1:A3 net)
+R-003,A1-C4,fossil_total,kgCO2e/块,11.4294699873,0.0001,SUM(A1:C4 fossil)
+R-004,A1-C4,net_biogenic_total,kgCO2e/块,11.4294699873,0.0001,SUM(A1:C4 net)
+R-005,A1-C4,normalized_by_weight,kgCO2e/kg,2.0668119326,0.0001,fossil_total ÷ 5.53
+R-006,A1-C4,normalized_by_area,kgCO2e/m²,43.8919738376,0.0001,fossil_total ÷ 0.2604
+S-A1,A1,stage_fossil,kgCO2e/块,6.4399350680,0.0001,SUM(A1 fossil)
+S-A2,A2,stage_fossil,kgCO2e/块,0.1531489646,0.0001,SUM(A2 fossil)
+S-A3,A3,stage_fossil,kgCO2e/块,0.8112897813,0.0001,SUM(A3 fossil)
+S-A4,A4,stage_fossil,kgCO2e/块,0.7026588367,0.0001,SUM(A4 fossil)
+S-A5,A5,stage_fossil,kgCO2e/块,0.0104982167,0.0001,SUM(A5 fossil)
+S-B,B1-B7,stage_fossil,kgCO2e/块,0,0.0001,保留使用阶段
+S-C1,C1,stage_fossil,kgCO2e/块,0,0.0001,保留拆除阶段
+S-C2,C2,stage_fossil,kgCO2e/块,0.1437800000,0.0001,SUM(C2 fossil)
+S-C3,C3,stage_fossil,kgCO2e/块,0,0.0001,保留废弃物加工阶段
+S-C4,C4,stage_fossil,kgCO2e/块,3.1681591200,0.0001,SUM(C4 fossil)

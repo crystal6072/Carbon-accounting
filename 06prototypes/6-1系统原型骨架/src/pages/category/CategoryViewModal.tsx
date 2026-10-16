@@ -11,9 +11,9 @@ interface CategoryViewModalProps {
   onEdit: (item: CategoryItem) => void
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Row({ label, annTarget, children }: { label: string; annTarget?: string; children: ReactNode }) {
   return (
-    <div className="detail-item">
+    <div className="detail-item" data-ann-target={annTarget}>
       <span className="detail-label">{label}</span>
       <span className="detail-value">{children}</span>
     </div>
@@ -29,15 +29,17 @@ export default function CategoryViewModal({ open, item, parentName, onClose, onE
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>关闭</Button>
-          <Button variant="primary" onClick={() => item && onEdit(item)}>
+          <Button data-ann-target="category.view.close" onClick={onClose}>
+            关闭
+          </Button>
+          <Button variant="primary" data-ann-target="category.view.edit" onClick={() => item && onEdit(item)}>
             编辑
           </Button>
         </>
       }
     >
       {item && (
-        <div className="detail-list">
+        <div className="detail-list" data-ann-target="category.view.body">
           <Row label="分类编码">
             <span className="mono">{item.code}</span>
           </Row>
@@ -50,7 +52,9 @@ export default function CategoryViewModal({ open, item, parentName, onClose, onE
               {item.status === 'enabled' ? '启用' : '禁用'}
             </Tag>
           </Row>
-          <Row label="创建人">{item.createdBy}</Row>
+          <Row label="创建人" annTarget="category.view.meta">
+            {item.createdBy}
+          </Row>
           <Row label="创建时间">{item.createdAt}</Row>
           <Row label="最后修改时间">{item.updatedAt}</Row>
           <Row label="备注">{item.remark || '-'}</Row>

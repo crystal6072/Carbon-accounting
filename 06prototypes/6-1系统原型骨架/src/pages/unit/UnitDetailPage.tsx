@@ -67,7 +67,7 @@ export default function UnitDetailPage() {
   if (!unit) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '基础库', '计量单位库']} title="单位详情" />
+        <PageHeader breadcrumb={['系统管理', '基础库', '计量单位库']} title="单位详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '单位不存在或已被删除'}</div>
         </div>
@@ -78,16 +78,24 @@ export default function UnitDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '计量单位库', unit.name]}
+        breadcrumb={['系统管理', '基础库', '计量单位库', unit.name]}
         title={unit.name}
         description={`单位符号 ${unit.symbol} · ${unitTypeText[unit.unitType]} · ${useStatusText[unit.status]}`}
         actions={
           <>
             <Button onClick={() => navigate('/basic/unit')}>返回列表</Button>
-            {unit.status === 'enabled'
-              ? canDisableUnit(unit) && <Button onClick={() => setConfirmOpen(true)}>禁用</Button>
-              : <Button onClick={() => setConfirmOpen(true)}>启用</Button>}
-            <Button variant="primary" onClick={() => navigate(`/basic/unit/${unit.id}/edit`)}>
+            {unit.status === 'enabled' ? (
+              canDisableUnit(unit) && (
+                <Button data-ann-target="unit.detail.disable" onClick={() => setConfirmOpen(true)}>
+                  禁用
+                </Button>
+              )
+            ) : (
+              <Button data-ann-target="unit.detail.enable" onClick={() => setConfirmOpen(true)}>
+                启用
+              </Button>
+            )}
+            <Button variant="primary" data-ann-target="unit.detail.edit" onClick={() => navigate(`/basic/unit/${unit.id}/edit`)}>
               编辑
             </Button>
           </>
@@ -95,7 +103,7 @@ export default function UnitDetailPage() {
       />
 
       <div className="unit-stack">
-        <section className="card">
+        <section className="card" data-ann-target="unit.detail.body">
           <div className="unit-section-header">
             <span className="unit-section-title">基本信息</span>
             <span className="toolbar-tip">
@@ -156,7 +164,7 @@ export default function UnitDetailPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="unit.detail.references">
           <div className="unit-section-header">
             <span className="unit-section-title">引用情况</span>
             <span className="toolbar-tip">共 {unit.references.length} 条 · 只读反查，仅作参考</span>
@@ -170,7 +178,7 @@ export default function UnitDetailPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="unit.detail.meta">
           <div className="unit-section-header">
             <span className="unit-section-title">制单信息</span>
           </div>

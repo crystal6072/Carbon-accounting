@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Modal, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { Button, CascaderSelect, Input, Modal, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { collectTreeValues } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
-import { deleteMyProduct, fetchCategories, fetchMyProductRefProjects, fetchMyProducts, updateMyProductUseStatus } from '@/mock'
+import {
+  deleteMyProduct,
+  fetchCategories,
+  fetchCategoryTreeOptions,
+  fetchMyProductRefProjects,
+  fetchMyProducts,
+  updateMyProductUseStatus,
+} from '@/mock'
 import type { MyProductBatchResult } from '@/mock'
-import type { CategoryItem, MyProductItem, MyProductSource } from '@/types'
+import type { CategoryItem, MyProductItem, TreeOption } from '@/types'
 import ProductConfirmModal from '@/pages/product/ProductConfirmModal'
 import MyProductReferenceModal from './MyProductReferenceModal'
 import {
   MY_PRODUCT_BREADCRUMB,
-  myProductSourceText,
-  myProductSourceTone,
-  myProductSourceTip,
   myProductUseStatusText,
   myProductUseStatusTone,
 } from './myProductMeta'
@@ -23,18 +28,19 @@ const PAGE_SIZE = 20
 interface QueryState {
   code: string
   name: string
-  source: '' | MyProductSource
   categoryId: string
   useStatus: '' | 'on' | 'off'
 }
 
-const EMPTY_QUERY: QueryState = { code: '', name: '', source: '', categoryId: '', useStatus: '' }
+const EMPTY_QUERY: QueryState = { code: '', name: '', categoryId: '', useStatus: '' }
 
 export default function MyProductListPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const [list, setList] = useState<MyProductItem[]>([])
   const [categories, setCategories] = useState<CategoryItem[]>([])
+  /** 产品分类多级选项（一级 / 二级 / 三级），供筛选使用 */
+  const [categoryTree, setCategoryTree] = useState<TreeOption[]>([])
   /** 引用核算项目数（key = 产品 id；引用标准产品同样统计） */
   const [refCountMap, setRefCountMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
@@ -44,13 +50,20 @@ export default function MyProductListPage() {
   const [confirm, setConfirm] = useState<{ product: MyProductItem; target: 'on' | 'off' } | null>(null)
   const [deleting, setDeleting] = useState<MyProductItem | null>(null)
   const [referenceOpen, setReferenceOpen] = useState(false)
+  /** 新增产品方式选择：引用产品库 / 自定义产品 */
+  const [createOpen, setCreateOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [products, categoryList] = await Promise.all([fetchMyProducts(), fetchCategories()])
+      const [products, categoryList, categoryTreeList] = await Promise.all([
+        fetchMyProducts(),
+        fetchCategories(),
+        fetchCategoryTreeOptions(),
+      ])
       setList(products)
       setCategories(categoryList)
+      setCategoryTree(categoryTreeList)
       const counts: Record<string, number> = {}
       await Promise.all(
         products.map(async (item) => {
@@ -73,17 +86,7 @@ export default function MyProductListPage() {
     return map
   }, [categories])
 
-  const categoryOptions = useMemo<SelectOption[]>(
-    () =>
-      categories
-        .slice()
-        .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-        .map((item) => ({
-          label: `${'　'.repeat(item.level - 1)}${item.name}${item.status === 'disabled' ? '（已禁用）' : ''}`,
-          value: item.id,
-        })),
-    [categories],
-  )
+  const categoryOptions = useMemo<TreeOption[]>(() => categoryTree, [categoryTree])
 
   const rows = useMemo(() => {
     let data = list
@@ -94,17 +97,16 @@ export default function MyProductListPage() {
     if (query.name.trim()) {
       data = data.filter((item) => item.name.includes(query.name.trim()))
     }
-    if (query.source) {
-      data = data.filter((item) => item.source === query.source)
-    }
     if (query.categoryId) {
-      data = data.filter((item) => item.categoryId === query.categoryId)
+      /** 选中父级分类时，命中其下所有子级分类 */
+      const matched = new Set(collectTreeValues(categoryOptions, query.categoryId))
+      data = data.filter((item) => matched.has(item.categoryId))
     }
     if (query.useStatus) {
       data = data.filter((item) => item.useStatus === query.useStatus)
     }
     return data
-  }, [list, query])
+  }, [list, query, categoryOptions])
 
   useEffect(() => {
     setPage(1)
@@ -168,17 +170,6 @@ export default function MyProductListPage() {
       ),
     },
     {
-      key: 'source',
-      title: '产品来源',
-      width: 130,
-      render: (row) => (
-        <span className="my-source-cell" title={myProductSourceTip[row.source]}>
-          <Tag tone={myProductSourceTone[row.source]}>{myProductSourceText[row.source]}</Tag>
-          {row.source === 'referenced' && <span className="my-source-readonly-tip">只读</span>}
-        </span>
-      ),
-    },
-    {
       key: 'categoryId',
       title: '产品分类',
       width: 116,
@@ -201,9 +192,7 @@ export default function MyProductListPage() {
       title: '使用状态',
       width: 90,
       render: (row) => (
-        <span title={row.source === 'referenced' ? '引用标准产品：上下架随后台产品信息库' : undefined}>
-          <Tag tone={myProductUseStatusTone[row.useStatus]}>{myProductUseStatusText[row.useStatus]}</Tag>
-        </span>
+        <Tag tone={myProductUseStatusTone[row.useStatus]}>{myProductUseStatusText[row.useStatus]}</Tag>
       ),
     },
     {
@@ -221,30 +210,26 @@ export default function MyProductListPage() {
           <button className="link" onClick={() => navigate(`/pcf/my-product/${row.id}`)}>
             查看
           </button>
-          {row.source === 'custom' && (
-            <>
-              <button className="link" onClick={() => navigate(`/pcf/my-product/${row.id}/edit`)}>
-                编辑
-              </button>
-              {row.useStatus === 'off' ? (
-                <button className="link" onClick={() => setConfirm({ product: row, target: 'on' })}>
-                  上架
-                </button>
-              ) : (
-                <button className="link link-danger" onClick={() => setConfirm({ product: row, target: 'off' })}>
-                  下架
-                </button>
-              )}
-              <button
-                className="link link-danger"
-                disabled={(refCountMap[row.id] ?? 0) > 0}
-                title={(refCountMap[row.id] ?? 0) > 0 ? '该产品已被核算项目引用，不可删除' : undefined}
-                onClick={() => setDeleting(row)}
-              >
-                删除
-              </button>
-            </>
+          <button className="link" onClick={() => navigate(`/pcf/my-product/${row.id}/edit`)}>
+            编辑
+          </button>
+          {row.useStatus === 'off' ? (
+            <button className="link" onClick={() => setConfirm({ product: row, target: 'on' })}>
+              上架
+            </button>
+          ) : (
+            <button className="link link-danger" onClick={() => setConfirm({ product: row, target: 'off' })}>
+              下架
+            </button>
           )}
+          <button
+            className="link link-danger"
+            disabled={(refCountMap[row.id] ?? 0) > 0}
+            title={(refCountMap[row.id] ?? 0) > 0 ? '该产品已被核算项目引用，不可删除' : undefined}
+            onClick={() => setDeleting(row)}
+          >
+            删除
+          </button>
         </span>
       ),
     },
@@ -255,19 +240,15 @@ export default function MyProductListPage() {
       <PageHeader
         breadcrumb={MY_PRODUCT_BREADCRUMB}
         title="我的产品库"
-        description="组织自建产品的维护面 + 核算人员的引用面；产品 = 基本信息 + 工艺 + 工序的组合，不做版本化"
         actions={
-          <>
-            <Button onClick={() => setReferenceOpen(true)}>引用标准产品</Button>
-            <Button variant="primary" onClick={() => navigate('/pcf/my-product/new')}>
-              新增
-            </Button>
-          </>
+          <Button variant="primary" data-ann-target="my-product-add" onClick={() => setCreateOpen(true)}>
+            新增
+          </Button>
         }
       />
 
-      <div className="card">
-        <div className="query-bar">
+      <div className="card" data-ann-target="my-product-list">
+        <div className="query-bar" data-ann-target="my-product-query">
           <div className="query-item">
             <span className="query-label">产品编码</span>
             <Input
@@ -285,24 +266,14 @@ export default function MyProductListPage() {
             />
           </div>
           <div className="query-item">
-            <span className="query-label">产品来源</span>
-            <Select
-              value={query.source}
-              placeholder="全部"
-              options={[
-                { label: '引用标准产品', value: 'referenced' },
-                { label: '自己新增', value: 'custom' },
-              ]}
-              onChange={(e) => setQuery((prev) => ({ ...prev, source: e.target.value as '' | MyProductSource }))}
-            />
-          </div>
-          <div className="query-item">
             <span className="query-label">产品分类</span>
-            <Select
+            <CascaderSelect
               value={query.categoryId}
               placeholder="全部"
               options={categoryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, categoryId: e.target.value }))}
+              allowParent
+              searchPlaceholder="搜索分类名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, categoryId: value }))}
             />
           </div>
           <div className="query-item">
@@ -328,11 +299,8 @@ export default function MyProductListPage() {
         <div className="toolbar">
           <div className="flex gap-sm">
             <span className="toolbar-title">产品列表</span>
-            <span className="toolbar-tip">
-              共 {rows.length} 条 · 引用标准产品只读、自己新增可维护；列表仅展示核心字段，其余请进入详情页查看
-            </span>
+            <span className="toolbar-tip">共 {rows.length} 条</span>
           </div>
-          <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>
         </div>
 
         <div className="product-table-wrap">
@@ -341,6 +309,41 @@ export default function MyProductListPage() {
 
         <Pagination total={rows.length} page={page} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
+
+      <Modal
+        open={createOpen}
+        title="新增产品"
+        size="sm"
+        onClose={() => setCreateOpen(false)}
+        footer={<Button onClick={() => setCreateOpen(false)}>取消</Button>}
+      >
+        <div className="my-create-choices">
+          <button
+            type="button"
+            className="my-create-choice"
+            data-ann-target="my-product-reference"
+            onClick={() => {
+              setCreateOpen(false)
+              setReferenceOpen(true)
+            }}
+          >
+            <span className="my-create-choice-title">引用产品库</span>
+            <span className="my-create-choice-desc">从平台级产品信息库复制一份标准产品到本组织</span>
+          </button>
+          <button
+            type="button"
+            className="my-create-choice"
+            data-ann-target="my-product-custom"
+            onClick={() => {
+              setCreateOpen(false)
+              navigate('/pcf/my-product/new')
+            }}
+          >
+            <span className="my-create-choice-title">自定义产品</span>
+            <span className="my-create-choice-desc">从零新建组织自建产品</span>
+          </button>
+        </div>
+      </Modal>
 
       <MyProductReferenceModal
         open={referenceOpen}
@@ -375,9 +378,7 @@ export default function MyProductListPage() {
             <div>
               确认删除产品「{deleting?.name}」（{deleting?.code}）？
             </div>
-            <div className="modal-confirm-tip">
-              删除后不可恢复；仅「自己新增且未被核算项目引用」的组织自建产品可删除，引用标准产品不可删除。
-            </div>
+            <div className="modal-confirm-tip">删除后不可恢复。</div>
           </div>
         </div>
       </Modal>

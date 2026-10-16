@@ -26,6 +26,7 @@ import IndustryDetailPanel from './IndustryDetailPanel'
 import IndustryFormModal from './IndustryFormModal'
 import IndustryViewModal from './IndustryViewModal'
 import {
+  INDUSTRY_MAX_LEVEL,
   INDUSTRY_ROOT_ID,
   INDUSTRY_ROOT_NAME,
   buildIndustryTree,
@@ -98,7 +99,7 @@ export default function IndustryListPage() {
     return list.find((item) => item.id === selectedId)?.name ?? INDUSTRY_ROOT_NAME
   }, [list, selectedId, isRootSelected])
 
-  /** 右表 = 所选节点的直接子级（选中「全部行业」时展示一级行业） */
+  /** 右表 = 所选节点的直接子级（选中「全部行业」时展示门类） */
   const rows = useMemo(() => {
     const parentId = selectedId === INDUSTRY_ROOT_ID ? null : selectedId
     let data = getDirectChildren(list, parentId)
@@ -121,7 +122,7 @@ export default function IndustryListPage() {
 
   const pagedRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  /** 上级行业候选：仅一级行业（仅两级），编辑时排除自身与其后代 */
+  /** 上级行业候选：非末级行业（门类 / 大类 / 中类），编辑时排除自身与其后代 */
   const parentOptions = useMemo<SelectOption[]>(() => {
     const excluded = new Set<string>()
     if (form.mode === 'edit' && form.initial) {
@@ -129,7 +130,7 @@ export default function IndustryListPage() {
       collectDescendantIds(list, form.initial.id).forEach((id) => excluded.add(id))
     }
     return list
-      .filter((item) => item.level === 1 && !excluded.has(item.id))
+      .filter((item) => item.level < INDUSTRY_MAX_LEVEL && !excluded.has(item.id))
       .sort((a, b) => (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
       .map((item) => ({
         label: `${item.name}（${item.code}）`,
@@ -141,10 +142,10 @@ export default function IndustryListPage() {
     setForm({ open: true, mode: 'create', initial: null, defaultParentId: parentId, lockParent })
   }
 
-  /** 上级行业锁定时展示的文案：一级行业为「无上级（一级行业）」 */
+  /** 上级行业锁定时展示的文案：门类为「无上级（门类）」 */
   const lockedParentLabel = useMemo(() => {
     if (!form.lockParent) return undefined
-    if (!form.defaultParentId) return '无上级（一级行业）'
+    if (!form.defaultParentId) return '无上级（门类）'
     return list.find((item) => item.id === form.defaultParentId)?.name ?? '—'
   }, [form.lockParent, form.defaultParentId, list])
 
@@ -180,32 +181,28 @@ export default function IndustryListPage() {
     }
   }
 
-  const handleExport = () => {
-    toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)
-  }
-
   const columns: Column<IndustryItem>[] = [
     {
       key: 'code',
-      title: '行业编码',
+      title: <span data-ann-target="industry.col.code">行业编码</span>,
       width: 120,
       render: (row) => (
-        <button className="link mono" onClick={() => setViewItem(row)}>
+        <button className="link mono" data-ann-target="industry.row.code" onClick={() => setViewItem(row)}>
           {row.code}
         </button>
       ),
     },
-    { key: 'name', title: '行业名称', width: 180 },
-    { key: 'level', title: '行业层级', width: 90, render: (row) => levelText(row.level) },
+    { key: 'name', title: <span data-ann-target="industry.col.name">行业名称</span>, width: 180 },
+    { key: 'level', title: <span data-ann-target="industry.col.level">行业层级</span>, width: 90, render: (row) => levelText(row.level) },
     {
       key: 'sortNo',
-      title: '排序号',
+      title: <span data-ann-target="industry.col.sortNo">排序号</span>,
       width: 80,
       render: (row) => (row.sortNo == null ? '-' : String(row.sortNo)),
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="industry.col.status">使用状态</span>,
       width: 90,
       render: (row) => <Tag tone={useStatusTone[row.status]}>{useStatusText[row.status]}</Tag>,
     },
@@ -221,14 +218,15 @@ export default function IndustryListPage() {
       width: 140,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => setViewItem(row)}>
+          <button className="link" data-ann-target="industry.row.view" onClick={() => setViewItem(row)}>
             查看
           </button>
-          <button className="link" onClick={() => openEdit(row)}>
+          <button className="link" data-ann-target="industry.row.edit" onClick={() => openEdit(row)}>
             编辑
           </button>
           <button
             className={row.status === 'enabled' ? 'link link-danger' : 'link'}
+            data-ann-target={row.status === 'enabled' ? 'industry.row.disable' : 'industry.row.enable'}
             onClick={() => setConfirm({ item: row, target: row.status === 'enabled' ? 'disabled' : 'enabled' })}
           >
             {row.status === 'enabled' ? '禁用' : '启用'}
@@ -238,28 +236,28 @@ export default function IndustryListPage() {
     },
   ]
 
-  /** 选中的是一级行业时才允许「新增下级行业」（仅两级） */
+  /** 选中的是非末级行业时才允许「新增下级行业」（四级：门类 → 大类 → 中类 → 小类） */
   const selectedItem = list.find((item) => item.id === selectedId)
-  const canAddChild = !!selectedItem && selectedItem.level === 1
+  const canAddChild = !!selectedItem && selectedItem.level < INDUSTRY_MAX_LEVEL
 
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '行业库']}
-        title="行业库"
-        description="轻量行业字典 · 左树 + 右表 + 弹窗；仅维护行业分类（一级 / 二级），行业参数由各模块按「适用行业」关联"
+        breadcrumb={['系统管理', '基础库', '行业库']}
+        title={<span data-ann-target="industry.page.global">行业库</span>}
+        description="轻量行业字典 · 左树 + 右表 + 弹窗；按《国民经济行业分类》GB/T 4754 维护四级分类（门类 / 大类 / 中类 / 小类），行业参数由各模块按「适用行业」关联"
         actions={
-          <Button variant="primary" onClick={() => openCreate(null, false)}>
+          <Button variant="primary" data-ann-target="industry.add.level1" onClick={() => openCreate(null, false)}>
             新增
           </Button>
         }
       />
 
       <div className="card workbench">
-        <aside className="workbench-tree">
+        <aside className="workbench-tree" data-ann-target="industry.page.tree">
           <div className="workbench-tree-header">
             <span className="workbench-tree-title">行业树</span>
-            <span className="toolbar-tip">两级</span>
+            <span className="toolbar-tip">四级（GB/T 4754）</span>
           </div>
           <Tree
             data={treeData}
@@ -268,11 +266,11 @@ export default function IndustryListPage() {
             onSelect={(node) => setSelectedId(node.id)}
           />
           <div className="workbench-tree-actions">
-            <Button size="small" onClick={() => openCreate(null, true)}>
-              + 新增一级行业
+            <Button size="small" data-ann-target="industry.add.level1" onClick={() => openCreate(null, true)}>
+              + 新增门类
             </Button>
             {canAddChild && (
-              <Button size="small" onClick={() => openCreate(selectedId, true)}>
+              <Button size="small" data-ann-target="industry.add.child" onClick={() => openCreate(selectedId, true)}>
                 + 新增下级行业
               </Button>
             )}
@@ -282,7 +280,7 @@ export default function IndustryListPage() {
         <section className="workbench-main">
           {isRootSelected || !selectedItem ? (
             <>
-              <div className="query-bar">
+              <div className="query-bar" data-ann-target="industry.query.bar">
                 <div className="query-item">
                   <span className="query-label">行业编码</span>
                   <Input
@@ -312,8 +310,8 @@ export default function IndustryListPage() {
                   />
                 </div>
                 <div className="query-actions">
-                  <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-                  <Button variant="primary" onClick={() => toast('查询完成')}>
+                  <Button data-ann-target="industry.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
+                  <Button variant="primary" data-ann-target="industry.query.search" onClick={() => toast('查询完成')}>
                     搜索
                   </Button>
                 </div>
@@ -323,13 +321,12 @@ export default function IndustryListPage() {
                 <div className="flex gap-sm">
                   <span className="toolbar-title">{selectedName}</span>
                   <span className="toolbar-tip">
-                    共 {rows.length} 条 · 展示一级行业；点击左侧行业树节点查看该行业详情
+                    共 {rows.length} 条 · 展示门类；点击左侧行业树节点查看该行业详情
                   </span>
                 </div>
-                <Button onClick={handleExport}>导出</Button>
               </div>
 
-              <div className="workbench-table-wrap">
+              <div className="workbench-table-wrap" data-ann-target="industry.page.list">
                 <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
               </div>
 

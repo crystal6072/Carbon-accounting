@@ -192,47 +192,47 @@ export default function UnitListPage() {
     },
     {
       key: 'name',
-      title: '单位名称',
+      title: <span data-ann-target="unit.col.name">单位名称</span>,
       width: 130,
       render: (row) => (
-        <button className="link" onClick={() => openView(row.id)}>
+        <button className="link" data-ann-target="unit.row.view" onClick={() => openView(row.id)}>
           {row.name}
         </button>
       ),
     },
     {
       key: 'symbol',
-      title: '单位符号',
+      title: <span data-ann-target="unit.col.symbol">单位符号</span>,
       width: 96,
       render: (row) => <span className="mono nowrap">{row.symbol}</span>,
     },
     {
       key: 'unitType',
-      title: '单位类型',
+      title: <span data-ann-target="unit.col.unitType">单位类型</span>,
       width: 100,
       render: (row) => <Tag tone={unitTypeTone[row.unitType]}>{unitTypeText[row.unitType]}</Tag>,
     },
     {
       key: 'isBase',
-      title: '基准标记',
+      title: <span data-ann-target="unit.col.isBase">基准标记</span>,
       width: 100,
       render: (row) => <Tag tone={row.isBase ? 'success' : 'default'}>{baseFlagText(row)}</Tag>,
     },
     {
       key: 'baseUnit',
-      title: '关联基准单位',
+      title: <span data-ann-target="unit.col.baseUnit">关联基准单位</span>,
       width: 110,
       render: (row) => <span className="nowrap">{baseUnitText(row)}</span>,
     },
     {
       key: 'factor',
-      title: '换算系数',
+      title: <span data-ann-target="unit.col.factor">换算系数</span>,
       width: 90,
       render: (row) => <span className="nowrap">{factorText(row)}</span>,
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="unit.col.status">使用状态</span>,
       width: 90,
       render: (row) => <Tag tone={useStatusTone[row.status]}>{useStatusText[row.status]}</Tag>,
     },
@@ -245,23 +245,23 @@ export default function UnitListPage() {
           <button className="link" onClick={() => openView(row.id)}>
             查看
           </button>
-          <button className="link" onClick={() => navigate(`/basic/unit/${row.id}/edit`)}>
+          <button className="link" data-ann-target="unit.row.edit" onClick={() => navigate(`/basic/unit/${row.id}/edit`)}>
             编辑
           </button>
           {row.status === 'enabled' ? (
             canDisableUnit(row) && (
-              <button className="link link-danger" onClick={() => setConfirm({ unit: row, mode: 'disable' })}>
+              <button className="link link-danger" data-ann-target="unit.row.disable" onClick={() => setConfirm({ unit: row, mode: 'disable' })}>
                 禁用
               </button>
             )
           ) : (
-            <button className="link" onClick={() => setConfirm({ unit: row, mode: 'enable' })}>
+            <button className="link" data-ann-target="unit.row.enable" onClick={() => setConfirm({ unit: row, mode: 'enable' })}>
               启用
             </button>
           )}
           {/* 删除仅对「已禁用」的非基准单位开放，其余状态隐藏入口 */}
           {canDeleteUnit(row) && (
-            <button className="link link-danger" onClick={() => setConfirm({ unit: row, mode: 'delete' })}>
+            <button className="link link-danger" data-ann-target="unit.row.delete" onClick={() => setConfirm({ unit: row, mode: 'delete' })}>
               删除
             </button>
           )}
@@ -273,18 +273,18 @@ export default function UnitListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '计量单位库']}
-        title="计量单位库"
+        breadcrumb={['系统管理', '基础库', '计量单位库']}
+        title={<span data-ann-target="unit.page.global">计量单位库</span>}
         description="一本单位字典：单位类型为系统内置枚举，不开放维护；换算按「基准中转」"
         actions={
-          <Button variant="primary" onClick={() => navigate('/basic/unit/new')}>
+          <Button variant="primary" data-ann-target="unit.add" onClick={() => navigate('/basic/unit/new')}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="unit.query.bar">
           <div className="query-item">
             <span className="query-label">单位名称</span>
             <Input
@@ -323,8 +323,8 @@ export default function UnitListPage() {
             />
           </div>
           <div className="query-actions">
-            <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-            <Button variant="primary" onClick={() => toast('查询完成')}>
+            <Button data-ann-target="unit.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
+            <Button variant="primary" data-ann-target="unit.query.search" onClick={() => toast('查询完成')}>
               搜索
             </Button>
           </div>
@@ -340,6 +340,7 @@ export default function UnitListPage() {
           <div className="flex gap-xs">
             <Button
               size="small"
+              data-ann-target="unit.batch.enable"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchMode('enable')}
             >
@@ -347,16 +348,16 @@ export default function UnitListPage() {
             </Button>
             <Button
               size="small"
+              data-ann-target="unit.batch.delete"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchMode('delete')}
             >
               批量删除
             </Button>
-            <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>
           </div>
         </div>
 
-        <div className="unit-table-wrap">
+        <div className="unit-table-wrap" data-ann-target="unit.page.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
         </div>
 

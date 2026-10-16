@@ -65,31 +65,19 @@ export default function CalcFormulaDetailPage() {
   }
 
   const factorColumns: Column<FormulaFactor>[] = [
-    { key: 'name', title: '因素名称', width: 150, render: (row) => <span className="nowrap">{row.name}</span> },
+    { key: 'name', title: '因素名称', width: 200, render: (row) => <span className="nowrap">{row.name}</span> },
     {
       key: 'sourceType',
-      title: '因素来源',
-      width: 110,
+      title: '因素类型',
+      width: 140,
       render: (row) => <Tag tone="info">{factorSourceTypeText[row.sourceType]}</Tag>,
     },
-    { key: 'sourceLib', title: '来源库', width: 110, render: (row) => row.sourceLib || '-' },
-    {
-      key: 'sourceName',
-      title: '引用对象',
-      width: 200,
-      render: (row) =>
-        row.sourceType === 'factor'
-          ? `${row.sourceName || '-'}${row.sourceCode ? `（${row.sourceCode}）` : ''}`
-          : '-',
-    },
-    { key: 'value', title: '因素数值', width: 120, render: (row) => <span className="mono">{row.value || '-'}</span> },
-    { key: 'unit', title: '单位', width: 140, render: (row) => <span className="mono">{row.unit || '-'}</span> },
   ]
 
   if (!formula) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '核算配置', '计算公式']} title="公式详情" />
+        <PageHeader breadcrumb={['系统管理', '核算配置', '计算公式']} title="公式详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '公式不存在或已被删除'}</div>
         </div>
@@ -100,7 +88,7 @@ export default function CalcFormulaDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '核算配置', '计算公式', formula.name]}
+        breadcrumb={['系统管理', '核算配置', '计算公式', formula.name]}
         title={formula.name}
         description={`${formula.code} · ${formulaTypeText[formula.formulaType]}`}
         actions={
@@ -154,12 +142,6 @@ export default function CalcFormulaDetailPage() {
               <div className="detail-item">
                 <span className="detail-label">公式类型</span>
                 <span className="detail-value">{formulaTypeText[formula.formulaType]}</span>
-              </div>
-              <div className="detail-item ce-detail-item-full">
-                <span className="detail-label">适用行业</span>
-                <span className="detail-value">
-                  {formula.industries.length > 0 ? formula.industries.join('、') : '全行业通用'}
-                </span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">使用状态</span>

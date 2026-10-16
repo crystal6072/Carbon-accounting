@@ -35,7 +35,7 @@ export default function MaterialBatchResultModal({
         </Button>
       }
     >
-      <div className="modal-confirm-text">
+      <div className="modal-confirm-text" data-ann-target="material.batch.result">
         <div>
           批量{status === 'enabled' ? '启用' : '停用'}完成：成功 <strong>{result?.success ?? 0}</strong> 条，
           跳过 <strong>{result?.failed.length ?? 0}</strong> 条。跳过条目未做任何改动。

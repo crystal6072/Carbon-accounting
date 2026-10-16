@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Input, Modal, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
 import type { Column } from '@/shared/components'
-import { fetchBackendProducts, fetchMyProducts, referenceBackendProducts } from '@/mock'
+import { fetchBackendProducts, fetchCategories, fetchMyProducts, referenceBackendProducts } from '@/mock'
 import type { MyProductBatchResult } from '@/mock'
 import type { CategoryItem, ProductItem } from '@/types'
 import '@/pages/product/ProductPage.css'
@@ -18,8 +18,8 @@ interface MyProductReferenceModalProps {
 
 /**
  * 前台「我的产品库」→ 引用标准产品：
- * 从平台级产品信息库（`PUBLIC`）勾选引用到本组织，**引用 = 只读指向、不落库**（PRD Q02），
- * 引用后在本模块可见且只读，不可编辑 / 删除，上下架状态随后台；已引用的置灰不可重复引用。
+ * 从平台级产品信息库（`PUBLIC`）勾选引用到本组织，**引用 = 复制一份、可编辑副本**（业务裁定 V1.1），
+ * 复制后在本模块可见且可编辑 / 上下架 / 删除，平台源头更新不回写本副本；已复制的置灰不可重复复制。
  */
 export default function MyProductReferenceModal({ open, onClose, onSubmitted }: MyProductReferenceModalProps) {
   const toast = useToast()
@@ -36,9 +36,14 @@ export default function MyProductReferenceModal({ open, onClose, onSubmitted }: 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [products, mine] = await Promise.all([fetchBackendProducts(), fetchMyProducts()])
+      const [products, mine, categoryList] = await Promise.all([
+        fetchBackendProducts(),
+        fetchMyProducts(),
+        fetchCategories(),
+      ])
       setList(products)
-      // 已引用清单：引用项与平台产品同 id（引用不落库，只读指向）
+      setCategories(categoryList)
+      // 已复制清单：引用副本与平台产品同 id（引用 = 复制一份到本组织）
       setReferencedIds(mine.filter((item) => item.source === 'referenced').map((item) => item.id))
     } finally {
       setLoading(false)
@@ -192,8 +197,8 @@ export default function MyProductReferenceModal({ open, onClose, onSubmitted }: 
       }
     >
       <div className="view-block">
-        <div className="my-reference-modal-tip">
-          引用 = 只读指向平台级产品（不落库）：**仅可引用已上架的平台级标准产品，下架产品不在本列表展示**；引用后在本模块可见且只读，不可编辑 / 删除，上下架状态随后台产品信息库。
+        <div className="my-reference-modal-tip" data-ann-target="my-product-reference">
+          仅可引用已上架的平台级标准产品；引用后将复制一份可编辑副本到本组织。
         </div>
         <div className="view-block-title flex-between">
           <span>平台级产品信息库（后台 · `PUBLIC` · 已上架）</span>

@@ -117,16 +117,6 @@ export default function CalcFormulaListPage() {
       width: 124,
       render: (row) => <Tag tone="info">{formulaTypeText[row.formulaType]}</Tag>,
     },
-    {
-      key: 'industries',
-      title: '适用行业',
-      width: 190,
-      render: (row) => (
-        <span className="cell-ellipsis" title={row.industries.join('、')}>
-          {row.industries.length > 0 ? row.industries.join('、') : '全行业通用'}
-        </span>
-      ),
-    },
     { key: 'factors', title: '数据因素', width: 90, render: (row) => `${row.factors.length} 项` },
     {
       key: 'status',
@@ -178,7 +168,7 @@ export default function CalcFormulaListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '核算配置', '计算公式']}
+        breadcrumb={['系统管理', '核算配置', '计算公式']}
         title="公式配置"
         description="维护计算公式与数据因素：公式类型按输入口径分类（因子公式、能耗公式、碳排公式、其他）；公式只解决“一类计算项怎么算”，与生命周期阶段无关、可跨阶段复用，阶段归属与排放源绑定在建模时配置"
         actions={

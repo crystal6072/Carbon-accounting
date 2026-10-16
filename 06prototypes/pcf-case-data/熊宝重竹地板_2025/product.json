@@ -1,0 +1,30 @@
+{
+  "caseId": "PCF-XB-RB-FLOOR-2025",
+  "caseType": "真实业务案例复现数据（脱敏测试夹具）",
+  "company": "熊宝科技（脱敏案例）",
+  "productName": "重竹地板",
+  "specification": "1860 × 140 × 20 mm",
+  "functionalUnit": { "value": 1, "unit": "块" },
+  "netWeight": { "value": 5.53, "unit": "kg" },
+  "area": { "value": 0.2604, "unit": "m²", "formula": "1.860 × 0.140" },
+  "dataPeriod": { "start": "2025-01-01", "end": "2025-12-31" },
+  "boundary": "A1-C4",
+  "standardReferences": [
+    "ISO 14040:2006",
+    "ISO 14044:2006",
+    "ISO 14067:2018",
+    "EN 15804+A2:2019（模块映射）"
+  ],
+  "allocation": {
+    "method": "质量分配",
+    "scope": "A3车间能源与公用工程",
+    "ratio": 1,
+    "evidenceId": "XB-2025-ALLOC-MASS-001",
+    "note": "原案例已将分摊后的单位产品活动量写入本数据包；正式系统应同时保存总量、产量和分配比例。"
+  },
+  "biogenicCarbon": {
+    "accountingMode": "单独列示并计算净气候影响",
+    "note": "负值表示吸收或系统边界扣减，正值表示释放；不得与化石因子混成一个不可解释的因子。"
+  },
+  "sourceNote": "项目内熊宝案例附件及《熊宝_产品碳足迹业务推演与公式.md》；因子值是核算快照，非公开数据库授权证明。"
+}

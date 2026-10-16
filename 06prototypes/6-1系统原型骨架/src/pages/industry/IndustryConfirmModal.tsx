@@ -20,8 +20,8 @@ export default function IndustryConfirmModal({ open, item, target, onClose, onCo
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" onClick={onConfirm}>
+          <Button data-ann-target="industry.confirm.cancel" onClick={onClose}>取消</Button>
+          <Button variant="primary" data-ann-target="industry.confirm.ok" onClick={onConfirm}>
             {isEnable ? '确认启用' : '确认禁用'}
           </Button>
         </>

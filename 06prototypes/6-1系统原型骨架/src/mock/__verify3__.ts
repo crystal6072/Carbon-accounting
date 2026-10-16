@@ -30,11 +30,14 @@ async function main() {
   console.log('① 创建后 fetchPcfProject.lifecycleStages =', JSON.stringify((await fetchPcfProject(project.id)).lifecycleStages))
 
   // 2. 模拟步骤① deriveStages（gate 边界）
-  const ruleOf = (s: any) => (project.boundary === 'gate' ? s.gateRule : s.graveRule)
   const stages = allStages
-    .filter((s) => s.status === 'enabled' && ruleOf(s) !== 'excluded' && (s.industries.length === 0 || s.industries.includes(product.industry)))
+    .filter(
+      (s) =>
+        s.status === 'enabled' &&
+        (s.boundaries.length === 0 || s.boundaries.includes(project.boundary)),
+    )
     .sort((a, b) => a.order - b.order)
-    .map((s) => ({ id: s.id, name: s.name, level: s.level, parentName: '', custom: false, rule: ruleOf(s), included: true }))
+    .map((s) => ({ id: s.id, name: s.name, level: s.level, parentName: '', custom: false, included: true }))
   console.log('② 步骤① deriveStages =', stages.map((s) => `${s.name}(included=${s.included})`).join('、'))
 
   // 3. 保存步骤①

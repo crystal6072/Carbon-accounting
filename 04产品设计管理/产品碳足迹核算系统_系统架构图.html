@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>产品碳足迹核算系统 · 系统架构图</title>
+<style>
+  :root{
+    --bg:#eef4fb;
+    --card:#ffffff;
+    --card-soft:#f2f8ff;
+    --line:#c9dcf4;
+    --line-soft:#dceaf9;
+    --blue:#2e6fd6;
+    --blue-d:#1f4e9c;
+    --ink:#1d3350;
+    --ink-2:#6a83a4;
+    --user:#3e7bdb;
+    --user-d:#2b60b8;
+    --inter:#3568c8;
+    --inter-d:#24508f;
+    --app:#5a6bd8;
+    --app-d:#414fbb;
+    --cap:#7d6bd8;
+    --cap-d:#5f4cbe;
+    --base:#2b5aa8;
+    --base-d:#1c3f7d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:34px 24px 46px;
+    background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1300px;margin:0 auto;}
+
+  /* ---------- 头部 ---------- */
+  header{text-align:center;margin-bottom:24px;}
+  header .ribbon{
+    display:inline-block;
+    padding:7px 26px;
+    border-radius:999px;
+    font-size:13px;
+    letter-spacing:.42em;
+    text-indent:.42em;
+    color:#2b6fd0;
+    background:#fff;
+    border:1px solid var(--line);
+    box-shadow:0 2px 8px rgba(46,111,214,.08);
+  }
+  header h1{
+    margin:14px 0 6px;
+    font-size:30px;
+    letter-spacing:.06em;
+    font-weight:700;
+    background:linear-gradient(90deg,#24508f,#3e7bdb 45%,#6a6ad8);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  header p{
+    margin:0;
+    font-size:13.5px;
+    color:var(--ink-2);
+    letter-spacing:.05em;
+  }
+
+  /* ---------- 层骨架 ---------- */
+  .stack{display:flex;flex-direction:column;}
+  .layer{
+    display:grid;
+    grid-template-columns:104px 1fr;
+    gap:14px;
+    align-items:stretch;
+  }
+  .tag{
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    writing-mode:vertical-rl;
+    text-orientation:upright;
+    letter-spacing:.34em;
+    font-size:16px;
+    font-weight:700;
+    color:#fff;
+    padding:18px 0;
+    box-shadow:0 6px 16px rgba(31,78,156,.18);
+    background:linear-gradient(180deg,#3e7bdb,#2b60b8);
+  }
+  .tag small{
+    display:block;
+    font-weight:400;
+    font-size:10.5px;
+    letter-spacing:.2em;
+    opacity:.82;
+    margin-top:8px;
+  }
+  .body{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px 18px;
+    box-shadow:0 3px 12px rgba(46,111,214,.06);
+  }
+
+  .tag.user{background:linear-gradient(180deg,#4b8ae6,#3e7bdb);}
+  .tag.inter{background:linear-gradient(180deg,#3d74d4,#3568c8);}
+  .tag.app{background:linear-gradient(180deg,#6b7ae2,#5a6bd8);}
+  .tag.cap{background:linear-gradient(180deg,#8d7ce2,#7d6bd8);}
+  .tag.base{background:linear-gradient(180deg,#3568b8,#2b5aa8);}
+
+  /* ---------- 连接箭头 ---------- */
+  .connector{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#8fb4e4;
+    padding:5px 0;
+  }
+  .connector svg{width:16px;height:30px;}
+
+  /* ---------- 通用 chip / 卡片 ---------- */
+  .grid{display:grid;gap:10px;}
+  .g-role{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  .g-inter{grid-template-columns:repeat(auto-fit,minmax(168px,1fr));}
+  .g-cap{grid-template-columns:repeat(auto-fit,minmax(228px,1fr));}
+
+  .chip{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    background:var(--card-soft);
+    border:1px solid var(--line-soft);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    line-height:1.25;
+  }
+  .chip .ico{
+    flex:none;
+    width:30px;height:30px;
+    border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--blue);
+  }
+  .chip b{font-weight:600;display:block;font-size:13px;}
+  .chip i{font-style:normal;display:block;font-size:11px;color:var(--ink-2);margin-top:2px;}
+
+  .ic{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* ---------- 应用层 ---------- */
+  .app-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .block{
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    padding:12px 13px;
+    background:linear-gradient(180deg,#f7fbff,#f0f7ff);
+  }
+  .block.full{grid-column:1 / -1;}
+  .block .btitle{
+    display:flex;align-items:center;gap:8px;
+    font-size:13.5px;font-weight:700;
+    color:#42509c;
+    margin-bottom:10px;
+  }
+  .block .btitle .dot{
+    width:8px;height:8px;border-radius:3px;
+    background:linear-gradient(135deg,#6b7ae2,#414fbb);
+  }
+  .block .btitle span.sub{
+    font-weight:400;font-size:11px;color:var(--ink-2);margin-left:auto;
+  }
+  .sublabel{
+    font-size:11px;color:#6a86ab;letter-spacing:.05em;
+    margin:8px 0 6px;
+  }
+  .pills{display:flex;flex-wrap:wrap;gap:7px;}
+  .pill{
+    font-size:12px;
+    padding:6px 11px;
+    border-radius:8px;
+    background:#fff;
+    border:1px solid var(--line-soft);
+    color:#3b5a86;
+    white-space:nowrap;
+  }
+  .pill.solid{
+    background:#eef4ff;
+    border-color:#cfdff8;
+    color:#3b4ea8;
+    font-weight:500;
+  }
+
+  /* ---------- 能力支撑 ---------- */
+  .capcard{
+    background:linear-gradient(180deg,#fbf9ff,#f4f1ff);
+    border:1px solid #e2ddf7;
+    border-radius:12px;
+    padding:13px 13px 12px;
+  }
+  .capcard .head{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+  .capcard .head .ico{
+    width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    background:#fff;border:1px solid #ded6f6;color:var(--cap-d);
+  }
+  .capcard b{font-size:13.5px;color:#4d43a0;letter-spacing:.01em;}
+  .capcard ul{margin:0;padding-left:0;list-style:none;}
+  .capcard li{
+    font-size:11.5px;color:#6b6a92;line-height:1.55;
+    padding-left:11px;position:relative;
+  }
+  .capcard li::before{
+    content:"";position:absolute;left:0;top:7px;
+    width:4px;height:4px;border-radius:50%;background:#b3a8e8;
+  }
+
+  /* ---------- 基础支撑 ---------- */
+  .base-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .base-block{
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    padding:12px 13px;
+    background:linear-gradient(180deg,#f7fbff,#eff6ff);
+  }
+  .base-block .btitle{
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:700;color:#2b5aa8;margin-bottom:9px;
+  }
+  .base-block .btitle .dot{
+    width:8px;height:8px;border-radius:3px;background:linear-gradient(135deg,#4b8ae6,#2b5aa8);
+  }
+  .base-block .btitle span.sub{font-weight:400;font-size:10.5px;color:var(--ink-2);margin-left:auto;}
+
+  /* ---------- 底部 ---------- */
+  footer{
+    margin-top:22px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:10px;
+  }
+  .fnote{
+    background:#fff;border:1px dashed var(--line);
+    border-radius:10px;padding:10px 13px;
+    font-size:11.5px;color:var(--ink-2);line-height:1.6;
+  }
+  .fnote b{color:#2b5aa8;font-weight:600;}
+
+  @media (max-width:960px){
+    .app-row,.base-row{grid-template-columns:1fr;}
+    .layer{grid-template-columns:76px 1fr;}
+    .tag{font-size:14px;}
+  }
+  @media print{
+    body{background:#fff;padding:0;}
+    .body,.block,.capcard,.base-block{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="ribbon">通用 · 可配置 · 可追溯 · 可审计</div>
+    <h1>产品碳足迹核算系统 · 系统架构图</h1>
+    <p>通用产品碳足迹（PCF）核算平台 · 不绑定行业与单一标准 · 木竹产品为首个验证场景</p>
+  </header>
+
+  <div class="stack">
+
+    <!-- ================= 用户层 ================= -->
+    <section class="layer">
+      <div class="tag user">用户层</div>
+      <div class="body">
+        <div class="grid g-role">
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg></span>
+            <span><b>平台运营管理员</b><i>SaaS 运营侧 · 默认不可见租户业务数据</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.4-2.9 8.2-7 9-4.1-.8-7-4.6-7-9V6l7-3z"/></svg></span>
+            <span><b>组织管理员</b><i>本组织及下级 · 用户与权限</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M4.2 7.5l1.9 1.1M17.9 15.4l1.9 1.1M4.2 16.5l1.9-1.1M17.9 8.6l1.9-1.1"/></svg></span>
+            <span><b>专业配置人员</b><i>基础库 / 核算模型维护</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg></span>
+            <span><b>项目负责人 / 核算人员</b><i>建项目 · 配置 · 核算 · 出报告</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20l3.5-1 11-11-2.5-2.5-11 11zM14.5 5.5L17 3l4 4-2.5 2.5"/></svg></span>
+            <span><b>数据填报人</b><i>活动数据录入 · 上传凭证</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
+            <span><b>审核人员</b><i>结果确认 · 报告确认 · 解锁发起</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg></span>
+            <span><b>只读观察者</b><i>查看与下载（预留第三方核查）</i></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector"><svg viewBox="0 0 16 30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v24"/><path d="M4 7l4-4 4 4"/><path d="M4 23l4 4 4-4"/></svg></div>
+
+    <!-- ================= 交互层 ================= -->
+    <section class="layer">
+      <div class="tag inter">交互层</div>
+      <div class="body">
+        <div class="grid g-inter">
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg></span>
+            <span><b>Web 管理后台</b><i>基础库 · 核算模型配置</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
+            <span><b>业务人员工作台</b><i>项目概览 · 待办 · 快捷入口</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M9 3v4M15 3v4"/><rect x="6" y="7" width="12" height="7" rx="3"/><path d="M12 14v7"/></svg></span>
+            <span><b>开放 API 接口</b><i>系统对接 · 数据交换</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg></span>
+            <span><b>Excel 模板导入导出</b><i>活动数据 / 因子批量处理</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg></span>
+            <span><b>报告导出与打印</b><i>PDF / 系统规定格式</i></span>
+          </div>
+          <div class="chip">
+            <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></span>
+            <span><b>移动端填报</b><i>本期预留 · 暂不交付</i></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector"><svg viewBox="0 0 16 30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v24"/><path d="M4 7l4-4 4 4"/><path d="M4 23l4 4 4-4"/></svg></div>
+
+    <!-- ================= 应用层 ================= -->
+    <section class="layer">
+      <div class="tag app">应用层</div>
+      <div class="body">
+        <div class="app-row">
+
+          <div class="block">
+            <div class="btitle"><span class="dot"></span>后台管理<span class="sub">沉淀"标准"</span></div>
+            <div class="sublabel">基础库</div>
+            <div class="pills">
+              <span class="pill">物料库 / 能源库</span>
+              <span class="pill">产品库（含产品分类）</span>
+              <span class="pill">工艺流程库 / 工序</span>
+              <span class="pill">计量单位库</span>
+              <span class="pill">生命周期阶段</span>
+              <span class="pill">标准文件库</span>
+              <span class="pill">行业库</span>
+            </div>
+            <div class="sublabel">核算模型</div>
+            <div class="pills">
+              <span class="pill solid">计算引擎配置 · 公式管理</span>
+              <span class="pill solid">排放因子库</span>
+              <span class="pill solid">模型管理</span>
+              <span class="pill solid">分配规则管理</span>
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="btitle"><span class="dot"></span>前台业务<span class="sub">核算日常作业面</span></div>
+            <div class="sublabel">产品碳足迹核算（主链）</div>
+            <div class="pills">
+              <span class="pill">产品与边界配置</span>
+              <span class="pill">生命周期模型配置</span>
+              <span class="pill">分配场景配置</span>
+              <span class="pill">数据填报</span>
+              <span class="pill">数据检测</span>
+              <span class="pill">碳足迹核算</span>
+              <span class="pill">关联项目 / 共享数据集</span>
+            </div>
+            <div class="sublabel">数据资产与产出</div>
+            <div class="pills">
+              <span class="pill solid">我的产品库</span>
+              <span class="pill solid">我的工艺库</span>
+              <span class="pill solid">我的因子库</span>
+              <span class="pill solid">工作台</span>
+              <span class="pill solid">报告管理</span>
+            </div>
+          </div>
+
+          <div class="block full">
+            <div class="btitle"><span class="dot"></span>平台支撑<span class="sub">贯穿前后台的公共能力</span></div>
+            <div class="pills">
+              <span class="pill">租户管理</span>
+              <span class="pill">组织架构（类型可配 · 层数不固定）</span>
+              <span class="pill">用户与角色</span>
+              <span class="pill">数据权限（数据域五档）</span>
+              <span class="pill">数据字典</span>
+              <span class="pill">附件与凭证</span>
+              <span class="pill">日志与审计</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="connector"><svg viewBox="0 0 16 30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v24"/><path d="M4 7l4-4 4 4"/><path d="M4 23l4 4 4-4"/></svg></div>
+
+    <!-- ================= 能力支撑层 ================= -->
+    <section class="layer">
+      <div class="tag cap">能力支撑层</div>
+      <div class="body">
+        <div class="grid g-cap">
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M6 21v-7M12 21V6M18 21v-11"/></svg></span>
+              <b>核算计算引擎</b>
+            </div>
+            <ul>
+              <li>行级 → 阶段汇总 → 全局三层受控公式</li>
+              <li>公式即算法，未配置时回退默认口径</li>
+              <li>结果可下钻至「数据·因子·公式·分配」</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></span>
+              <b>单位换算引擎</b>
+            </div>
+            <ul>
+              <li>基准中转：值_B = 值_A × 系数_A ÷ 系数_B</li>
+              <li>数量类不可换算，跨类型不支持</li>
+              <li>引擎自动计算行级单位换算系数</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L21 21"/></svg></span>
+              <b>因子匹配引擎</b>
+            </div>
+            <ul>
+              <li>按「活动类型 + 阶段 + 区域 + 年度」推荐</li>
+              <li>优先级：组织自建 &gt; 平台预置</li>
+              <li>匹配结果人工确认并留痕，可替换</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16l4-6 3 3 5-7"/></svg></span>
+              <b>分配引擎</b>
+            </div>
+            <ul>
+              <li>ISO 14044 层级：避免分配 → 物理 → 经济</li>
+              <li>共用能源 / 多产品共线 / 副产品替代法</li>
+              <li>比例合计 = 100%，层级合规校验</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.4-2.9 8.2-7 9-4.1-.8-7-4.6-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+              <b>数据检测引擎</b>
+            </div>
+            <ul>
+              <li>阻断级 / 提示级两级问题清单</li>
+              <li>E01–E16：因子缺失·单位·质量平衡·周期覆盖</li>
+              <li>准入校验：报告生成前必须关闭阻断项</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M12 8l5-3M12 8L7 5M12 16l5 3M12 16l-5 3"/></svg></span>
+              <b>版本与快照服务</b>
+            </div>
+            <ul>
+              <li>不可变对象：发布 / 引用后冻结，改动出新版本</li>
+              <li>模板 + 引用即复制（工序 / 工艺流程）</li>
+              <li>历史项目永远还原当时的标准</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg></span>
+              <b>报告生成引擎</b>
+            </div>
+            <ul>
+              <li>章节对齐 GB/T 24067-2024 / ISO 14067</li>
+              <li>按边界区分模板，草稿与正式版本全量留存</li>
+              <li>正式版本只读，说明性内容仅草稿可编辑</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+              <b>权限与审计服务</b>
+            </div>
+            <ul>
+              <li>数据域五档：SELF / CURRENT / SUB_TREE / SPECIFIED / ALL</li>
+              <li>组织过滤在前、创建人过滤在后，行级隔离</li>
+              <li>操作日志全留痕，租户数据完全隔离</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v10"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></span>
+              <b>导入导出与任务服务</b>
+            </div>
+            <ul>
+              <li>Excel 模板批量导入（≤2000 条）与校验</li>
+              <li>核算任务异步执行 · 状态查看 · 失败重试</li>
+              <li>结果明细导出，作为报告数据来源</li>
+            </ul>
+          </div>
+
+          <div class="capcard">
+            <div class="head">
+              <span class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M20 12l-7 7-9-7 9-7z"/><path d="M9 12h.01"/></svg></span>
+              <b>附件与凭证服务</b>
+            </div>
+            <ul>
+              <li>活动数据凭证上传与关联</li>
+              <li>附件访问鉴权，租户级存储隔离</li>
+              <li>数据可追溯：来源 · 凭证 · 核验人 · 核验时间</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="connector"><svg viewBox="0 0 16 30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v24"/><path d="M4 7l4-4 4 4"/><path d="M4 23l4 4 4-4"/></svg></div>
+
+    <!-- ================= 基础支撑 ================= -->
+    <section class="layer">
+      <div class="tag base">基础支撑</div>
+      <div class="body">
+        <div class="base-row">
+
+          <div class="base-block">
+            <div class="btitle"><span class="dot"></span>数据底座<span class="sub">Data</span></div>
+            <div class="pills">
+              <span class="pill">主数据：产品 / 工艺 / 工序 / 因子 / 单位 / 阶段 / 标准</span>
+              <span class="pill">业务数据：核算项目 / 活动数据 / 核算结果 / 报告</span>
+              <span class="pill">租户与组织数据</span>
+              <span class="pill">附件与凭证</span>
+              <span class="pill">日志与审计记录</span>
+            </div>
+          </div>
+
+          <div class="base-block">
+            <div class="btitle"><span class="dot"></span>平台底座<span class="sub">Platform</span></div>
+            <div class="pills">
+              <span class="pill">SaaS 多租户云平台（tenant_id 行级隔离）</span>
+              <span class="pill">关系型数据库</span>
+              <span class="pill">对象存储</span>
+              <span class="pill">缓存 / 消息队列</span>
+              <span class="pill">异步任务调度</span>
+              <span class="pill">统一认证 SSO</span>
+              <span class="pill">运维监控</span>
+            </div>
+          </div>
+
+          <div class="base-block">
+            <div class="btitle"><span class="dot"></span>基础设施<span class="sub">Infrastructure</span></div>
+            <div class="pills">
+              <span class="pill">服务器</span>
+              <span class="pill">存储设备</span>
+              <span class="pill">网络设备</span>
+              <span class="pill">安全设备</span>
+              <span class="pill">备份容灾</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <div class="fnote"><b>核算标准</b>：首发对齐 GB/T 24067-2024，架构兼容 ISO 14067 / PAS 2050 / PEF（以新模型版本接入，不引入独立规则包）</div>
+    <div class="fnote"><b>部署形态</b>：SaaS 多租户优先（租户 = 企业集团），架构不依赖多租户特性，保留私有化部署能力</div>
+    <div class="fnote"><b>本期范围</b>：产品碳足迹核算主链（CO₂ 口径）+ 基础库 + 核算模型；分析域、移动端填报、非 CO₂ 气体特征化后置</div>
+    <div class="fnote"><b>扩展位</b>：气体维度（GWP 特征化集）、行业包（阶段集 / 因子集 / 工艺模板）、第三方核查工作流</div>
+  </footer>
+
+</div>
+</body>
+</html>

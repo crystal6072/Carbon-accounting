@@ -1,44 +1,54 @@
 import type { TagTone } from '@/shared/components'
-import type { FlowItemType, PcfBoundary, PcfProjectStatus } from '@/types'
+import type { FlowItemType, PcfProjectStatus } from '@/types'
 
 /**
- * 项目状态文案（**界面口径唯一来源**，《核算项目业务 PRD》§5.1）：
- * 收敛自整体设计方案 §5.2 的工程态名，面向用户通俗化。
- * **已移除「已作废」**：取消项目统一走「删除」，不保留失效记录。
+ * 项目状态文案（**界面口径唯一来源**，2026-10-16 收敛）。
+ *
+ * **在役状态机**：新建 →（步骤①下一步）→ 待处理 →（步骤②下一步）→ 待检测 →（一键检测通过）→ 待核算 →（开始核算）→ 已完成；
+ * 检测不通过 → 回退「待处理」。
+ *
+ * **已移除**：检测中（`checking`）、核算中（`calculating`）、已核算（`calculated`）、
+ * 已作废、已归档 —— 枚举保留以兼容既有数据与 mock，工作流不再产生，界面不展示。
  */
 export const PCF_STATUS_TEXT: Record<PcfProjectStatus, string> = {
   new: '新建',
-  ongoing: '进行中',
-  checking: '检测中',
+  ongoing: '待处理',
+  toCheck: '待检测',
   toCalc: '待核算',
+  checking: '检测中',
   calculating: '核算中',
   calcFailed: '核算失败',
-  calculated: '已核算',
+  calculated: '已完成',
   reportGenerating: '报告生成中',
   reportEditing: '报告编制中',
   done: '已完成',
-  archived: '已归档',
 }
 
-/** 项目状态 Tag 配色（进行中=蓝 / 待办=橙 / 完成=绿 / 失败=红） */
+/**
+ * 核算列表「状态」筛选项（界面口径）：
+ * 仅含已落库的在役状态；不含草稿态「新建」（草稿不产生核算记录）、
+ * 不含已移除的「检测中 / 核算中 / 已核算」与历史报告态。
+ */
+export const PCF_STATUS_OPTIONS: PcfProjectStatus[] = [
+  'ongoing',
+  'toCheck',
+  'toCalc',
+  'done',
+]
+
+/** 项目状态 Tag 配色（待处理=蓝 / 待检测=橙 / 待核算=蓝 / 完成=绿） */
 export const PCF_STATUS_TONE: Record<PcfProjectStatus, TagTone> = {
   new: 'default',
   ongoing: 'info',
-  checking: 'warning',
+  toCheck: 'warning',
   toCalc: 'info',
+  checking: 'warning',
   calculating: 'info',
   calcFailed: 'error',
   calculated: 'success',
   reportGenerating: 'warning',
   reportEditing: 'warning',
   done: 'success',
-  archived: 'default',
-}
-
-/** 核算边界文案（方案 §1.4） */
-export const PCF_BOUNDARY_TEXT: Record<PcfBoundary, string> = {
-  gate: '摇篮到大门',
-  grave: '摇篮到坟墓',
 }
 
 /** 投入 / 产出项类别文案（数据填报用） */
@@ -54,9 +64,11 @@ export const FLOW_TYPE_TEXT: Record<FlowItemType, string> = {
 
 /**
  * 工作台步骤定义（骨架 §4.3）。
- * **V0.7：原 ④碳足迹核算 + ⑤核算结果 合并为 ④「碳足迹核算与结果」**，6 步收敛为 5 步：
- * 核算执行与结果查看是同一个闭环（核算完成即产出结果版本），不再拆成两个步骤节点；
- * 合并后步骤④ 上半区为核算执行状态卡，下半区为结果总览 / 阶段 / 工序 / 排放源 / 明细。
+ * **V0.8：移除步骤⑤「报告」（2026-10-12）** —— 报告环节从核算流程中去掉，
+ * **核算结果为最后一个节点**；报告相关能力改由「产品碳足迹 · 报告管理」承载
+ * （企业信息维护 / 报告编制 / 敏感性分析 / 数据质量评价，暂占位待完善）。
+ * 历史口径：V0.7 原 ④碳足迹核算 + ⑤核算结果 合并为 ④「碳足迹核算与结果」
+ * （核算执行与结果查看是同一个闭环，不再拆成两个步骤节点）。
  * `batch` = 交付批次，用于未交付步骤的占位说明。
  */
 export interface PcfStepDef {
@@ -69,34 +81,41 @@ export interface PcfStepDef {
 
 export const PCF_STEPS: PcfStepDef[] = [
   { seq: 1, name: '目标与范围', batch: 1, delivered: true },
-  { seq: 2, name: '工序与数据', batch: 3, delivered: true },
+  { seq: 2, name: '产品建模', batch: 3, delivered: true },
   { seq: 3, name: '数据检测', batch: 5, delivered: true },
   { seq: 4, name: '碳足迹核算与结果', batch: 5, delivered: true },
-  { seq: 5, name: '报告', batch: 6, delivered: true },
 ]
 
 /**
- * 可编辑状态：**核算完成前均可编辑**（V0.3 放宽）。
- * - `new` / `ongoing` / `checking` / `toCalc` / `calcFailed`：可直接编辑；
- * - `calculated`：可编辑，但保存后回退「进行中」并需重走检测 → 核算（E13）；
- * - `calculating` / `reportGenerating` / `reportEditing` / `done` / `archived`：只读。
+ * 可编辑状态（2026-10-16）：
+ * - `new` / `ongoing` / `toCheck` / `toCalc` / `calcFailed`：可直接编辑；
+ * - `calculated`：历史态，可编辑，保存后回退「待处理」并需重走检测 → 核算（E13）；
+ * - `done`（已完成）：**结果不锁定**——仍可编辑 / 重新检测 / 重新核算 / 重新计算；
+ *   但**步骤①「目标与范围」锁定只读**（仅步骤②「产品建模」可改），
+ *   改数据保存时弹「数据变更」提示并回退「待检测」重走检测 → 核算。
  */
 export const PCF_EDITABLE_STATUSES: PcfProjectStatus[] = [
   'new',
   'ongoing',
-  'checking',
+  'toCheck',
   'toCalc',
   'calcFailed',
   'calculated',
+  'done',
 ]
 
-/** 需要「编辑即回退重算」的状态（保存后回到「进行中」） */
-export const PCF_REVERT_STATUSES: PcfProjectStatus[] = ['calculated']
-
-/** 是否可物理删除：仅「新建 / 进行中」 */
-export function canDelete(status: PcfProjectStatus): boolean {
-  return status === 'new' || status === 'ongoing'
-}
+/**
+ * 需要「编辑即回退重跑」的状态（2026-10-16）：保存后回退「待检测」，
+ * 需重走一键检测 → 核算（V0.8 起不含历史报告态）。
+ */
+export const PCF_REVERT_STATUSES: PcfProjectStatus[] = [
+  'toCheck',
+  'toCalc',
+  'calculating',
+  'calcFailed',
+  'calculated',
+  'done',
+]
 
 /** 产品展示文案：名称｜规格 */
 export function pcfProductLabel(name: string, spec: string): string {
@@ -116,10 +135,4 @@ export const PCF_YEAR_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '2026 年', value: '2026' },
   { label: '2025 年', value: '2025' },
   { label: '2024 年', value: '2024' },
-]
-
-/** 核算边界选项（一项目一边界，创建后不可修改） */
-export const PCF_BOUNDARY_OPTIONS: Array<{ label: string; value: PcfBoundary }> = [
-  { label: PCF_BOUNDARY_TEXT.gate, value: 'gate' },
-  { label: PCF_BOUNDARY_TEXT.grave, value: 'grave' },
 ]

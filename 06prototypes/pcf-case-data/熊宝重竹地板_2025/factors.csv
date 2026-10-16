@@ -1,0 +1,16 @@
+factor_id,factor_name,activity_unit,factor_value,factor_unit,biogenic_capable,source_category,source_reference,data_quality,valid_from,valid_to,region,note
+F-XB-RAW-BAMBOO,原竹生产（案例快照）,kg,0.0498,kgCO2e/kg,false,material,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,用于原竹输入
+F-XB-PAINT,油漆生产（案例快照）,kg,3.17,kgCO2e/kg,false,material,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-GLUE,胶黏剂生产（案例快照）,kg,3.93,kgCO2e/kg,false,material,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,热点因子
+F-XB-BAMBOO-DUST,竹粉处理（案例快照）,kg,0.04987,kgCO2e/kg,false,waste,熊宝案例附件/背景数据库映射,estimated,2025-01-01,2025-12-31,中国,活动量为负表示扣除/副产物流
+F-XB-PACK-BAG,包装袋生产（案例快照）,kg,3.37,kgCO2e/kg,false,material,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-PACK-WOOD,垫方生产（案例快照）,kg,1.17,kgCO2e/kg,true,material,熊宝案例附件/背景数据库映射,estimated,2025-01-01,2025-12-31,中国,
+F-XB-PACK-PEARL,珍珠棉生产（案例快照）,kg,4.083,kgCO2e/kg,false,material,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-TRUCK,公路货运（案例快照）,t·km,0.2,kgCO2e/t·km,false,transport,熊宝案例附件/背景数据库映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-ELECTRICITY,区域电力（案例快照）,kWh,0.3809067599,kgCO2e/kWh,false,energy,熊宝案例附件/电力因子映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-STEAM,蒸汽（案例快照）,MJ,0.000385,kgCO2e/MJ,false,energy,熊宝案例附件/热力因子映射,estimated,2025-01-01,2025-12-31,中国,
+F-XB-WATER,工业用水（案例快照）,kg,0.0012,kgCO2e/kg,false,energy,熊宝案例附件/用水因子映射,secondary,2025-01-01,2025-12-31,中国,
+F-XB-HAZARDOUS-WASTE,危废处理（案例快照）,kg,2.39,kgCO2e/kg,false,waste,熊宝案例附件/背景数据库映射,estimated,2025-01-01,2025-12-31,中国,
+F-XB-INCINERATION,一般工业垃圾焚烧（案例快照）,kg,0.519,kgCO2e/kg,true,eol,熊宝案例附件/末端处置映射,estimated,2025-01-01,2025-12-31,中国,
+F-XB-WOOD-EOL,木材处置（案例快照）,kg,0.0152,kgCO2e/kg,true,eol,熊宝案例附件/末端处置映射,estimated,2025-01-01,2025-12-31,中国,需另存生物碳流
+F-XB-GLUED-WOOD-EOL,含胶木材处置（案例快照）,kg,2.44,kgCO2e/kg,false,eol,熊宝案例附件/末端处置映射,estimated,2025-01-01,2025-12-31,中国,热点因子

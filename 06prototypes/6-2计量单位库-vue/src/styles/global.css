@@ -1,0 +1,58 @@
+:root {
+  --bg-page: #f5f7fa;
+  --line-color: #e4e7ed;
+  --text-primary: #1f2329;
+  --text-regular: #4e5969;
+  --text-secondary: #86909c;
+  --brand-color: #1f6feb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue',
+    Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100%;
+}
+
+/* 统一卡片观感：无阴影 + 细边框，保持干净对齐 */
+.el-card {
+  --el-card-border-color: var(--line-color);
+  border-radius: 6px;
+}
+
+.el-card__header {
+  padding: 14px 16px;
+}
+
+/* 表头：浅灰底 + 不加粗 */
+.el-table th.el-table__cell {
+  background: #fafbfc !important;
+  color: var(--text-regular);
+  font-weight: 500;
+}
+
+.el-table .el-table__cell {
+  padding: 8px 0;
+}
+
+/* 表格 hover 高亮弱化 */
+.el-table__body tr:hover > td.el-table__cell {
+  background: #f7f9fc !important;
+}

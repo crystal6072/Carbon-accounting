@@ -429,6 +429,11 @@ export default function ProjectStepFive({ project, onSaved }: ProjectStepFivePro
   const isDone = project.status === 'done'
   /** 准入：已核算且尚无报告（业务 PRD R-052） */
   const canGenerate = project.status === 'calculated' && !report
+  /**
+   * 重新生成入口：改了前序数据并重新核算后，项目回到「已核算」而报告仍是上一版结果。
+   * 此时按最新核算结果重新装配报告 → 回到「报告编制中」，才能继续编辑并「确认完成」。
+   */
+  const canRegenerate = !!report && !report.locked && project.status === 'calculated'
   /** 报告编制中（唯一可编辑态，R-057） */
   const isEditing = project.status === 'reportEditing' && !!report && !report.locked
   const system = report?.system
@@ -767,6 +772,9 @@ export default function ProjectStepFive({ project, onSaved }: ProjectStepFivePro
           2. 产品碳足迹结果计算：{coverData.productName} 每声明单位（{systemData.unit}）碳足迹为{' '}
           {formatNumber(systemData.unitEmission)} kgCO₂e（结果版本 V{systemData.resultVersion}）。
         </p>
+        <p className="pcf-report-para">
+          注：本报告清单数据以 1 个声明单位计（数量口径）。
+        </p>
 
         <h4 className="pcf-report-chapter">六、结果解释</h4>
         <p className="pcf-report-para">1. 结果说明</p>
@@ -830,12 +838,23 @@ export default function ProjectStepFive({ project, onSaved }: ProjectStepFivePro
                 {generating ? '报告生成中…' : '填写报告信息'}
               </Button>
             )}
+            {canRegenerate && (
+              <Button variant="primary" onClick={() => void runGenerate()} disabled={generating}>
+                {generating ? '报告生成中…' : '重新生成报告'}
+              </Button>
+            )}
             {generating && !report && <span className="pcf-report-gen-hint">正在按模板装配报告…</span>}
           </div>
           {canGenerate && (
             <div className="pcf-report-gen-tip">
               报告正文由模板与核算结果自动装配；点击「填写报告信息」补充企业信息 / 产品信息与说明性章节后，
               可先预览再生成报告。
+            </div>
+          )}
+          {canRegenerate && (
+            <div className="pcf-report-gen-tip">
+              前序数据已修改并重新核算，当前报告仍停留在上一版核算结果。点击「重新生成报告」按最新结果重新装配，
+              生成后可继续编辑并「确认完成」。
             </div>
           )}
         </div>

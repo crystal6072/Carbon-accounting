@@ -16,6 +16,8 @@ interface LifecycleConfirmModalProps {
   mode: LifecycleConfirmMode
   /** 删除一级阶段时其下二级阶段数量；> 0 时阻断删除并在弹窗中明示 */
   childCount?: number
+  /** 禁用一级阶段时将同步禁用的二级阶段数量（启用态）；> 0 时在禁用提示中明示级联 */
+  cascadeCount?: number
   onClose: () => void
   onConfirm: () => void
 }
@@ -32,12 +34,15 @@ export default function LifecycleConfirmModal({
   stage,
   mode,
   childCount = 0,
+  cascadeCount = 0,
   onClose,
   onConfirm,
 }: LifecycleConfirmModalProps) {
   const level = stage?.level === 2 ? '二级' : '一级'
   /** 删除被阻断：一级阶段下仍有二级阶段（与 mock 层 deleteLifecycleStage 校验口径一致） */
   const deleteBlocked = mode === 'delete' && (childCount ?? 0) > 0
+  /** 禁用级联提示：一级阶段且存在启用态二级阶段时，明示同步禁用 */
+  const cascadeTip = mode === 'disable' && stage?.level === 1 && cascadeCount > 0
 
   return (
     <Modal
@@ -47,11 +52,12 @@ export default function LifecycleConfirmModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
+          <Button data-ann-target="lifecycle.confirm.cancel" onClick={onClose}>取消</Button>
           <Button
             variant={mode === 'delete' ? 'danger' : 'primary'}
             onClick={onConfirm}
             disabled={deleteBlocked}
+            data-ann-target="lifecycle.confirm.ok"
           >
             {TITLE[mode]}
           </Button>
@@ -68,11 +74,13 @@ export default function LifecycleConfirmModal({
             {mode === 'enable' ? '启用' : mode === 'disable' ? '禁用' : '删除'}？
           </div>
           {mode === 'enable' && (
-            <div className="modal-confirm-tip">启用后该阶段可被新项目按「行业 + 边界」加载。</div>
+            <div className="modal-confirm-tip">启用后该阶段可被新项目按「系统边界」加载。</div>
           )}
           {mode === 'disable' && (
             <div className="modal-confirm-tip">
-              禁用后该阶段不可被新项目加载；已加载该阶段的在途项目按基线快照运行、不受影响。禁用后可执行删除。
+              禁用后该阶段不可被新项目加载；
+              {cascadeTip ? `其下 ${cascadeCount} 个二级阶段将同步禁用；` : ''}
+              已加载该阶段的在途项目按基线快照运行、不受影响。禁用后可执行删除。
             </div>
           )}
           {mode === 'delete' && (

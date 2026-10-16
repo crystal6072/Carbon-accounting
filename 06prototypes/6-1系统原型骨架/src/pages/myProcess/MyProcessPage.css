@@ -1,0 +1,60 @@
+/** 我的工艺库（前台 · B3）页面补充样式；通用布局 / 画布 / 表单类名复用后台工艺流程 `ProcessPage.css` */
+
+.my-source-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.my-source-readonly-tip {
+  color: var(--color-text-tertiary, #909399);
+  font-size: 12px;
+}
+
+.my-reference-modal-tip {
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary, #909399);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.my-batch-tip {
+  margin-top: 8px;
+}
+
+/* 新增工艺方式选择（引用后台工艺 / 自己新增） */
+.my-create-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-create-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--color-border, #e5e6eb);
+  border-radius: 8px;
+  background: var(--color-bg-container, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.my-create-choice:hover {
+  border-color: var(--color-primary, #165dff);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.12);
+}
+
+.my-create-choice-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #1d2129);
+}
+
+.my-create-choice-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #909399);
+}

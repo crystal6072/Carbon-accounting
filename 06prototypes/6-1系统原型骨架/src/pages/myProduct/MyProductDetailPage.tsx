@@ -25,8 +25,6 @@ import { buildFormulaLines } from '@/shared/formulaMeta'
 import {
   MY_PRODUCT_BREADCRUMB,
   myProductSourceText,
-  myProductSourceTone,
-  myProductSourceTip,
   myProductUseStatusText,
   myProductUseStatusTone,
 } from './myProductMeta'
@@ -86,8 +84,6 @@ export default function MyProductDetailPage() {
     if (!category) return '-'
     return category.status === 'disabled' ? `${category.name}（已禁用）` : category.name
   }, [categories, product])
-
-  const isReferenced = product?.source === 'referenced'
 
   const handleConfirm = async () => {
     if (!product || !confirm) return
@@ -235,103 +231,86 @@ export default function MyProductDetailPage() {
         title={product.name}
         description={`产品编码 ${product.code} · ${myProductSourceText[product.source]} · ${
           myProductUseStatusText[product.useStatus]
-        }${isReferenced ? '（随后台产品信息库）' : ''}`}
+        }`}
         actions={
           <>
             <Button onClick={() => navigate('/pcf/my-product')}>返回列表</Button>
-            {!isReferenced && (
-              <>
-                {product.useStatus === 'off' ? (
-                  <Button onClick={() => setConfirm('on')}>上架</Button>
-                ) : (
-                  <Button onClick={() => setConfirm('off')}>下架</Button>
-                )}
-                <Button variant="primary" onClick={() => navigate(`/pcf/my-product/${product.id}/edit`)}>
-                  编辑
-                </Button>
-                <Button variant="danger" disabled={refProjects.length > 0} onClick={() => setDeleting(true)}>
-                  删除
-                </Button>
-              </>
-            )}
+            <span data-ann-target="my-product-toggle">
+              {product.useStatus === 'off' ? (
+                <Button onClick={() => setConfirm('on')}>上架</Button>
+              ) : (
+                <Button onClick={() => setConfirm('off')}>下架</Button>
+              )}
+            </span>
+            <Button variant="primary" onClick={() => navigate(`/pcf/my-product/${product.id}/edit`)}>
+              编辑
+            </Button>
+            <span data-ann-target="my-product-delete">
+              <Button
+                variant="danger"
+                disabled={refProjects.length > 0}
+                title={refProjects.length > 0 ? '该产品已被核算项目引用，不可删除' : undefined}
+                onClick={() => setDeleting(true)}
+              >
+                删除
+              </Button>
+            </span>
           </>
         }
       />
 
-      {isReferenced && (
-        <div className="card">
-          <div className="form-block">
-            <div className="form-tip">
-              引用标准产品为**只读**项：不可编辑 / 上下架 / 删除，产品主体与状态由后台产品信息库维护；
-              需要调整时，请在后台申请变更后重新引用（本模块不提供「复制成新的」，业务裁定 2026-09-28）。
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="stack">
-        <section className="card">
+        <section className="card" data-ann-target="my-product-detail">
           <div className="section-header">
             <span className="section-title">基本信息</span>
           </div>
           <div className="section-body">
             <div className="detail-list">
-              <div className="detail-item">
-                <span className="detail-label">产品编码</span>
-                <span className="detail-value mono">{product.code}</span>
-              </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-name">
                 <span className="detail-label">产品名称</span>
                 <span className="detail-value">{product.name}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">产品来源</span>
-                <span className="detail-value">
-                  <span title={myProductSourceTip[product.source]}>
-                    <Tag tone={myProductSourceTone[product.source]}>{myProductSourceText[product.source]}</Tag>
-                  </span>
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">来源产品</span>
-                <span className="detail-value">
-                  {product.sourceProductId ? `${product.code}（平台级）` : '-'}
-                </span>
-              </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-category">
                 <span className="detail-label">产品分类</span>
                 <span className="detail-value">{categoryName}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">型号</span>
-                <span className="detail-value">{product.model || '-'}</span>
-              </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-spec">
                 <span className="detail-label">规格</span>
                 <span className="detail-value">{product.spec || '-'}</span>
               </div>
               <div className="detail-item">
+                <span className="detail-label">产品批次号</span>
+                <span className="detail-value">{product.batchNo || '-'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">生产地点</span>
+                <span className="detail-value">{product.productionSite || '-'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">生产功能</span>
+                <span className="detail-value">{product.productionFunction || '-'}</span>
+              </div>
+              <div className="detail-item" data-ann-target="my-product-unit">
                 <span className="detail-label">单位</span>
                 <span className="detail-value">{product.unit}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-industry">
                 <span className="detail-label">所属行业</span>
                 <span className="detail-value">{product.industry || '-'}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-usestatus">
                 <span className="detail-label">使用状态</span>
                 <span className="detail-value">
                   <Tag tone={myProductUseStatusTone[product.useStatus]}>
                     {myProductUseStatusText[product.useStatus]}
                   </Tag>
-                  {isReferenced && <span className="my-source-readonly-tip">随后台产品信息库</span>}
                 </span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-org">
                 <span className="detail-label">归属组织</span>
                 <span className="detail-value">{product.org}</span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="my-product-meta">
                 <span className="detail-label">创建人</span>
                 <span className="detail-value">{product.createdBy}</span>
               </div>
@@ -343,7 +322,7 @@ export default function MyProductDetailPage() {
                 <span className="detail-label">最后修改</span>
                 <span className="detail-value">{product.updatedAt}</span>
               </div>
-              <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+              <div className="detail-item" style={{ gridColumn: '1 / -1' }} data-ann-target="my-product-desc">
                 <span className="detail-label">产品描述</span>
                 <span className="detail-value">{product.description || '-'}</span>
               </div>
@@ -351,15 +330,36 @@ export default function MyProductDetailPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="my-product-scenario">
+          <div className="section-header">
+            <span className="section-title">产品场景应用</span>
+          </div>
+          <div className="section-body">
+            {product.scenarios && product.scenarios.length > 0 ? (
+              <div className="scenario-list">
+                {product.scenarios.map((scenario) => (
+                  <div className="scenario-item" key={scenario.id}>
+                    <div className="scenario-desc">{scenario.description || '-'}</div>
+                    {scenario.images.length > 0 && (
+                      <div className="scenario-images">
+                        {scenario.images.map((url, idx) => (
+                          <img key={idx} src={url} alt="场景图片" className="scenario-image" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty">暂未维护产品场景应用</div>
+            )}
+          </div>
+        </section>
+
+        <section className="card" data-ann-target="my-product-process">
           <div className="section-header">
             <span className="section-title">产品工艺与工序</span>
             <span className="section-extra">
-              <span className="toolbar-tip">
-                {isReferenced
-                  ? '引用标准产品的组合随平台级产品只读展示'
-                  : '工序为模板复制副本，基础库变更不回写；投入产出流维护归属「工序管理」'}
-              </span>
               <div className="pcf-view-switch" role="tablist" aria-label="展示方式">
                 <button
                   type="button"
@@ -406,12 +406,10 @@ export default function MyProductDetailPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="my-product-ref-log">
           <div className="section-header">
             <span className="section-title">引用情况</span>
-            <span className="toolbar-tip">
-              共 {refProjects.length} 个核算项目 · 项目侧已生成快照，产品后续修改不影响已建项目
-            </span>
+            <span className="toolbar-tip">共 {refProjects.length} 个核算项目</span>
           </div>
           <div className="section-body">
             {refProjects.length > 0 ? (
@@ -422,7 +420,7 @@ export default function MyProductDetailPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="my-product-ref-log">
           <div className="section-header">
             <button className="collapse-trigger" onClick={() => setLogOpen((prev) => !prev)}>
               <span className={['collapse-caret', logOpen ? 'expanded' : ''].filter(Boolean).join(' ')}>
@@ -430,11 +428,9 @@ export default function MyProductDetailPage() {
               </span>
               操作日志
             </button>
-            <span className="toolbar-tip">
-              {isReferenced ? '引用标准产品为只读项，无本组织操作日志' : `共 ${logs.length} 条`}
-            </span>
+            <span className="toolbar-tip">共 {logs.length} 条</span>
           </div>
-          {logOpen && !isReferenced && (
+          {logOpen && (
             <>
               <div className="section-body section-body-flush">
                 <Table
@@ -476,9 +472,7 @@ export default function MyProductDetailPage() {
             <div>
               确认删除产品「{product.name}」（{product.code}）？
             </div>
-            <div className="modal-confirm-tip">
-              删除后不可恢复；仅「自己新增且未被核算项目引用」的组织自建产品可删除。
-            </div>
+            <div className="modal-confirm-tip">删除后不可恢复。</div>
           </div>
         </div>
       </Modal>

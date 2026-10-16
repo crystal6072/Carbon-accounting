@@ -6,13 +6,14 @@ import {
   LIFECYCLE_ORDER_MAX,
   LIFECYCLE_ORDER_MIN,
   createLifecycleStage,
-  fetchIndustryOptions,
+  fetchDictOptionsByTypeCode,
   fetchLifecycleStages,
   updateLifecycleStage,
 } from '@/mock'
 import type { LifecycleStagePayload } from '@/mock'
-import type { LifecycleInclusion, LifecycleLevel, LifecycleStageItem } from '@/types'
-import { inclusionHint, inclusionOrder, inclusionText, levelText, suggestOrder } from './lifecycleMeta'
+import type { LifecycleLevel, LifecycleStageItem } from '@/types'
+import { DICT_TYPE_SYSTEM_BOUNDARY } from '@/types'
+import { levelText, suggestOrder } from './lifecycleMeta'
 
 interface LifecycleFormModalProps {
   open: boolean
@@ -29,9 +30,7 @@ interface FormState {
   level: LifecycleLevel
   parentId: string
   order: string
-  industries: string[]
-  gateRule: '' | LifecycleInclusion
-  graveRule: '' | LifecycleInclusion
+  boundaries: string[]
   description: string
 }
 
@@ -41,9 +40,7 @@ const EMPTY_FORM: FormState = {
   level: 1,
   parentId: '',
   order: '',
-  industries: [],
-  gateRule: '',
-  graveRule: '',
+  boundaries: [],
   description: '',
 }
 
@@ -53,7 +50,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
   const toast = useToast()
 
   const [list, setList] = useState<LifecycleStageItem[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
+  const [boundaryOptions, setBoundaryOptions] = useState<MultiSelectOption[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -64,9 +61,12 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
     setLoading(true)
     setErrors({})
     try {
-      const [stages, industryList] = await Promise.all([fetchLifecycleStages(), fetchIndustryOptions()])
+      const [stages, boundaryList] = await Promise.all([
+        fetchLifecycleStages(),
+        fetchDictOptionsByTypeCode(DICT_TYPE_SYSTEM_BOUNDARY),
+      ])
       setList(stages)
-      setIndustries(industryList)
+      setBoundaryOptions(boundaryList.map((item) => ({ label: item.label, value: item.code })))
 
       const target = stageId ? stages.find((item) => item.id === stageId) ?? null : null
       if (target) {
@@ -76,9 +76,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
           level: target.level,
           parentId: target.parentId ?? '',
           order: String(target.order),
-          industries: [...target.industries],
-          gateRule: target.gateRule,
-          graveRule: target.graveRule,
+          boundaries: [...target.boundaries],
           description: target.description,
         })
       } else {
@@ -122,16 +120,6 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
     [],
   )
 
-  const inclusionOptions = useMemo<SelectOption[]>(
-    () => inclusionOrder.map((value) => ({ label: inclusionText[value], value })),
-    [],
-  )
-
-  const industryOptions = useMemo<MultiSelectOption[]>(
-    () => industries.map((item) => ({ label: item, value: item })),
-    [industries],
-  )
-
   const updateForm = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
   /** 层级变更：顺序按新层级「同级最大值 + 10」重算（【待确认 Q04】） */
@@ -170,9 +158,6 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
       next.order = '同级内阶段顺序不重复（D05）'
     }
 
-    if (!form.gateRule) next.gateRule = '请选择摇篮到大门纳入规则'
-    if (!form.graveRule) next.graveRule = '请选择摇篮到坟墓纳入规则'
-
     setErrors(next)
     return Object.keys(next).length > 0 ? '请先完善必填项' : ''
   }
@@ -191,9 +176,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
       parentId: form.level === 2 ? form.parentId : null,
       order: Number(form.order),
       description: form.description.trim(),
-      industries: form.industries,
-      gateRule: form.gateRule as LifecycleInclusion,
-      graveRule: form.graveRule as LifecycleInclusion,
+      boundaries: form.boundaries,
     }
 
     setSubmitting(true)
@@ -216,8 +199,8 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" disabled={submitting || loading} onClick={handleSubmit}>
+          <Button data-ann-target="lifecycle.form.cancel" onClick={onClose}>取消</Button>
+          <Button variant="primary" data-ann-target="lifecycle.form.save" disabled={submitting || loading} onClick={handleSubmit}>
             {submitting ? '保存中…' : '保存'}
           </Button>
         </>
@@ -227,7 +210,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
         <div className="empty">加载中…</div>
       ) : (
         <div className="form-grid">
-          <FormField label="阶段编码" required error={errors.code}>
+          <FormField label="阶段编码" required error={errors.code} annTarget="lifecycle.form.code">
             <Input
               value={form.code}
               placeholder="如 LS-07"
@@ -236,7 +219,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
               onChange={(e) => updateForm({ code: e.target.value })}
             />
           </FormField>
-          <FormField label="阶段名称" required error={errors.name}>
+          <FormField label="阶段名称" required error={errors.name} annTarget="lifecycle.form.name">
             <Input
               value={form.name}
               placeholder="请输入阶段名称"
@@ -244,7 +227,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
               onChange={(e) => updateForm({ name: e.target.value })}
             />
           </FormField>
-          <FormField label="阶段层级" required>
+          <FormField label="阶段层级" required annTarget="lifecycle.form.level">
             <Select
               value={String(form.level)}
               options={levelOptions}
@@ -252,7 +235,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
               onChange={(e) => handleLevelChange(Number(e.target.value) as LifecycleLevel)}
             />
           </FormField>
-          <FormField label="上级阶段" required={form.level === 2} error={errors.parentId}>
+          <FormField label="上级阶段" required={form.level === 2} error={errors.parentId} annTarget="lifecycle.form.parent">
             <Select
               value={form.parentId}
               placeholder={form.level === 2 ? '请选择一级阶段（必填）' : '一级阶段无上级'}
@@ -262,7 +245,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
               onChange={(e) => handleParentChange(e.target.value)}
             />
           </FormField>
-          <FormField label="阶段顺序" required error={errors.order}>
+          <FormField label="阶段顺序" required error={errors.order} annTarget="lifecycle.form.order">
             <Input
               type="number"
               min={LIFECYCLE_ORDER_MIN}
@@ -273,33 +256,20 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
               onChange={(e) => updateForm({ order: e.target.value })}
             />
           </FormField>
-          <FormField label="适用行业">
+          <FormField
+            label="适用系统边界"
+            full
+            annTarget="lifecycle.form.boundaries"
+            hint="引用「平台支撑 · 数据字典 · 系统边界」；可多选，为空 = 全边界通用"
+          >
             <MultiSelect
-              value={form.industries}
-              options={industryOptions}
-              placeholder="为空 = 全行业通用"
-              onChange={(value) => updateForm({ industries: value })}
+              value={form.boundaries}
+              options={boundaryOptions}
+              placeholder="为空 = 全边界通用"
+              onChange={(value) => updateForm({ boundaries: value })}
             />
           </FormField>
-          <FormField label="摇篮到大门纳入规则" required error={errors.gateRule}>
-            <Select
-              value={form.gateRule}
-              placeholder="请选择"
-              options={inclusionOptions}
-              invalid={!!errors.gateRule}
-              onChange={(e) => updateForm({ gateRule: e.target.value as '' | LifecycleInclusion })}
-            />
-          </FormField>
-          <FormField label="摇篮到坟墓纳入规则" required error={errors.graveRule}>
-            <Select
-              value={form.graveRule}
-              placeholder="请选择"
-              options={inclusionOptions}
-              invalid={!!errors.graveRule}
-              onChange={(e) => updateForm({ graveRule: e.target.value as '' | LifecycleInclusion })}
-            />
-          </FormField>
-          <FormField label="阶段描述" full>
+          <FormField label="阶段描述" full annTarget="lifecycle.form.description">
             <Textarea
               value={form.description}
               rows={3}

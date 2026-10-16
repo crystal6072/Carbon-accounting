@@ -8,12 +8,17 @@ interface FormFieldProps {
   hint?: string
   /** 占满一行（默认跨两列，配合 .form-grid 使用） */
   full?: boolean
+  /** 批注锚点（可选，挂到字段根节点，供批注层定位） */
+  annTarget?: string
   children: ReactNode
 }
 
-export default function FormField({ label, required, error, hint, full, children }: FormFieldProps) {
+export default function FormField({ label, required, error, hint, full, annTarget, children }: FormFieldProps) {
   return (
-    <div className={['form-item', full ? 'form-item-full' : ''].filter(Boolean).join(' ')}>
+    <div
+      className={['form-item', full ? 'form-item-full' : ''].filter(Boolean).join(' ')}
+      {...(annTarget ? { 'data-ann-target': annTarget } : {})}
+    >
       <label className={['form-label', required ? 'required' : ''].filter(Boolean).join(' ')}>{label}</label>
       {children}
       {error ? <span className="form-error">{error}</span> : hint ? <span className="form-tip">{hint}</span> : null}

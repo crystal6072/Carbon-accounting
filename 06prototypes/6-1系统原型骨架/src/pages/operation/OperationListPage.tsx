@@ -94,7 +94,7 @@ export default function OperationListPage() {
   const columns: Column<OperationItem>[] = [
     {
       key: 'code',
-      title: '工序编码',
+      title: <span data-ann-target="operation.col.code">工序编码</span>,
       width: 130,
       render: (row) => (
         <button className="link mono nowrap" onClick={() => navigate(`/basic/operation/${row.id}`)}>
@@ -104,7 +104,7 @@ export default function OperationListPage() {
     },
     {
       key: 'name',
-      title: '工序名称',
+      title: <span data-ann-target="operation.col.name">工序名称</span>,
       width: 160,
       render: (row) => (
         <span className="cell-ellipsis" title={row.name}>
@@ -114,13 +114,13 @@ export default function OperationListPage() {
     },
     {
       key: 'type',
-      title: '工序类型',
+      title: <span data-ann-target="operation.col.type">工序类型</span>,
       width: 110,
       render: (row) => <Tag tone={operationTypeTone[row.type]}>{operationTypeText[row.type]}</Tag>,
     },
     {
       key: 'useStatus',
-      title: '使用状态',
+      title: <span data-ann-target="operation.col.status">使用状态</span>,
       width: 100,
       render: (row) => <Tag tone={useStatusTone[row.useStatus]}>{useStatusText[row.useStatus]}</Tag>,
     },
@@ -136,23 +136,23 @@ export default function OperationListPage() {
       width: 200,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => navigate(`/basic/operation/${row.id}`)}>
+          <button className="link" data-ann-target="operation.row.view" onClick={() => navigate(`/basic/operation/${row.id}`)}>
             查看
           </button>
-          <button className="link" onClick={() => navigate(`/basic/operation/${row.id}/edit`)}>
+          <button className="link" data-ann-target="operation.row.edit" onClick={() => navigate(`/basic/operation/${row.id}/edit`)}>
             编辑
           </button>
           {row.useStatus === 'disabled' ? (
-            <button className="link" onClick={() => setConfirm({ operation: row, mode: 'enable' })}>
+            <button className="link" data-ann-target="operation.row.enable" onClick={() => setConfirm({ operation: row, mode: 'enable' })}>
               启用
             </button>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ operation: row, mode: 'disable' })}>
+            <button className="link link-danger" data-ann-target="operation.row.disable" onClick={() => setConfirm({ operation: row, mode: 'disable' })}>
               禁用
             </button>
           )}
           {row.useStatus === 'disabled' && (
-            <button className="link link-danger" onClick={() => setConfirm({ operation: row, mode: 'delete' })}>
+            <button className="link link-danger" data-ann-target="operation.row.delete" onClick={() => setConfirm({ operation: row, mode: 'delete' })}>
               删除
             </button>
           )}
@@ -164,18 +164,18 @@ export default function OperationListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工序']}
-        title="工序"
+        breadcrumb={['系统管理', '工艺流程管理', '工序']}
+        title={<span data-ann-target="operation.page.global">工序</span>}
         description="只维护「有哪些数据项」与单位，不填数量（数量 = 工序单耗，在核算模型 / 数据录入阶段填写）；模板可自由编辑、引用即复制、不做版本化"
         actions={
-          <Button variant="primary" onClick={() => navigate('/basic/operation/new')}>
+          <Button variant="primary" data-ann-target="operation.add" onClick={() => navigate('/basic/operation/new')}>
             新增
           </Button>
         }
       />
 
-      <div className="card">
-        <div className="query-bar">
+      <div className="card" data-ann-target="operation.page.list">
+        <div className="query-bar" data-ann-target="operation.query.bar">
           <div className="query-item">
             <span className="query-label">工序编码</span>
             <Input
@@ -229,7 +229,7 @@ export default function OperationListPage() {
             </span>
           </div>
           <div className="flex gap-xs">
-            <Button size="small" onClick={() => setGrouped((prev) => !prev)}>
+            <Button size="small" data-ann-target="operation.group" onClick={() => setGrouped((prev) => !prev)}>
               {grouped ? '取消按类型分组' : '按工序类型分组'}
             </Button>
             <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>

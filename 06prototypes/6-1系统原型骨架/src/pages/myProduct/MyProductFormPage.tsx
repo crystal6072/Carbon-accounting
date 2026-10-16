@@ -1,39 +1,42 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, FormField, Input, PageHeader, Select, Table, Tag, Textarea, useToast } from '@/shared/components'
+import { Button, CascaderSelect, FormField, ImageUpload, Input, PageHeader, Select, Table, Tag, Textarea, useToast } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
 import { buildFormulaLines } from '@/shared/formulaMeta'
 import {
   MY_PRODUCT_ORG,
   createMyProduct,
-  fetchCategories,
-  fetchIndustryOptions,
+  fetchCategoryTreeOptions,
+  fetchIndustryTreeOptions,
   fetchOperationTemplates,
   fetchOperations,
   fetchProcessTemplates,
   fetchMyProduct,
-  fetchUnitOptions,
+  fetchUnitGroupOptions,
   updateMyProduct,
 } from '@/mock'
 import type { ProductPayload } from '@/mock'
 import type {
-  CategoryItem,
   OperationItem,
   OperationTemplate,
-  ProductItem,
   ProductOperationItem,
   ProductProcessItem,
+  ProductScenario,
   ProcessTemplate,
+  TreeOption,
 } from '@/types'
 import ProductOperationViewModal from '@/pages/product/ProductOperationViewModal'
-import { flowTypeText } from '@/pages/product/productMeta'
-import { MY_PRODUCT_BREADCRUMB, myProductSourceText, myProductSourceTone } from './myProductMeta'
+import ProductScenarioEditor from '@/pages/product/ProductScenarioEditor'
+import { MY_PRODUCT_BREADCRUMB } from './myProductMeta'
 import '@/pages/product/ProductPage.css'
 import './MyProductPage.css'
 
 let uid = 0
 const nextId = (prefix: string) => `${prefix}-${Date.now().toString().slice(-6)}-${++uid}`
+
+/** 产品编码由系统自动生成（页面不再展示 / 填写） */
+const genProductCode = () => `ORG-P-${Date.now().toString().slice(-10)}`
 
 /** 由工序模板复制为产品内的工序副本（保留来源模板标识，C3 / C3b） */
 function buildOperation(template: OperationTemplate, seq: number): ProductOperationItem {
@@ -68,8 +71,8 @@ function buildOperation(template: OperationTemplate, seq: number): ProductOperat
 }
 
 /**
- * 我的产品库 · 新增 / 编辑产品（**仅「自己新增」来源**）。
- * 引用标准产品为只读项，无编辑入口（业务 PRD R-004）；本模块不提供「复制成新的」（裁定 2026-09-28）。
+ * 我的产品库 · 新增 / 编辑产品。
+ * 自己新增与引用标准产品（复制副本）均可在本表单编辑；引用 = 从平台级复制一份可编辑副本（业务裁定 V1.1）。
  */
 export default function MyProductFormPage() {
   const { id } = useParams()
@@ -77,14 +80,14 @@ export default function MyProductFormPage() {
   const navigate = useNavigate()
   const toast = useToast()
 
-  const [categories, setCategories] = useState<CategoryItem[]>([])
-  const [unitList, setUnitList] = useState<string[]>([])
-  const [industryList, setIndustryList] = useState<string[]>([])
+  /** 多级下拉选项：产品分类（三级）/ 计量单位（按类型分组）/ 所属行业（行业四级） */
+  const [categoryTree, setCategoryTree] = useState<TreeOption[]>([])
+  const [unitTree, setUnitTree] = useState<TreeOption[]>([])
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [processList, setProcessList] = useState<ProcessTemplate[]>([])
   const [operationList, setOperationList] = useState<OperationTemplate[]>([])
   /** 工序库（用于列表展示「工序类型」） */
   const [operations, setOperations] = useState<OperationItem[]>([])
-  const [origin, setOrigin] = useState<ProductItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -94,12 +97,17 @@ export default function MyProductFormPage() {
     categoryId: '',
     model: '',
     spec: '',
+    batchNo: '',
+    productionSite: '',
+    productionFunction: '',
     unit: '',
     industry: '',
     imageUrl: '',
     description: '',
   })
   const [processes, setProcesses] = useState<ProductProcessItem[]>([])
+  /** 产品场景应用（选填：场景说明 + 多张场景图片） */
+  const [scenarios, setScenarios] = useState<ProductScenario[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   /** 工艺与工序组合展示模式：流程画布 / 列表 */
   const [viewMode, setViewMode] = useState<'canvas' | 'list'>('canvas')
@@ -113,39 +121,39 @@ export default function MyProductFormPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [categoryList, units, industries, templates, operationTemplates, operationList] = await Promise.all([
-        fetchCategories(),
-        fetchUnitOptions(),
-        fetchIndustryOptions(),
+      const [categoryTree, unitTree, industryTree, templates, operationTemplates, operationList] = await Promise.all([
+        fetchCategoryTreeOptions(),
+        fetchUnitGroupOptions(),
+        fetchIndustryTreeOptions(),
         fetchProcessTemplates(),
         fetchOperationTemplates(),
         fetchOperations(),
       ])
-      setCategories(categoryList)
-      setUnitList(units)
-      setIndustryList(industries)
+      setCategoryTree(categoryTree)
+      setUnitTree(unitTree)
+      setIndustryTree(industryTree)
       setProcessList(templates)
       setOperationList(operationTemplates)
       setOperations(operationList)
 
       if (isEdit && id) {
         const product = await fetchMyProduct(id)
-        if (product.source !== 'custom') {
-          throw new Error('引用标准产品为只读项，不可编辑')
-        }
-        setOrigin(product)
         setForm({
           code: product.code,
           name: product.name,
           categoryId: product.categoryId,
           model: product.model,
           spec: product.spec,
+          batchNo: product.batchNo ?? '',
+          productionSite: product.productionSite ?? '',
+          productionFunction: product.productionFunction ?? '',
           unit: product.unit,
           industry: product.industry,
           imageUrl: product.imageUrl,
           description: product.description,
         })
         setProcesses(product.processes)
+        setScenarios(product.scenarios ?? [])
       }
     } catch (error) {
       toast(error instanceof Error ? error.message : '加载失败', 'error')
@@ -159,39 +167,12 @@ export default function MyProductFormPage() {
     void load()
   }, [load])
 
-  /** 分类选项：仅可选启用中的分类；编辑时保留原分类（即便已禁用）以便展示（R-002） */
-  const categoryOptions = useMemo<SelectOption[]>(() => {
-    const options = categories
-      .filter((item) => item.status === 'enabled' || item.id === origin?.categoryId)
-      .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-      .map((item) => ({
-        label: `${'　'.repeat(item.level - 1)}${item.name}${item.status === 'disabled' ? '（已禁用）' : ''}`,
-        value: item.id,
-      }))
-    return options
-  }, [categories, origin])
-
   const processOptions: SelectOption[] = processList.map((item) => ({
     label: `${item.name}（${item.code}）`,
     value: item.code,
   }))
 
   const updateForm = (patch: Partial<typeof form>) => setForm((prev) => ({ ...prev, ...patch }))
-
-  /** 产品图片：原型仅本地读取为 data URL 做预览，不做真实上传与存储 */
-  const handleImageChange = (file?: File) => {
-    if (!file) {
-      updateForm({ imageUrl: '' })
-      return
-    }
-    if (!file.type.startsWith('image/')) {
-      toast('请选择图片文件', 'error')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => updateForm({ imageUrl: String(reader.result ?? '') })
-    reader.readAsDataURL(file)
-  }
 
   const handleAddProcess = () => {
     setProcesses((prev) => [
@@ -412,11 +393,11 @@ export default function MyProductFormPage() {
 
   const handleSubmit = async () => {
     const nextErrors: Record<string, string> = {}
-    if (!form.code.trim()) nextErrors.code = '请输入产品编码'
     if (!form.name.trim()) nextErrors.name = '请输入产品名称'
     if (!form.categoryId) nextErrors.categoryId = '请选择产品分类'
     if (!form.unit) nextErrors.unit = '请选择单位'
     if (!form.industry) nextErrors.industry = '请选择所属行业'
+    if (!form.imageUrl) nextErrors.imageUrl = '请上传产品图片'
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
       toast('请先完善必填项', 'error')
@@ -425,7 +406,7 @@ export default function MyProductFormPage() {
     setErrors({})
 
     const payload: ProductPayload = {
-      code: form.code.trim(),
+      code: isEdit ? form.code.trim() : genProductCode(),
       name: form.name.trim(),
       categoryId: form.categoryId,
       model: form.model.trim(),
@@ -434,6 +415,10 @@ export default function MyProductFormPage() {
       industry: form.industry,
       imageUrl: form.imageUrl,
       description: form.description.trim(),
+      scenarios: scenarios.filter((item) => item.description.trim() !== '' || item.images.length > 0),
+      batchNo: form.batchNo.trim(),
+      productionSite: form.productionSite.trim(),
+      productionFunction: form.productionFunction.trim(),
       processes,
     }
 
@@ -459,7 +444,7 @@ export default function MyProductFormPage() {
   const renderProcessBlocks = () => (
     <>
       {processes.length === 0 && (
-        <div className="compose-empty">产品至少需要 1 个工艺流程（D05），请点击「添加工艺流程」</div>
+        <div className="compose-empty">工艺流程为选填，可不关联；如需关联请点击「添加工艺流程」</div>
       )}
       {processes.map((process) => (
         <div className="sub-block" key={process.id}>
@@ -584,34 +569,18 @@ export default function MyProductFormPage() {
       <PageHeader
         breadcrumb={[...MY_PRODUCT_BREADCRUMB, isEdit ? '编辑产品' : '新增产品']}
         title={isEdit ? '编辑产品' : '新增产品'}
-        description={
-          isEdit
-            ? '产品不版本化，保存后直接覆盖；组合校验通过后可上架供核算项目选择'
-            : '产品来源 = 自己新增（组织自建）；保存后为下架状态，通过组合校验后可上架'
-        }
-        actions={<Button onClick={() => navigate(-1)}>取消</Button>}
       />
 
       <div className="stack">
-        <section className="card">
+        <section className="card" data-ann-target="my-product-edit">
           <div className="section-header">
             <span className="section-title">基本信息</span>
-            <span className="section-extra">
-              <span className="toolbar-tip">引用标准产品请在列表「引用标准产品」操作，只读不可编辑</span>
-            </span>
           </div>
           <div className="form-block">
             <div className="form-grid">
-              <FormField label="产品编码" required error={errors.code}>
-                <Input
-                  value={form.code}
-                  placeholder="如 ORG-P-202609-003"
-                  invalid={!!errors.code}
-                  onChange={(e) => updateForm({ code: e.target.value })}
-                />
-              </FormField>
               <FormField label="产品名称" required error={errors.name}>
                 <Input
+                  data-ann-target="my-product-name"
                   value={form.name}
                   placeholder="请输入产品名称"
                   invalid={!!errors.name}
@@ -619,16 +588,15 @@ export default function MyProductFormPage() {
                 />
               </FormField>
               <FormField label="产品分类" required error={errors.categoryId}>
-                <Select
+                <CascaderSelect
+                  data-ann-target="my-product-category"
                   value={form.categoryId}
-                  placeholder="仅可选择启用中的分类"
-                  options={categoryOptions}
+                  options={categoryTree}
+                  placeholder="请选择产品分类（一级 / 二级 / 三级）"
+                  searchPlaceholder="搜索分类名称 / 编码"
                   invalid={!!errors.categoryId}
-                  onChange={(e) => updateForm({ categoryId: e.target.value })}
+                  onChange={(value) => updateForm({ categoryId: value })}
                 />
-              </FormField>
-              <FormField label="型号">
-                <Input value={form.model} placeholder="选填" onChange={(e) => updateForm({ model: e.target.value })} />
               </FormField>
               <FormField label="规格">
                 <Input
@@ -637,60 +605,60 @@ export default function MyProductFormPage() {
                   onChange={(e) => updateForm({ spec: e.target.value })}
                 />
               </FormField>
+              <FormField label="产品批次号">
+                <Input
+                  value={form.batchNo}
+                  placeholder="选填"
+                  onChange={(e) => updateForm({ batchNo: e.target.value })}
+                />
+              </FormField>
+              <FormField label="生产地点">
+                <Input
+                  value={form.productionSite}
+                  placeholder="选填"
+                  onChange={(e) => updateForm({ productionSite: e.target.value })}
+                />
+              </FormField>
+              <FormField label="生产功能">
+                <Input
+                  value={form.productionFunction}
+                  placeholder="选填"
+                  onChange={(e) => updateForm({ productionFunction: e.target.value })}
+                />
+              </FormField>
               <FormField label="单位" required error={errors.unit}>
-                <Select
+                <CascaderSelect
+                  data-ann-target="my-product-unit"
                   value={form.unit}
+                  options={unitTree}
                   placeholder="引用计量单位库"
-                  options={unitList.map((unit) => ({ label: unit, value: unit }))}
+                  searchPlaceholder="搜索单位符号 / 名称"
                   invalid={!!errors.unit}
-                  onChange={(e) => updateForm({ unit: e.target.value })}
+                  onChange={(value) => updateForm({ unit: value })}
                 />
               </FormField>
               <FormField label="所属行业" required error={errors.industry}>
-                <Select
+                <CascaderSelect
+                  data-ann-target="my-product-industry"
                   value={form.industry}
-                  placeholder="引用行业库"
-                  options={industryList.map((item) => ({ label: item, value: item }))}
+                  options={industryTree}
+                  placeholder="引用行业库（门类 / 大类 / 中类 / 小类）"
+                  searchPlaceholder="搜索行业名称 / 编码"
                   invalid={!!errors.industry}
-                  onChange={(e) => updateForm({ industry: e.target.value })}
+                  onChange={(value) => updateForm({ industry: value })}
                 />
               </FormField>
-              <FormField label="产品来源">
-                <span className="my-source-cell">
-                  <Tag tone={myProductSourceTone.custom}>{myProductSourceText.custom}</Tag>
-                  <span className="my-source-readonly-tip">系统带出，不可改</span>
-                </span>
-              </FormField>
               <FormField label="归属组织">
-                <span className="my-source-cell">
-                  <span>{MY_PRODUCT_ORG}</span>
-                  <span className="my-source-readonly-tip">自动带出当前登录用户所属组织，不可改</span>
-                </span>
+                <span>{MY_PRODUCT_ORG}</span>
               </FormField>
-              <FormField label="产品图片" full>
-                <div className="image-upload">
-                  {form.imageUrl ? (
-                    <img className="image-thumb" src={form.imageUrl} alt="产品图片" />
-                  ) : (
-                    <div className="image-thumb image-thumb-empty">暂无图片</div>
-                  )}
-                  <div className="image-upload-actions">
-                    <label className="btn btn-sm">
-                      选择图片
-                      <input
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={(e) => handleImageChange(e.target.files?.[0])}
-                      />
-                    </label>
-                    {form.imageUrl && (
-                      <button type="button" className="link link-danger" onClick={() => handleImageChange(undefined)}>
-                        移除
-                      </button>
-                    )}
-                    <span className="toolbar-tip">选填；原型仅做本地预览，不校验尺寸与格式</span>
-                  </div>
+              <FormField label="产品图片" required error={errors.imageUrl} full>
+                <div data-ann-target="my-product-image">
+                  <ImageUpload
+                    value={form.imageUrl}
+                    invalid={!!errors.imageUrl}
+                    onChange={(imageUrl) => updateForm({ imageUrl })}
+                    tip="必填"
+                  />
                 </div>
               </FormField>
               <FormField label="产品描述" full>
@@ -703,19 +671,21 @@ export default function MyProductFormPage() {
               </FormField>
             </div>
           </div>
-          <div className="form-block">
-            <div className="form-tip">
-              「单位」引用计量单位库，同时承载核算结果的比较基准口径（D05）；「所属行业」引用行业库（A1-4），
-              用于匹配行业阶段基线与核算模型（D06）。
-            </div>
+        </section>
+
+        <section className="card" data-ann-target="my-product-scenario">
+          <div className="section-header">
+            <span className="section-title">产品场景应用</span>
+          </div>
+          <div className="section-body">
+            <ProductScenarioEditor value={scenarios} onChange={setScenarios} />
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="my-product-process">
           <div className="section-header">
             <span className="section-title">工艺与工序组合</span>
             <span className="section-extra">
-              <span className="toolbar-tip">工序随工艺流程带出并复制为副本（C3 / C3b）</span>
               <div className="pcf-view-switch" role="tablist" aria-label="展示方式">
                 <button
                   type="button"
@@ -746,21 +716,12 @@ export default function MyProductFormPage() {
             </span>
           </div>
           <div className="section-body">{renderProcessBlocks()}</div>
-          <div className="form-block">
-            <div className="form-tip">
-              组合校验：至少 1 个工艺流程、每个工艺流程至少 1 道工序、末道工序产出必须为「产品」；投入产出流（
-              {flowTypeText.material} / {flowTypeText.energy} / {flowTypeText.resource} / {flowTypeText.semi} /{' '}
-              {flowTypeText.product} / {flowTypeText.byproduct} / {flowTypeText.emission}
-              ）为工序副本带出，本模块只读，维护归属「工序管理」（A1-8）。当前候选来自平台级工艺库 / 工序库，
-              「我的工艺流程库 / 我的工序库」交付后组织自建项将并入候选。
-            </div>
-          </div>
         </section>
 
-        <section className="card">
+        <section className="card my-form-footer">
           <div className="form-page-footer">
             <Button onClick={() => navigate(-1)}>取消</Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button variant="primary" data-ann-target="my-product-save" onClick={handleSubmit} disabled={submitting}>
               {submitting ? '保存中…' : '保存'}
             </Button>
           </div>

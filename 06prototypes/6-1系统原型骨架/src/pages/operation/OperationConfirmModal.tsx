@@ -34,8 +34,8 @@ export default function OperationConfirmModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant={mode === 'delete' ? 'danger' : 'primary'} onClick={onConfirm}>
+          <Button data-ann-target="operation.confirm.cancel" onClick={onClose}>取消</Button>
+          <Button data-ann-target="operation.confirm.ok" variant={mode === 'delete' ? 'danger' : 'primary'} onClick={onConfirm}>
             {TITLE[mode]}
           </Button>
         </>

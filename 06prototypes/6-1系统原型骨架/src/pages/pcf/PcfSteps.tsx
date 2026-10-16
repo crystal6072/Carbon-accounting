@@ -12,7 +12,7 @@ interface PcfStepsProps {
 }
 
 /**
- * 顶部步骤条（骨架 §4.2）：横向 5 步。
+ * 顶部步骤条（骨架 §4.2）：横向步骤条，步数随 `PCF_STEPS`（V0.8 起为 4 步，核算结果为最后节点）。
  * 完成态 ✓ / 当前步高亮 / 未到达锁定；未交付批次标注「待交付」。
  */
 export default function PcfSteps({

@@ -7,11 +7,9 @@ import type { FlowFormulaDisposal, FlowItemType } from '@/types'
  */
 const DEFAULT_FORMULA_RULES: Array<{ pattern: RegExp; name: string }> = [
   { pattern: /运输|货运|物流/, name: '运输 t·km 法' },
-  { pattern: /蒸汽|热力|热水|采暖/, name: '净外购热力法' },
-  { pattern: /天然气|柴油|汽油|燃煤|燃料|燃气|液化气/, name: '燃料燃烧（碳平衡）法' },
-  { pattern: /制冷剂|冷媒|R\d{3}/i, name: '制冷剂泄漏法' },
+  { pattern: /电力|用电/, name: '因子法（电力口径）' },
+  { pattern: /废水|污水|废液/, name: '因子法（废水口径）' },
   { pattern: /回收|再生|回用/, name: '回收信用法（负项）' },
-  { pattern: /末期|废弃|填埋|焚烧|处置/, name: '末期处理法' },
 ]
 
 /** 默认不计入的流类型：中间品 / 产品（其排放已计入上游工序，避免重复计算） */

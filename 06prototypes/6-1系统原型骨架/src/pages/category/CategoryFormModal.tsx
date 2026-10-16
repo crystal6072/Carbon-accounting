@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Button, FormField, Input, Modal, Select, Textarea } from '@/shared/components'
-import type { SelectOption } from '@/shared/components'
-import type { CategoryItem, CategoryLevel } from '@/types'
+import { useEffect, useState } from 'react'
+import { Button, FormField, Input, Modal, Textarea, TreeSelect } from '@/shared/components'
+import type { CategoryItem, CategoryLevel, TreeOption } from '@/types'
 import type { CategoryPayload } from '@/mock'
 import { levelText } from '@/shared/utils/tree'
 
@@ -18,7 +17,8 @@ interface CategoryFormModalProps {
   lockParent: boolean
   /** 上级分类锁定时展示的文案（如「竹制餐具」「无上级（一级分类）」） */
   lockedParentLabel?: string
-  parentOptions: SelectOption[]
+  /** 上级分类候选（分级树：层级未达上限，且已排除自身与其全部下级） */
+  parentOptions: TreeOption[]
   onClose: () => void
   onSubmit: (payload: CategoryPayload) => Promise<void>
   resolveLevel: (parentId: string | null) => CategoryLevel
@@ -66,12 +66,6 @@ export default function CategoryFormModal({
 
   const level = resolveLevel(parentId || null)
 
-  // 「一级分类」作为显式选项，避免用户靠「不选」来表达一级分类
-  const parentSelectOptions = useMemo<SelectOption[]>(
-    () => [{ label: PARENT_NONE_LABEL, value: '' }, ...parentOptions],
-    [parentOptions],
-  )
-
   // 标题随入口变化，让用户明确当前在新增哪一级分类
   const modalTitle =
     mode === 'edit' ? '编辑分类' : lockParent ? (parentId ? '新增下级分类' : '新增一级分类') : '新增分类'
@@ -105,8 +99,10 @@ export default function CategoryFormModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={onClose} data-ann-target="category.form.cancel">
+            取消
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={submitting} data-ann-target="category.form.save">
             {submitting ? '保存中…' : '保存'}
           </Button>
         </>
@@ -117,7 +113,16 @@ export default function CategoryFormModal({
           {lockParent ? (
             <div className="form-static">{lockedParentLabel ?? PARENT_NONE_LABEL}</div>
           ) : (
-            <Select value={parentId} options={parentSelectOptions} onChange={(e) => setParentId(e.target.value)} />
+            <TreeSelect
+              value={parentId}
+              options={parentOptions}
+              noneLabel={PARENT_NONE_LABEL}
+              placeholder="请选择上级分类"
+              searchPlaceholder="搜索分类名称 / 编码"
+              emptyText="暂无可选分类"
+              annTarget="category.form.parent"
+              onChange={(next) => setParentId(next)}
+            />
           )}
         </FormField>
         <FormField label="分类编码" required error={errors.code}>
@@ -125,6 +130,7 @@ export default function CategoryFormModal({
             value={code}
             placeholder="如 BAM-01"
             invalid={!!errors.code}
+            data-ann-target="category.form.code"
             onChange={(e) => setCode(e.target.value)}
           />
         </FormField>
@@ -133,25 +139,34 @@ export default function CategoryFormModal({
             value={name}
             placeholder="请输入分类名称"
             invalid={!!errors.name}
+            data-ann-target="category.form.name"
             onChange={(e) => setName(e.target.value)}
           />
         </FormField>
         <FormField label="分类层级">
-          <div className="form-static">{levelText(level)}</div>
+          <div className="form-static" data-ann-target="category.form.level">
+            {levelText(level)}
+          </div>
         </FormField>
         <FormField label="排序号">
           <Input
             value={sortNo}
             inputMode="numeric"
             placeholder="越小越靠前，可留空"
+            data-ann-target="category.form.sortNo"
             onChange={(e) => setSortNo(e.target.value.replace(/[^0-9]/g, ''))}
           />
         </FormField>
         <FormField label="备注" full>
-          <Textarea value={remark} rows={3} placeholder="选填" onChange={(e) => setRemark(e.target.value)} />
+          <Textarea
+            value={remark}
+            rows={3}
+            placeholder="选填"
+            data-ann-target="category.form.remark"
+            onChange={(e) => setRemark(e.target.value)}
+          />
         </FormField>
       </div>
-      <div className="modal-confirm-tip">上级分类与分类层级的联动口径为【待确认 Q03】，原型按「上级层级 + 1」自动带出。</div>
     </Modal>
   )
 }

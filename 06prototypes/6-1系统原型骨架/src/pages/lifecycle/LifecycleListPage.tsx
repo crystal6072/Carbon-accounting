@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
-import type { Column, SelectOption } from '@/shared/components'
-import { deleteLifecycleStage, fetchIndustryOptions, fetchLifecycleStages, updateLifecycleStageStatus } from '@/mock'
+import type { Column } from '@/shared/components'
+import { boundaryLabelOf, deleteLifecycleStage, fetchLifecycleStages, updateLifecycleStageStatus } from '@/mock'
 import type { LifecycleStageItem } from '@/types'
 import LifecycleConfirmModal from './LifecycleConfirmModal'
 import type { LifecycleConfirmMode } from './LifecycleConfirmModal'
@@ -10,9 +10,7 @@ import LifecycleViewModal from './LifecycleViewModal'
 import {
   canDeleteStage,
   groupStages,
-  inclusionText,
-  inclusionTone,
-  isCommonIndustry,
+  isCommonBoundary,
   levelText,
   levelTone,
   useStatusText,
@@ -22,17 +20,13 @@ import './LifecyclePage.css'
 
 const PAGE_SIZE = 20
 
-/** 「适用行业」筛选中的「全行业通用（适用行业为空）」哨兵值 */
-const COMMON_INDUSTRY = '__common__'
-
 interface QueryState {
   name: string
   level: '' | '1' | '2'
-  industry: string
   status: '' | 'enabled' | 'disabled'
 }
 
-const EMPTY_QUERY: QueryState = { name: '', level: '', industry: '', status: '' }
+const EMPTY_QUERY: QueryState = { name: '', level: '', status: '' }
 
 /** 列表行：一级行 + 其下二级行（缩进展示）；`matched` 区分「命中结果」与「分组上下文行」 */
 interface Row {
@@ -46,7 +40,6 @@ export default function LifecycleListPage() {
   const toast = useToast()
 
   const [list, setList] = useState<LifecycleStageItem[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState<QueryState>(EMPTY_QUERY)
   const [page, setPage] = useState(1)
@@ -61,9 +54,7 @@ export default function LifecycleListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [stages, industryList] = await Promise.all([fetchLifecycleStages(), fetchIndustryOptions()])
-      setList(stages)
-      setIndustries(industryList)
+      setList(await fetchLifecycleStages())
     } finally {
       setLoading(false)
     }
@@ -73,23 +64,10 @@ export default function LifecycleListPage() {
     void load()
   }, [load])
 
-  const industryOptions: SelectOption[] = useMemo(
-    () => [
-      { label: '（全行业通用）', value: COMMON_INDUSTRY },
-      ...industries.map((item) => ({ label: item, value: item })),
-    ],
-    [industries],
-  )
-
   const match = useCallback(
     (stage: LifecycleStageItem) => {
       if (query.name.trim() && !stage.name.includes(query.name.trim())) return false
       if (query.level && String(stage.level) !== query.level) return false
-      if (query.industry === COMMON_INDUSTRY) {
-        if (!isCommonIndustry(stage)) return false
-      } else if (query.industry && !stage.industries.includes(query.industry)) {
-        return false
-      }
       if (query.status && stage.status !== query.status) return false
       return true
     },
@@ -134,8 +112,19 @@ export default function LifecycleListPage() {
         await deleteLifecycleStage(stage.id)
         toast('删除成功')
       } else {
+        /** 级联禁用：禁用一级阶段时同步禁用其下启用态二级阶段（与 mock 层口径一致） */
+        const cascade =
+          mode === 'disable' && stage.level === 1
+            ? list.filter((item) => item.parentId === stage.id && item.status !== 'disabled').length
+            : 0
         await updateLifecycleStageStatus(stage.id, mode === 'enable' ? 'enabled' : 'disabled')
-        toast(mode === 'enable' ? '启用成功' : '禁用成功')
+        toast(
+          mode === 'enable'
+            ? '启用成功'
+            : cascade > 0
+              ? `禁用成功，其下 ${cascade} 个二级阶段已同步禁用`
+              : '禁用成功',
+        )
       }
       setConfirm(null)
       await load()
@@ -147,13 +136,14 @@ export default function LifecycleListPage() {
   const columns: Column<Row>[] = [
     {
       key: 'name',
-      title: '阶段名称',
+      title: <span data-ann-target="lifecycle.col.name">阶段名称</span>,
       width: 280,
       render: (row) => (
         <span className="stage-cell">
           {row.isChild && <span className="stage-indent">└</span>}
           <button
             className={['link', 'stage-name', row.isChild ? 'stage-name-child' : 'stage-name-primary'].join(' ')}
+            data-ann-target="lifecycle.row.name"
             onClick={() => openView(row.stage.id)}
           >
             {row.stage.name}
@@ -164,38 +154,30 @@ export default function LifecycleListPage() {
     },
     {
       key: 'level',
-      title: '阶段层级',
+      title: <span data-ann-target="lifecycle.col.level">阶段层级</span>,
       width: 100,
       render: (row) => <Tag tone={levelTone[row.stage.level]}>{levelText[row.stage.level]}</Tag>,
     },
     {
-      key: 'industries',
-      title: '适用行业',
-      width: 260,
-      render: (row) => (
-        <span
-          className={['industry-cell', isCommonIndustry(row.stage) ? 'industry-common' : ''].filter(Boolean).join(' ')}
-          title={isCommonIndustry(row.stage) ? '适用行业为空 = 全行业通用' : row.stage.industries.join('、')}
-        >
-          {isCommonIndustry(row.stage) ? '全行业通用' : row.stage.industries.join('、')}
-        </span>
-      ),
-    },
-    {
-      key: 'gateRule',
-      title: '摇篮到大门纳入规则',
-      width: 150,
-      render: (row) => <Tag tone={inclusionTone[row.stage.gateRule]}>{inclusionText[row.stage.gateRule]}</Tag>,
-    },
-    {
-      key: 'graveRule',
-      title: '摇篮到坟墓纳入规则',
-      width: 150,
-      render: (row) => <Tag tone={inclusionTone[row.stage.graveRule]}>{inclusionText[row.stage.graveRule]}</Tag>,
+      key: 'boundaries',
+      title: <span data-ann-target="lifecycle.col.boundaries">适用系统边界</span>,
+      width: 240,
+      render: (row) =>
+        isCommonBoundary(row.stage) ? (
+          <Tag>全边界通用</Tag>
+        ) : (
+          <span className="boundary-cell">
+            {row.stage.boundaries.map((code) => (
+              <Tag key={code} tone="info">
+                {boundaryLabelOf(code)}
+              </Tag>
+            ))}
+          </span>
+        ),
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="lifecycle.col.status">使用状态</span>,
       width: 90,
       render: (row) => <Tag tone={useStatusTone[row.stage.status]}>{useStatusText[row.stage.status]}</Tag>,
     },
@@ -205,24 +187,24 @@ export default function LifecycleListPage() {
       width: 180,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => openView(row.stage.id)}>
+          <button className="link" data-ann-target="lifecycle.row.view" onClick={() => openView(row.stage.id)}>
             查看
           </button>
-          <button className="link" onClick={() => openEdit(row.stage.id)}>
+          <button className="link" data-ann-target="lifecycle.row.edit" onClick={() => openEdit(row.stage.id)}>
             编辑
           </button>
           {row.stage.status === 'disabled' ? (
-            <button className="link" onClick={() => setConfirm({ stage: row.stage, mode: 'enable' })}>
+            <button className="link" data-ann-target="lifecycle.row.enable" onClick={() => setConfirm({ stage: row.stage, mode: 'enable' })}>
               启用
             </button>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ stage: row.stage, mode: 'disable' })}>
+            <button className="link link-danger" data-ann-target="lifecycle.row.disable" onClick={() => setConfirm({ stage: row.stage, mode: 'disable' })}>
               禁用
             </button>
           )}
           {/* 删除仅对「已禁用」的阶段开放，启用态隐藏入口 */}
           {canDeleteStage(row.stage) && (
-            <button className="link link-danger" onClick={() => setConfirm({ stage: row.stage, mode: 'delete' })}>
+            <button className="link link-danger" data-ann-target="lifecycle.row.delete" onClick={() => setConfirm({ stage: row.stage, mode: 'delete' })}>
               删除
             </button>
           )}
@@ -234,18 +216,18 @@ export default function LifecycleListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '生命周期阶段']}
-        title="生命周期阶段"
-        description="填报、检测、汇总与报告的阶段骨架：层级仅一级 / 二级，按边界维护三态纳入规则"
+        breadcrumb={['系统管理', '基础库', '生命周期阶段']}
+        title={<span data-ann-target="lifecycle.page.global">生命周期阶段</span>}
+        description="生命周期阶段字典：层级仅一级 / 二级，按「数据字典 · 系统边界」维护适用边界（多选）"
         actions={
-          <Button variant="primary" onClick={() => openEdit(null)}>
+          <Button variant="primary" data-ann-target="lifecycle.add" onClick={() => openEdit(null)}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="lifecycle.query.bar">
           <div className="query-item">
             <span className="query-label">阶段名称</span>
             <Input
@@ -267,15 +249,6 @@ export default function LifecycleListPage() {
             />
           </div>
           <div className="query-item">
-            <span className="query-label">适用行业</span>
-            <Select
-              value={query.industry}
-              placeholder="全部"
-              options={industryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, industry: e.target.value }))}
-            />
-          </div>
-          <div className="query-item">
             <span className="query-label">使用状态</span>
             <Select
               value={query.status}
@@ -288,8 +261,8 @@ export default function LifecycleListPage() {
             />
           </div>
           <div className="query-actions">
-            <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-            <Button variant="primary" onClick={() => toast('查询完成')}>
+            <Button data-ann-target="lifecycle.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
+            <Button variant="primary" data-ann-target="lifecycle.query.search" onClick={() => toast('查询完成')}>
               搜索
             </Button>
           </div>
@@ -303,12 +276,9 @@ export default function LifecycleListPage() {
               其所属一级阶段作为分组行一并展示，不计入结果数）
             </span>
           </div>
-          <Button onClick={() => toast(`导出任务已创建，共 ${matchedCount} 条（原型模拟，含两个边界的纳入规则）`)}>
-            导出
-          </Button>
         </div>
 
-        <div className="lifecycle-table-wrap">
+        <div className="lifecycle-table-wrap" data-ann-target="lifecycle.page.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.stage.id} loading={loading} />
         </div>
 
@@ -349,6 +319,11 @@ export default function LifecycleListPage() {
         mode={confirm?.mode ?? 'enable'}
         childCount={
           confirm?.stage ? list.filter((item) => item.parentId === confirm.stage.id).length : 0
+        }
+        cascadeCount={
+          confirm?.stage
+            ? list.filter((item) => item.parentId === confirm.stage.id && item.status !== 'disabled').length
+            : 0
         }
         onClose={() => setConfirm(null)}
         onConfirm={handleConfirm}

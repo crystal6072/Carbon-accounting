@@ -37,7 +37,7 @@ export default function MaterialBatchConfirmModal({
         </>
       }
     >
-      <div className="modal-confirm-text">
+      <div className="modal-confirm-text" data-ann-target="material.batch.confirm">
         <span style={{ color: 'var(--color-warning)', display: 'flex' }}>
           <Icon name="warning" size={16} />
         </span>

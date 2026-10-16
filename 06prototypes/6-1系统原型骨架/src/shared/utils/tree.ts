@@ -4,13 +4,16 @@ import type { CategoryItem } from '@/types'
 /** 分类树根节点 id（虚拟节点） */
 export const ROOT_ID = 'all'
 
+/** 产品分类层级上限：**六级**；达上限的分类不再提供「新增下级分类」入口 */
+export const CATEGORY_MAX_LEVEL = 6
+
 function sortBySortNo(items: CategoryItem[]): CategoryItem[] {
   return [...items].sort(
     (a, b) => (a.sortNo ?? Number.MAX_SAFE_INTEGER) - (b.sortNo ?? Number.MAX_SAFE_INTEGER),
   )
 }
 
-/** 由平铺分类列表构建「全部分类 → 一/二/三级」树 */
+/** 由平铺分类列表构建「全部分类 → 各级分类」树 */
 export function buildCategoryTree(list: CategoryItem[]): TreeNodeData[] {
   const byParent = new Map<string, CategoryItem[]>()
   list.forEach((item) => {
@@ -57,7 +60,7 @@ export function collectDescendantIds(list: CategoryItem[], id: string): string[]
   return ids
 }
 
-/** 层级显示文案：1 → 一级分类 */
+/** 层级显示文案：1 → 一级分类 …… 6 → 六级分类 */
 export function levelText(level: number): string {
-  return ['', '一级分类', '二级分类', '三级分类'][level] ?? `${level} 级分类`
+  return ['', '一级分类', '二级分类', '三级分类', '四级分类', '五级分类', '六级分类'][level] ?? `${level} 级分类`
 }

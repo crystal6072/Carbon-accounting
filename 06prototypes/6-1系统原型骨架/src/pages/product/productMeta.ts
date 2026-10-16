@@ -1,5 +1,15 @@
 import type { TagTone } from '@/shared/components'
-import type { FlowItemType, ProductUseStatus } from '@/types'
+import type { FlowItemType, ProductUseStatus, TreeOption } from '@/types'
+
+/** 递归过滤掉已禁用分类节点（K-06：产品信息库不展示已禁用分类） */
+export function filterEnabledCategories(nodes: TreeOption[]): TreeOption[] {
+  return nodes
+    .filter((node) => !node.disabled)
+    .map((node) => ({
+      ...node,
+      children: node.children ? filterEnabledCategories(node.children) : undefined,
+    }))
+}
 
 /** 使用状态文案与色板（**产品级**） */
 export const useStatusText: Record<ProductUseStatus, string> = {

@@ -1,6 +1,10 @@
 node_modules
 dist
 dist-ssr
+# 验证脚本（__verify_*.ts）的 SSR 构建输出
+dist-ui
+dist-grave
+dist-verify
 *.local
 .DS_Store
 .vite

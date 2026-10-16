@@ -1,27 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, FormField, Input, PageHeader, Select, Textarea, useToast } from '@/shared/components'
+import { Button, CascaderSelect, FormField, Input, PageHeader, Select, Textarea, useToast } from '@/shared/components'
 import type { SelectOption } from '@/shared/components'
 import {
   createOperation,
-  fetchCalcFormulas,
   fetchEnergyOptions,
   fetchMaterialOptions,
   fetchOperation,
-  fetchUnitOptions,
+  fetchUnitGroupOptions,
   updateOperation,
 } from '@/mock'
 import type { OperationFlowPayload, OperationPayload } from '@/mock'
 import type {
-  CalcFormula,
   EmissionCategory,
   EnergyOption,
-  FlowFormulaDisposal,
   FlowItemType,
   MaterialOption,
   OperationFlowItem,
   OperationItem,
   OperationType,
+  TreeOption,
 } from '@/types'
 import {
   emissionCategoryOrder,
@@ -39,7 +37,7 @@ const nextId = (prefix: string) => `${prefix}-${Date.now().toString().slice(-6)}
 
 type TableKey = 'input' | 'output'
 
-/** 投入项：只定义「有哪些」（流类型 + 物料 + 单位 + 计算公式），不含数量 */
+/** 投入项：只定义「有哪些」（流类型 + 物料 + 单位），不含数量 */
 const emptyInputRow = (): OperationFlowItem => ({
   id: nextId('I'),
   seq: 0,
@@ -49,11 +47,6 @@ const emptyInputRow = (): OperationFlowItem => ({
   refName: '',
   unit: '',
   remark: '',
-  formulaId: '',
-  formulaCode: '',
-  formulaName: '',
-  formulaExpression: '',
-  disposal: 'formula',
 })
 
 /** 产出项：只定义「有哪些」，排放物须标类别 */
@@ -67,11 +60,6 @@ const emptyOutputRow = (): OperationFlowItem => ({
   unit: '',
   emissionCategory: undefined,
   remark: '',
-  formulaId: '',
-  formulaCode: '',
-  formulaName: '',
-  formulaExpression: '',
-  disposal: 'formula',
 })
 
 /** 子表按数组顺序重编行序（投入项 / 产出项各自独立编号） */
@@ -86,8 +74,8 @@ export default function OperationFormPage() {
 
   const [materialList, setMaterialList] = useState<MaterialOption[]>([])
   const [energyList, setEnergyList] = useState<EnergyOption[]>([])
-  const [unitList, setUnitList] = useState<string[]>([])
-  const [formulas, setFormulas] = useState<CalcFormula[]>([])
+  /** 计量单位多级选项（按单位类型分组） */
+  const [unitTree, setUnitTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -106,16 +94,14 @@ export default function OperationFormPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [materials, energies, units, formulaList] = await Promise.all([
+      const [materials, energies, units] = await Promise.all([
         fetchMaterialOptions(),
         fetchEnergyOptions(),
-        fetchUnitOptions(),
-        fetchCalcFormulas(),
+        fetchUnitGroupOptions(),
       ])
       setMaterialList(materials)
       setEnergyList(energies)
-      setUnitList(units)
-      setFormulas(formulaList.filter((item) => item.status === 'enabled'))
+      setUnitTree(units)
 
       if (isEdit && id) {
         const detail: OperationItem = await fetchOperation(id)
@@ -143,44 +129,7 @@ export default function OperationFormPage() {
     void load()
   }, [load])
 
-  const unitOptions = useMemo<SelectOption[]>(() => unitList.map((unit) => ({ label: unit, value: unit })), [unitList])
-
-  /** 计算公式选项：系统默认 + 不计入 + 启用中的公式 */
-  const formulaSelectOptions = useMemo<SelectOption[]>(() => {
-    const list: SelectOption[] = [
-      { label: '系统默认（按类型自动带出）', value: '__default__' },
-      { label: '不参与计算', value: '__excluded__' },
-    ]
-    formulas.forEach((item) => list.push({ label: `${item.name}（${item.code}）`, value: item.id }))
-    return list
-  }, [formulas])
-
-  /** 中间品 / 产品：其排放即上游工序排放，默认不计入、不可改 */
-  const isExcludedFlow = (row: OperationFlowItem): boolean =>
-    row.flowType === 'semi' || row.flowType === 'product'
-
-  const formulaSelectValueOf = (row: OperationFlowItem): string => {
-    if (row.disposal === 'excluded') return '__excluded__'
-    if (row.formulaId) return row.formulaId
-    return '__default__'
-  }
-
-  const handleFormulaChange = (table: TableKey, rowId: string, value: string) => {
-    if (value === '__excluded__') {
-      updateRow(table, rowId, { disposal: 'excluded', formulaId: '', formulaCode: '', formulaName: '', formulaExpression: '' })
-    } else if (value === '__default__') {
-      updateRow(table, rowId, { disposal: 'formula', formulaId: '', formulaCode: '', formulaName: '', formulaExpression: '' })
-    } else {
-      const formula = formulas.find((item) => item.id === value)
-      updateRow(table, rowId, {
-        disposal: 'formula',
-        formulaId: formula?.id ?? '',
-        formulaCode: formula?.code ?? '',
-        formulaName: formula?.name ?? '',
-        formulaExpression: formula?.expression ?? '',
-      })
-    }
-  }
+  const unitOptions = useMemo<TreeOption[]>(() => unitTree, [unitTree])
 
   const inputTypeOptions = useMemo<SelectOption[]>(
     () => inputFlowTypes.map((type) => ({ label: flowTypeText[type], value: type })),
@@ -309,8 +258,6 @@ export default function OperationFormPage() {
       unit: row.unit,
       emissionCategory: isOutput ? row.emissionCategory : undefined,
       remark: row.remark,
-      formulaId: row.formulaId ?? '',
-      disposal: row.disposal ?? 'formula',
     }))
 
   const handleSubmit = async () => {
@@ -351,7 +298,7 @@ export default function OperationFormPage() {
   if (loading) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '工艺流程管理', '工序']} title={isEdit ? '编辑工序' : '新增工序'} />
+        <PageHeader breadcrumb={['系统管理', '工艺流程管理', '工序']} title={isEdit ? '编辑工序' : '新增工序'} />
         <div className="card">
           <div className="empty">加载中…</div>
         </div>
@@ -362,13 +309,13 @@ export default function OperationFormPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工序', isEdit ? '编辑工序' : '新增工序']}
-        title={isEdit ? '编辑工序' : '新增工序'}
+        breadcrumb={['系统管理', '工艺流程管理', '工序', isEdit ? '编辑工序' : '新增工序']}
+        title={<span data-ann-target="operation.page.global">{isEdit ? '编辑工序' : '新增工序'}</span>}
         description="工序只维护输入 / 输出数据项与单位，不填数量；数量（工序单耗）在核算模型 / 数据录入阶段填写"
         actions={<Button onClick={() => navigate(-1)}>取消</Button>}
       />
 
-      <div className="stack">
+      <div className="stack" data-ann-target="operation.form.root">
         <section className="card">
           <div className="section-header">
             <span className="section-title">基本信息</span>
@@ -378,6 +325,7 @@ export default function OperationFormPage() {
             <div className="form-grid">
               <FormField label="工序编码" required error={errors.code}>
                 <Input
+                  data-ann-target="operation.form.code"
                   value={form.code}
                   placeholder="如 GX-0701"
                   readOnly={isEdit}
@@ -387,6 +335,7 @@ export default function OperationFormPage() {
               </FormField>
               <FormField label="工序名称" required error={errors.name}>
                 <Input
+                  data-ann-target="operation.form.name"
                   value={form.name}
                   placeholder="请输入工序名称"
                   invalid={!!errors.name}
@@ -395,6 +344,7 @@ export default function OperationFormPage() {
               </FormField>
               <FormField label="工序类型" required error={errors.type}>
                 <Select
+                  data-ann-target="operation.form.type"
                   value={form.type}
                   placeholder="请选择"
                   options={operationTypeOrder.map((type) => ({ label: operationTypeText[type], value: type }))}
@@ -403,7 +353,7 @@ export default function OperationFormPage() {
                 />
               </FormField>
               <FormField label="工序图标">
-                <div className="image-upload">
+                <div className="image-upload" data-ann-target="operation.form.icon">
                   {iconUrl ? (
                     <img className="image-thumb" src={iconUrl} alt="工序图标" />
                   ) : (
@@ -425,6 +375,7 @@ export default function OperationFormPage() {
               </FormField>
               <FormField label="工序描述" full>
                 <Textarea
+                  data-ann-target="operation.form.description"
                   value={form.description}
                   rows={3}
                   placeholder="选填"
@@ -441,7 +392,7 @@ export default function OperationFormPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="operation.form.input">
           <div className="section-header">
             <span className="section-title">投入项</span>
             <span className="section-extra">
@@ -457,7 +408,6 @@ export default function OperationFormPage() {
               <span>流类型</span>
               <span>物料（物料库 / 能源库）</span>
               <span>单位</span>
-              <span>计算公式</span>
               <span>备注</span>
               <span />
             </div>
@@ -479,21 +429,13 @@ export default function OperationFormPage() {
                   options={refOptions(row)}
                   onChange={(e) => handleRefChange('input', row.id, e.target.value, row)}
                 />
-                <Select
+                <CascaderSelect
                   value={row.unit}
                   placeholder="单位"
                   options={unitOptions}
-                  onChange={(e) => updateRow('input', row.id, { unit: e.target.value })}
+                  searchPlaceholder="搜索单位符号 / 名称"
+                  onChange={(value) => updateRow('input', row.id, { unit: value })}
                 />
-                {isExcludedFlow(row) ? (
-                  <span className="flow-static">不参与计算</span>
-                ) : (
-                  <Select
-                    value={formulaSelectValueOf(row)}
-                    options={formulaSelectOptions}
-                    onChange={(e) => handleFormulaChange('input', row.id, e.target.value)}
-                  />
-                )}
                 <Input
                   value={row.remark}
                   placeholder="选填"
@@ -514,7 +456,7 @@ export default function OperationFormPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" data-ann-target="operation.form.output">
           <div className="section-header">
             <span className="section-title">产出项</span>
             <span className="section-extra">
@@ -533,7 +475,6 @@ export default function OperationFormPage() {
               <span>物料（物料库）</span>
               <span>单位</span>
               <span>排放物类别</span>
-              <span>计算公式</span>
               <span>备注</span>
               <span />
             </div>
@@ -555,11 +496,12 @@ export default function OperationFormPage() {
                   options={refOptions(row)}
                   onChange={(e) => handleRefChange('output', row.id, e.target.value, row)}
                 />
-                <Select
+                <CascaderSelect
                   value={row.unit}
                   placeholder="单位"
                   options={unitOptions}
-                  onChange={(e) => updateRow('output', row.id, { unit: e.target.value })}
+                  searchPlaceholder="搜索单位符号 / 名称"
+                  onChange={(value) => updateRow('output', row.id, { unit: value })}
                 />
                 {row.flowType === 'emission' ? (
                   <Select
@@ -573,15 +515,6 @@ export default function OperationFormPage() {
                   />
                 ) : (
                   <span className="flow-static">-</span>
-                )}
-                {isExcludedFlow(row) ? (
-                  <span className="flow-static">不参与计算</span>
-                ) : (
-                  <Select
-                    value={formulaSelectValueOf(row)}
-                    options={formulaSelectOptions}
-                    onChange={(e) => handleFormulaChange('output', row.id, e.target.value)}
-                  />
                 )}
                 <Input
                   value={row.remark}
@@ -606,8 +539,8 @@ export default function OperationFormPage() {
 
         <section className="card">
           <div className="form-page-footer">
-            <Button onClick={() => navigate(-1)}>取消</Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button data-ann-target="operation.form.cancel" onClick={() => navigate(-1)}>取消</Button>
+            <Button data-ann-target="operation.form.save" variant="primary" onClick={handleSubmit} disabled={submitting}>
               {submitting ? '保存中…' : '保存'}
             </Button>
           </div>

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import './PcfPage.css'
 
 interface PcfPanelProps {
-  title: string
+  title: ReactNode
   tip?: string
   /** 是否可折叠（折叠后面板主体收起，标题栏仍可见） */
   collapsible?: boolean

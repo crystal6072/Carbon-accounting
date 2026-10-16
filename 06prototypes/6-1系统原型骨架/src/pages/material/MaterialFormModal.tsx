@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, FormField, Input, Modal, MultiSelect, Select, Textarea, useToast } from '@/shared/components'
-import type { MultiSelectOption, SelectOption } from '@/shared/components'
+import { Button, FormField, Input, Modal, MultiCascaderSelect, Select, Textarea, useToast } from '@/shared/components'
+import type { SelectOption } from '@/shared/components'
 import {
   MATERIAL_DESCRIPTION_MAX,
   createMaterial,
-  fetchIndustryOptions,
+  fetchIndustryTreeOptions,
   fetchMaterial,
   updateMaterial,
 } from '@/mock'
 import type { MaterialPayload } from '@/mock'
-import type { MaterialFlowType, MaterialItem, MaterialSubCategory } from '@/types'
+import type { MaterialFlowType, MaterialItem, MaterialSubCategory, TreeOption } from '@/types'
 import {
   materialFlowTypeOrder,
   materialFlowTypeText,
@@ -49,7 +49,8 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
   const isEdit = !!materialId
   const toast = useToast()
 
-  const [industryList, setIndustryList] = useState<string[]>([])
+  /** 适用行业多级选项（行业库四级） */
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -60,8 +61,8 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
     setLoading(true)
     setErrors({})
     try {
-      const industries = await fetchIndustryOptions()
-      setIndustryList(industries)
+      const industries = await fetchIndustryTreeOptions()
+      setIndustryTree(industries)
 
       if (materialId) {
         const detail = await fetchMaterial(materialId)
@@ -101,10 +102,7 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
     [],
   )
 
-  const industryOptions = useMemo<MultiSelectOption[]>(
-    () => industryList.map((industry) => ({ label: industry, value: industry })),
-    [industryList],
-  )
+  const industryOptions = useMemo<TreeOption[]>(() => industryTree, [industryTree])
 
   const updateForm = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -163,8 +161,8 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" disabled={submitting || loading} onClick={handleSubmit}>
+          <Button data-ann-target="material.form.cancel" onClick={onClose}>取消</Button>
+          <Button variant="primary" data-ann-target="material.form.save" disabled={submitting || loading} onClick={handleSubmit}>
             {submitting ? '保存中…' : '保存'}
           </Button>
         </>
@@ -174,7 +172,7 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
         <div className="empty">加载中…</div>
       ) : (
         <div className="form-grid">
-          <FormField label="物料编码" required error={errors.code}>
+          <FormField label="物料编码" required error={errors.code} annTarget="material.form.code">
             <Input
               value={form.code}
               placeholder="如 M-801"
@@ -183,7 +181,7 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
               onChange={(e) => updateForm({ code: e.target.value })}
             />
           </FormField>
-          <FormField label="物料名称" required error={errors.name}>
+          <FormField label="物料名称" required error={errors.name} annTarget="material.form.name">
             <Input
               value={form.name}
               placeholder="请输入物料名称"
@@ -191,7 +189,7 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
               onChange={(e) => updateForm({ name: e.target.value })}
             />
           </FormField>
-          <FormField label="物料类型（一级）" required error={errors.flowType}>
+          <FormField label="物料类型（一级）" required error={errors.flowType} annTarget="material.form.flowType">
             <Select
               value={form.flowType}
               placeholder="请选择投入产出流"
@@ -202,7 +200,7 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
           </FormField>
           {/* 二级仅「原辅料」需要维护，其余类型不展示 */}
           {form.flowType === 'material' && (
-            <FormField label="物料子类（二级）" required error={errors.subCategory}>
+            <FormField label="物料子类（二级）" required error={errors.subCategory} annTarget="material.form.subCategory">
               <Select
                 value={form.subCategory}
                 placeholder="请选择子类"
@@ -212,15 +210,16 @@ export default function MaterialFormModal({ open, materialId, onClose, onSaved }
               />
             </FormField>
           )}
-          <FormField label="适用行业" full>
-            <MultiSelect
+          <FormField label="适用行业" full annTarget="material.form.industries">
+            <MultiCascaderSelect
               value={form.industries}
               options={industryOptions}
               placeholder="请选择适用行业"
+              searchPlaceholder="搜索行业名称 / 编码"
               onChange={(industries) => updateForm({ industries })}
             />
           </FormField>
-          <FormField label="物料描述" full error={errors.description}>
+          <FormField label="物料描述" full error={errors.description} annTarget="material.form.description">
             <Textarea
               value={form.description}
               rows={3}

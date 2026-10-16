@@ -34,8 +34,8 @@ export default function ProcessConfirmModal({
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>取消</Button>
-          <Button variant={mode === 'delete' ? 'danger' : 'primary'} onClick={onConfirm}>
+          <Button data-ann-target="process.confirm.cancel" onClick={onClose}>取消</Button>
+          <Button data-ann-target="process.confirm.ok" variant={mode === 'delete' ? 'danger' : 'primary'} onClick={onConfirm}>
             {TITLE[mode]}
           </Button>
         </>

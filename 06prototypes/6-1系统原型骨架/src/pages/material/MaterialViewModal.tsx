@@ -50,8 +50,8 @@ export default function MaterialViewModal({ open, materialId, onClose, onEdit }:
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>关闭</Button>
-          <Button variant="primary" disabled={!material} onClick={() => material && onEdit(material.id)}>
+          <Button data-ann-target="material.view.close" onClick={onClose}>关闭</Button>
+          <Button variant="primary" data-ann-target="material.view.edit" disabled={!material} onClick={() => material && onEdit(material.id)}>
             编辑
           </Button>
         </>
@@ -61,7 +61,7 @@ export default function MaterialViewModal({ open, materialId, onClose, onEdit }:
       {!loading && !material && <div className="empty">物料不存在或已被删除</div>}
       {!loading && material && (
         <>
-          <div className="view-block">
+          <div className="view-block" data-ann-target="material.view.body">
             <div className="view-block-title">基本信息</div>
             <div className="detail-list">
               <div className="detail-item">
@@ -100,7 +100,7 @@ export default function MaterialViewModal({ open, materialId, onClose, onEdit }:
             </div>
           </div>
 
-          <div className="view-block">
+          <div className="view-block" data-ann-target="material.view.meta">
             <div className="view-block-title">制单信息</div>
             <div className="detail-list">
               <div className="detail-item">

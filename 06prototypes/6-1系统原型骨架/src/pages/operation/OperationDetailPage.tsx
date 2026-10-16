@@ -87,19 +87,6 @@ export default function OperationDetailPage() {
       ),
     },
     { key: 'unit', title: '单位', width: 90 },
-    {
-      key: 'formula',
-      title: '计算公式',
-      width: 220,
-      render: (row) =>
-        row.disposal === 'excluded' ? (
-          <Tag tone="default">不参与计算</Tag>
-        ) : (
-          <span className="toolbar-tip" title={row.formulaExpression}>
-            {row.formulaName ? `${row.formulaName}（${row.formulaCode}）` : '-'}
-          </span>
-        ),
-    },
     { key: 'remark', title: '备注', render: (row) => row.remark || '-' },
   ]
 
@@ -135,19 +122,6 @@ export default function OperationDetailPage() {
           '-'
         ),
     },
-    {
-      key: 'formula',
-      title: '计算公式',
-      width: 220,
-      render: (row) =>
-        row.disposal === 'excluded' ? (
-          <Tag tone="default">不参与计算</Tag>
-        ) : (
-          <span className="toolbar-tip" title={row.formulaExpression}>
-            {row.formulaName ? `${row.formulaName}（${row.formulaCode}）` : '-'}
-          </span>
-        ),
-    },
     { key: 'remark', title: '备注', render: (row) => row.remark || '-' },
   ]
 
@@ -161,7 +135,7 @@ export default function OperationDetailPage() {
   if (!operation) {
     return (
       <>
-        <PageHeader breadcrumb={['后台管理', '工艺流程管理', '工序']} title="工序详情" />
+        <PageHeader breadcrumb={['系统管理', '工艺流程管理', '工序']} title="工序详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '工序不存在或已被删除'}</div>
         </div>
@@ -172,7 +146,7 @@ export default function OperationDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '工艺流程管理', '工序', operation.name]}
+        breadcrumb={['系统管理', '工艺流程管理', '工序', operation.name]}
         title={operation.name}
         description={`工序编码 ${operation.code} · ${operationTypeText[operation.type]} · ${useStatusText[operation.useStatus]}`}
         actions={
@@ -193,7 +167,7 @@ export default function OperationDetailPage() {
         }
       />
 
-      <div className="stack">
+      <div className="stack" data-ann-target="operation.detail.body">
         <section className="card">
           <div className="section-header">
             <span className="section-title">基本信息</span>
@@ -201,7 +175,7 @@ export default function OperationDetailPage() {
           </div>
           <div className="section-body">
             <div className="detail-list">
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="operation.detail.code">
                 <span className="detail-label">工序编码</span>
                 <span className="detail-value mono">{operation.code}</span>
               </div>
@@ -221,7 +195,7 @@ export default function OperationDetailPage() {
                   <Tag tone={useStatusTone[operation.useStatus]}>{useStatusText[operation.useStatus]}</Tag>
                 </span>
               </div>
-              <div className="detail-item">
+              <div className="detail-item" data-ann-target="operation.detail.icon">
                 <span className="detail-label">工序图标</span>
                 <span className="detail-value">
                   {operation.iconUrl ? (
@@ -243,7 +217,7 @@ export default function OperationDetailPage() {
                 <span className="detail-label">更新时间</span>
                 <span className="detail-value">{operation.updatedAt}</span>
               </div>
-              <div className="detail-item" style={{ gridColumn: '1 / -1' }}>
+              <div className="detail-item" style={{ gridColumn: '1 / -1' }} data-ann-target="operation.detail.desc">
                 <span className="detail-label">工序描述</span>
                 <span className="detail-value">{operation.description || '-'}</span>
               </div>

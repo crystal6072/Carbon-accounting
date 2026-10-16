@@ -7,14 +7,17 @@ import type { EnableStatus, IndustryItem, IndustryLevel } from '@/types'
 export const INDUSTRY_ROOT_ID = 'all'
 export const INDUSTRY_ROOT_NAME = '全部行业'
 
-/** 行业层级：仅一级 / 二级 */
-export const INDUSTRY_MAX_LEVEL: IndustryLevel = 2
+/** 行业层级：门类 → 大类 → 中类 → 小类（GB/T 4754 四级） */
+export const INDUSTRY_MAX_LEVEL: IndustryLevel = 4
 
-export const levelText = (level: number) => ['', '一级行业', '二级行业'][level] ?? `${level} 级行业`
+export const levelText = (level: number) =>
+  ['', '门类', '大类', '中类', '小类'][level] ?? `${level} 级行业`
 
 export const levelTone: Record<IndustryLevel, TagTone> = {
-  1: 'info',
-  2: 'default',
+  1: 'success',
+  2: 'info',
+  3: 'default',
+  4: 'default',
 }
 
 /* ===================== 使用状态（启用 / 禁用） ===================== */
@@ -38,7 +41,7 @@ function sortBySortNo(items: IndustryItem[]): IndustryItem[] {
   )
 }
 
-/** 由平铺列表构建「全部行业 → 一级 / 二级」树 */
+/** 由平铺列表构建「全部行业 → 门类 / 大类 / 中类 / 小类」树 */
 export function buildIndustryTree(list: IndustryItem[]): TreeNodeData[] {
   const byParent = new Map<string, IndustryItem[]>()
   list.forEach((item) => {
@@ -62,7 +65,7 @@ export function buildIndustryTree(list: IndustryItem[]): TreeNodeData[] {
   return [{ id: INDUSTRY_ROOT_ID, name: INDUSTRY_ROOT_NAME, children: build(INDUSTRY_ROOT_ID) }]
 }
 
-/** 取某节点下的直接子级（选中「全部行业」时 = 一级行业） */
+/** 取某节点下的直接子级（选中「全部行业」时 = 门类） */
 export function getDirectChildren(list: IndustryItem[], parentId: string | null): IndustryItem[] {
   return sortBySortNo(list.filter((item) => item.parentId === parentId))
 }
@@ -82,7 +85,7 @@ export function collectDescendantIds(list: IndustryItem[], id: string): string[]
   return ids
 }
 
-/** 上级行业名称（一级行业展示 `-`） */
+/** 上级行业名称（门类展示 `-`） */
 export function parentNameOf(list: IndustryItem[], parentId: string | null): string {
   if (!parentId) return '-'
   return list.find((item) => item.id === parentId)?.name ?? '-'

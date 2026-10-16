@@ -17,7 +17,8 @@ export default function AppHeader() {
           const active = isNodeActive(node, location.pathname)
           return (
             <Link key={node.key} to={target} className={active ? 'active' : undefined}>
-              {node.label}
+              {node.icon && <Icon name={node.icon} size={16} />}
+              <span>{node.label}</span>
             </Link>
           )
         })}

@@ -1,14 +1,46 @@
 /** 我的产品库（前台 · P27）页面补充样式；通用布局 / 画布 / 表单类名复用后台产品库 `ProductPage.css` */
 
-.my-source-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.my-source-readonly-tip {
-  color: var(--color-text-tertiary, #909399);
-  font-size: 12px;
+.scenario-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border, #e5e6eb);
+  border-radius: 8px;
+}
+
+.scenario-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-primary, #1d2129);
+}
+
+.scenario-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scenario-image {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e5e6eb);
+}
+
+/* 表单底部操作栏：吸底固定，页面滚动时不随内容滚走 */
+.my-form-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .my-reference-modal-tip {
@@ -20,4 +52,41 @@
 
 .my-batch-tip {
   margin-top: 8px;
+}
+
+/* 新增产品方式选择（引用产品库 / 自定义产品） */
+.my-create-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-create-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--color-border, #e5e6eb);
+  border-radius: 8px;
+  background: var(--color-bg-container, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.my-create-choice:hover {
+  border-color: var(--color-primary, #165dff);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.12);
+}
+
+.my-create-choice-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #1d2129);
+}
+
+.my-create-choice-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #909399);
 }

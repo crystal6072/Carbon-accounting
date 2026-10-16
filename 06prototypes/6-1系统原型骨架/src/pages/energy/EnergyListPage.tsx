@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
+import { Button, CascaderSelect, Input, PageHeader, Pagination, Select, Table, Tag, useToast } from '@/shared/components'
 import type { Column, SelectOption } from '@/shared/components'
 import {
   batchUpdateEnergyStatus,
   deleteEnergy,
   fetchEnergies,
-  fetchIndustryOptions,
+  fetchIndustryTreeOptions,
   updateEnergyStatus,
 } from '@/mock'
 import type { EnergyBatchResult } from '@/mock'
-import type { EnableStatus, EnergyItem, EnergyType } from '@/types'
+import type { EnableStatus, EnergyItem, EnergyType, TreeOption } from '@/types'
 import EnergyBatchConfirmModal from './EnergyBatchConfirmModal'
 import EnergyBatchResultModal from './EnergyBatchResultModal'
 import EnergyConfirmModal from './EnergyConfirmModal'
@@ -49,7 +49,8 @@ export default function EnergyListPage() {
   const toast = useToast()
 
   const [list, setList] = useState<EnergyItem[]>([])
-  const [industries, setIndustries] = useState<string[]>([])
+  /** 适用行业多级选项（行业库四级） */
+  const [industryTree, setIndustryTree] = useState<TreeOption[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState<QueryState>(EMPTY_QUERY)
   const [page, setPage] = useState(1)
@@ -68,9 +69,9 @@ export default function EnergyListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [energies, industryList] = await Promise.all([fetchEnergies(), fetchIndustryOptions()])
+      const [energies, industryTreeList] = await Promise.all([fetchEnergies(), fetchIndustryTreeOptions()])
       setList(energies)
-      setIndustries(industryList)
+      setIndustryTree(industryTreeList)
     } finally {
       setLoading(false)
     }
@@ -85,10 +86,7 @@ export default function EnergyListPage() {
     [],
   )
 
-  const industryOptions: SelectOption[] = useMemo(
-    () => industries.map((industry) => ({ label: industry, value: industry })),
-    [industries],
-  )
+  const industryOptions: TreeOption[] = useMemo(() => industryTree, [industryTree])
 
   const rows = useMemo(() => {
     let data = list
@@ -226,17 +224,17 @@ export default function EnergyListPage() {
     },
     {
       key: 'code',
-      title: '能源编码',
+      title: <span data-ann-target="energy.col.code">能源编码</span>,
       width: 120,
       render: (row) => (
-        <button className="link mono nowrap" onClick={() => openView(row.id)}>
+        <button className="link mono nowrap" data-ann-target="energy.row.code" onClick={() => openView(row.id)}>
           {row.code}
         </button>
       ),
     },
     {
       key: 'name',
-      title: '能源名称',
+      title: <span data-ann-target="energy.col.name">能源名称</span>,
       width: 160,
       render: (row) => (
         <span className="cell-ellipsis" title={row.name}>
@@ -246,13 +244,13 @@ export default function EnergyListPage() {
     },
     {
       key: 'energyType',
-      title: '能源类型',
+      title: <span data-ann-target="energy.col.energyType">能源类型</span>,
       width: 110,
       render: (row) => <Tag tone={energyTypeTone[row.energyType]}>{energyTypeText[row.energyType]}</Tag>,
     },
     {
       key: 'industries',
-      title: '适用行业',
+      title: <span data-ann-target="energy.col.industries">适用行业</span>,
       width: 240,
       render: (row) => (
         <span className="cell-ellipsis" title={industriesText(row.industries)}>
@@ -262,7 +260,7 @@ export default function EnergyListPage() {
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="energy.col.status">使用状态</span>,
       width: 90,
       render: (row) => <Tag tone={useStatusTone[row.status]}>{useStatusText[row.status]}</Tag>,
     },
@@ -278,24 +276,24 @@ export default function EnergyListPage() {
       width: 180,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => openView(row.id)}>
+          <button className="link" data-ann-target="energy.row.view" onClick={() => openView(row.id)}>
             查看
           </button>
-          <button className="link" onClick={() => openEdit(row.id)}>
+          <button className="link" data-ann-target="energy.row.edit" onClick={() => openEdit(row.id)}>
             编辑
           </button>
           {row.status === 'disabled' ? (
-            <button className="link" onClick={() => setConfirm({ energy: row, mode: 'enable' })}>
+            <button className="link" data-ann-target="energy.row.enable" onClick={() => setConfirm({ energy: row, mode: 'enable' })}>
               启用
             </button>
           ) : (
-            <button className="link link-danger" onClick={() => setConfirm({ energy: row, mode: 'disable' })}>
+            <button className="link link-danger" data-ann-target="energy.row.disable" onClick={() => setConfirm({ energy: row, mode: 'disable' })}>
               禁用
             </button>
           )}
           {/* 删除仅对「已禁用」的能源开放，启用态隐藏入口 */}
           {canDeleteEnergy(row) && (
-            <button className="link link-danger" onClick={() => setConfirm({ energy: row, mode: 'delete' })}>
+            <button className="link link-danger" data-ann-target="energy.row.delete" onClick={() => setConfirm({ energy: row, mode: 'delete' })}>
               删除
             </button>
           )}
@@ -307,17 +305,17 @@ export default function EnergyListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '能源库']}
-        title="能源库"
+        breadcrumb={['系统管理', '基础库', '能源库']}
+        title={<span data-ann-target="energy.page.global">能源库</span>}
         actions={
-          <Button variant="primary" onClick={() => openEdit(null)}>
+          <Button variant="primary" data-ann-target="energy.add" onClick={() => openEdit(null)}>
             新增
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="energy.query.bar">
           <div className="query-item">
             <span className="query-label">能源编码</span>
             <Input
@@ -345,11 +343,12 @@ export default function EnergyListPage() {
           </div>
           <div className="query-item">
             <span className="query-label">适用行业</span>
-            <Select
+            <CascaderSelect
               value={query.industry}
               placeholder="全部"
               options={industryOptions}
-              onChange={(e) => setQuery((prev) => ({ ...prev, industry: e.target.value }))}
+              searchPlaceholder="搜索行业名称 / 编码"
+              onChange={(value) => setQuery((prev) => ({ ...prev, industry: value }))}
             />
           </div>
           <div className="query-item">
@@ -365,8 +364,8 @@ export default function EnergyListPage() {
             />
           </div>
           <div className="query-actions">
-            <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-            <Button variant="primary" onClick={() => toast('查询完成')}>
+            <Button data-ann-target="energy.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
+            <Button variant="primary" data-ann-target="energy.query.search" onClick={() => toast('查询完成')}>
               搜索
             </Button>
           </div>
@@ -382,6 +381,7 @@ export default function EnergyListPage() {
           <div className="flex gap-xs">
             <Button
               size="small"
+              data-ann-target="energy.batch.enable"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchStatus('enabled')}
             >
@@ -389,16 +389,16 @@ export default function EnergyListPage() {
             </Button>
             <Button
               size="small"
+              data-ann-target="energy.batch.disable"
               disabled={selectedItems.length === 0 || batching}
               onClick={() => setBatchStatus('disabled')}
             >
               批量停用
             </Button>
-            <Button onClick={() => toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)}>导出</Button>
           </div>
         </div>
 
-        <div className="energy-table-wrap">
+        <div className="energy-table-wrap" data-ann-target="energy.page.list">
           <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
         </div>
 

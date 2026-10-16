@@ -1,6 +1,5 @@
 import { Button, Modal, Table, Tag } from '@/shared/components'
 import type { Column, TagTone } from '@/shared/components'
-import { resolveFormulaText } from '@/shared/formulaMeta'
 import type { EmissionCategory, FlowItemType, OperationFlowItem, OperationItem, OperationType } from '@/types'
 import './ProcessPage.css'
 
@@ -80,27 +79,6 @@ export default function ProcessOperationViewModal({
     },
     { key: 'unit', title: '单位', width: 80 },
     {
-      key: 'formula',
-      title: '计算公式',
-      width: 210,
-      render: (row) => {
-        const { text, excluded } = resolveFormulaText(
-          row.flowType,
-          row.refName,
-          row.formulaName,
-          row.formulaCode,
-          row.disposal,
-        )
-        return excluded ? (
-          <Tag tone="default">{text}</Tag>
-        ) : (
-          <span className="toolbar-tip" title={row.formulaExpression}>
-            {text}
-          </span>
-        )
-      },
-    },
-    {
       key: 'emissionCategory',
       title: '排放物类别',
       width: 104,
@@ -126,7 +104,7 @@ export default function ProcessOperationViewModal({
         <div className="empty">该节点尚未选择工序，请先在节点中选择工序后再查看。</div>
       ) : (
         <>
-          <div className="detail-list">
+          <div className="detail-list" data-ann-target="process.viewop.body">
             <div className="detail-item">
               <span className="detail-label">工序编码</span>
               <span className="detail-value mono">{operation.code}</span>

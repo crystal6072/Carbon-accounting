@@ -7,7 +7,7 @@
  *   ② 前台核算五步闭环（新建项目 → 步骤①目标与范围 → 步骤②模型与数据
  *      → 步骤③数据检测 → 步骤④核算计算 → 步骤⑤报告生成与确认）
  *   ③ 异常场景（grave 边界 B5 拦截与修复、B1~B4 数据质量拦截与修复）
- *   ④ 前后台联动（因子禁用、产品下架、E13 回退重算、删除约束）
+ *   ④ 前后台联动（因子禁用、产品下架、E13 回退重算、删除不受状态限制）
  *   ⑤ 选项断点（静态常量选项 vs Store 数据脱钩）
  * ========================================================================== */
 import {
@@ -15,6 +15,7 @@ import {
   createCategory,
   createIndustry,
   createLifecycleStage,
+  createStandard,
   createUnit,
   createMaterial,
   createEnergy,
@@ -24,7 +25,6 @@ import {
   updateProductUseStatus,
   createFactor,
   createCalcFormula,
-  updateFactorStatus,
   fetchCategories,
   fetchIndustries,
   fetchLifecycleStages,
@@ -227,19 +227,17 @@ const coverFill = {
   productIntro: '以毛竹原竹经断料、碳化、打磨成型与包装制成。',
 }
 const sectionFill = {
-  S06A: '本期核算覆盖原材料获取、生产制造两个阶段，生产制造阶段排放占比最高，主要来源为电力消耗与竹材加工工序。',
+  S06A: '本期核算覆盖原材料获取、生产两个阶段，生产阶段排放占比最高，主要来源为电力消耗与竹材加工工序。',
 }
 
 /** 步骤① 生命周期派生（复刻 ProjectStepOne.deriveStages 口径） */
 async function deriveStages(boundary: 'gate' | 'grave', industryName: string): Promise<any[]> {
   const all = await fetchLifecycleStages()
-  const ruleOf = (s: any) => (boundary === 'gate' ? s.gateRule : s.graveRule)
   return all
     .filter(
       (s: any) =>
         s.status === 'enabled' &&
-        ruleOf(s) !== 'excluded' &&
-        (s.industries.length === 0 || s.industries.includes(industryName)),
+        (s.boundaries.length === 0 || s.boundaries.includes(boundary)),
     )
     .sort((a: any, b: any) => a.order - b.order)
     .map((s: any) => ({
@@ -248,7 +246,6 @@ async function deriveStages(boundary: 'gate' | 'grave', industryName: string): P
       level: s.level,
       parentName: '',
       custom: false,
-      rule: ruleOf(s),
       included: true,
     }))
 }
@@ -263,7 +260,7 @@ async function main(): Promise<void> {
     return
   }
 
-  /* ============ ① 后台基础数据录入（模拟后台管理各库维护） ============ */
+  /* ============ ① 后台基础数据录入（模拟系统管理各库维护） ============ */
   section('① 后台基础数据录入（分类/行业/生命周期/单位/物料/能源/工序/工艺/产品/因子/公式）')
 
   const industry = await createIndustry({
@@ -289,31 +286,25 @@ async function main(): Promise<void> {
     parentId: null,
     order: 10,
     description: '原料获取与厂外运输',
-    industries: [],
-    gateRule: 'required',
-    graveRule: 'required',
+    boundaries: ['gate', 'grave'],
   })
   const lcProd = await createLifecycleStage({
     code: 'LC-02',
-    name: '生产制造',
+    name: '生产',
     level: 1,
     parentId: null,
     order: 20,
     description: '',
-    industries: [],
-    gateRule: 'required',
-    graveRule: 'required',
+    boundaries: ['gate_to_gate', 'gate', 'grave'],
   })
   const lcDist = await createLifecycleStage({
     code: 'LC-03',
-    name: '分销',
+    name: '运输/交付',
     level: 1,
     parentId: null,
     order: 30,
     description: '',
-    industries: [],
-    gateRule: 'excluded',
-    graveRule: 'required',
+    boundaries: ['grave'],
   })
   const lcUse = await createLifecycleStage({
     code: 'LC-04',
@@ -322,22 +313,18 @@ async function main(): Promise<void> {
     parentId: null,
     order: 40,
     description: '',
-    industries: [],
-    gateRule: 'excluded',
-    graveRule: 'optional',
+    boundaries: ['grave'],
   })
   const lcEol = await createLifecycleStage({
     code: 'LC-05',
-    name: '末期处理',
+    name: '生命末期',
     level: 1,
     parentId: null,
     order: 50,
     description: '',
-    industries: [],
-    gateRule: 'excluded',
-    graveRule: 'required',
+    boundaries: ['grave'],
   })
-  console.log(`  生命周期阶段：原材料获取 / 生产制造 / 分销(grave) / 使用(grave) / 末期处理(grave)`)
+  console.log(`  生命周期阶段：原材料获取 / 生产 / 运输/交付(grave) / 使用(grave) / 生命末期(grave)`)
 
   const uKg = await createUnit({ name: '千克', symbol: 'kg', unitType: 'weight', isBase: true, baseUnitId: null, factor: 1, remark: '' })
   await createUnit({ name: '吨', symbol: 't', unitType: 'weight', isBase: false, baseUnitId: uKg.id, factor: 1000, remark: '' })
@@ -355,54 +342,71 @@ async function main(): Promise<void> {
   await createEnergy({ code: 'E-002', name: '天然气', energyType: 'fuel', industries: ['竹制品制造'], description: '' })
   console.log('  物料 4 条 / 能源 2 条')
 
+  // 标准文件（核算方法引用标准文件库 A1-3；「现行」方可被模型绑定，R-008）
+  const stdA = await createStandard({
+    code: 'GB/T 24067-2024',
+    nameZh: '温室气体 产品碳足迹 量化要求和指南',
+    nameEn: '',
+    status: '现行',
+    publishDate: '2024-08-23',
+    implementDate: '2024-12-01',
+    publisher: '国家市场监督管理总局、国家标准化管理委员会',
+    sourceUrl: 'https://openstd.samr.gov.cn/',
+    competentDept: '国家标准化管理委员会',
+    responsibleDept: '',
+    attachments: [],
+  })
+  const stdI = await createStandard({
+    code: 'ISO 14067:2018',
+    nameZh: '温室气体—产品碳足迹—量化要求和准则',
+    nameEn: '',
+    status: '现行',
+    publishDate: '2018-08-01',
+    implementDate: '2018-08-01',
+    publisher: '国际标准化组织（ISO）',
+    sourceUrl: 'https://www.iso.org/standard/71206.html',
+    competentDept: '',
+    responsibleDept: '',
+    attachments: [],
+  })
+  console.log(`  标准文件：${stdA.code} / ${stdI.code}（现行，可被模型绑定）`)
+  console.log('  物料 4 条 / 能源 2 条')
+
   // 排放因子（后台预置 preset）
   const fElec = await createFactor({
-    name: '电力排放因子', alias: '', category: 'energy', industries: ['竹制品制造'],
+    name: '电力排放因子', alias: '',
     scenario: '外购电力消耗', value: 0.581, numeratorUnit: 'kgCO₂e', denominatorUnit: 'kWh',
-    sourceCategory: '国家温室气体清单', publishYear: '2023', publishDate: '2023-12',
-    publisherRegion: '中国', publisherFullName: '生态环境部', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   const fGas = await createFactor({
-    name: '天然气排放因子', alias: '', category: 'energy', industries: ['竹制品制造'],
+    name: '天然气排放因子', alias: '',
     scenario: '天然气燃烧', value: 2.1622, numeratorUnit: 'kgCO₂e', denominatorUnit: 'm³',
-    sourceCategory: '国家温室气体清单', publishYear: '2023', publishDate: '2023-12',
-    publisherRegion: '中国', publisherFullName: '生态环境部', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   const fBamboo = await createFactor({
-    name: '毛竹原材料排放因子', alias: '', category: 'material', industries: ['竹制品制造'],
+    name: '毛竹原材料排放因子', alias: '',
     scenario: '毛竹原竹获取', value: 0.18, numeratorUnit: 'kgCO₂e', denominatorUnit: 'kg',
-    sourceCategory: '行业研究报告', publishYear: '2022', publishDate: '2022-06',
-    publisherRegion: '中国', publisherFullName: '中国林产工业协会', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   const fTrans = await createFactor({
-    name: '公路货运排放因子', alias: '', category: 'transport', industries: ['竹制品制造'],
+    name: '公路货运排放因子', alias: '',
     scenario: '公路货物运输', value: 0.036, numeratorUnit: 'kgCO₂e', denominatorUnit: 't·km',
-    sourceCategory: '国家温室气体清单', publishYear: '2023', publishDate: '2023-12',
-    publisherRegion: '中国', publisherFullName: '生态环境部', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   const fWater = await createFactor({
-    name: '废水处理排放因子', alias: '', category: 'waste', industries: ['竹制品制造'],
+    name: '废水处理排放因子', alias: '',
     scenario: '工业废水处理', value: 0.52, numeratorUnit: 'kgCO₂e', denominatorUnit: 'kg',
-    sourceCategory: '行业研究报告', publishYear: '2021', publishDate: '2021-09',
-    publisherRegion: '中国', publisherFullName: '生态环境部', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   const fPack = await createFactor({
-    name: '纸包装材料排放因子', alias: '', category: 'material', industries: ['竹制品制造'],
+    name: '纸包装材料排放因子', alias: '',
     scenario: '外购纸包装材料', value: 0.91, numeratorUnit: 'kgCO₂e', denominatorUnit: 'kg',
-    sourceCategory: '行业研究报告', publishYear: '2022', publishDate: '2022-06',
-    publisherRegion: '中国', publisherFullName: '中国包装联合会', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'preset',
+    description: '', source: 'preset',
   })
   console.log(`  排放因子：${[fElec, fGas, fBamboo, fTrans, fWater, fPack].map((f) => `${f.code} ${f.name}(${f.value} ${f.numeratorUnit}/${f.denominatorUnit})`).join('；')}`)
 
   // 计算公式（按 FM-001 起顺序创建，编码与「流→公式」默认带出规则对齐）
   const formulaBase = {
-    industries: ['竹制品制造'],
     resultName: '碳排放量',
     resultUnit: 'kgCO₂e',
     supportsSumLoop: false,
@@ -498,12 +502,12 @@ async function main(): Promise<void> {
   // 工艺流程（工艺库）
   await createProcess({
     code: 'GY-00', name: '采购与运输工艺', categoryId: category.id, industry: '竹制品制造',
-    lifecycleStage: '原材料获取', description: '毛竹采购与厂外运输', baseQty: null, baseUnit: '',
+    lifecycleStage: '原材料获取', description: '毛竹采购与厂外运输',
     operations: [{ order: 1, opCode: 'GX-00', opName: '厂外运输', remark: '' }],
   })
   await createProcess({
     code: 'GY-01', name: '竹筷成型工艺', categoryId: category.id, industry: '竹制品制造',
-    lifecycleStage: '生产制造', description: '断料-碳化-打磨成型', baseQty: null, baseUnit: '',
+    lifecycleStage: '生产', description: '断料-碳化-打磨成型',
     operations: [
       { order: 1, opCode: 'GX-01', opName: '断料', remark: '' },
       { order: 2, opCode: 'GX-02', opName: '碳化', remark: '' },
@@ -512,12 +516,12 @@ async function main(): Promise<void> {
   })
   await createProcess({
     code: 'GY-02', name: '包装工艺', categoryId: category.id, industry: '竹制品制造',
-    lifecycleStage: '生产制造', description: '纸盒包装', baseQty: null, baseUnit: '',
+    lifecycleStage: '生产', description: '纸盒包装',
     operations: [{ order: 1, opCode: 'GX-04', opName: '包装', remark: '' }],
   })
   await createProcess({
     code: 'GY-03', name: '废水处理工艺', categoryId: category.id, industry: '竹制品制造',
-    lifecycleStage: '末期处理', description: '厂内废水处理', baseQty: null, baseUnit: '',
+    lifecycleStage: '生命末期', description: '厂内废水处理',
     operations: [{ order: 1, opCode: 'GX-06', opName: '厂内废水处理', remark: '' }],
   })
 
@@ -540,7 +544,7 @@ async function main(): Promise<void> {
           [pf('material', '集后毛竹', 1, 'kg', '', 'excluded')])],
       },
       {
-        id: '', processCode: 'GY-01', processName: '竹筷成型工艺', lifecycleStage: '生产制造', seq: 2,
+        id: '', processCode: 'GY-01', processName: '竹筷成型工艺', lifecycleStage: '生产', seq: 2,
         operations: [
           opCopy('GX-01', '断料', 1,
             [pf('material', '毛竹原竹', 62, 'kg', fmMass.id)],
@@ -551,7 +555,7 @@ async function main(): Promise<void> {
           opCopy('GX-03', '打磨成型', 3,
             [pf('material', '碳化竹段', 52, 'kg', '', 'excluded')],
             [pf('material', '成品筷（散）', 100, '双', '', 'excluded'), pf('material', '竹屑', 5, 'kg', fmRecycle.id)]),
-          /* 同一生命周期阶段只绑定一个工艺流程：包装工序并入「竹筷成型工艺 / 生产制造」 */
+          /* 同一生命周期阶段只绑定一个工艺流程：包装工序并入「竹筷成型工艺 / 生产」 */
           opCopy('GX-04', '包装', 4,
             [pf('material', '成品筷（散）', 100, '双', '', 'excluded'), pf('material', '纸包装材料', 2.5, 'kg', fmMass.id)],
             [pf('product', '盒装竹筷', 1, '盒', '', 'excluded')]),
@@ -589,7 +593,10 @@ async function main(): Promise<void> {
   assert(org && org.name, '当前用户组织为空')
   console.log(`  当前核算主体：${org.name}；组织选项 ${orgOptions.length} 个`)
   const stdOptions = await fetchPcfStandardOptions()
-  assert(stdOptions.length === 2 && stdOptions.some((s) => s.id === 'STD-001'), '核算方法选项异常')
+  assert(
+    stdOptions.length === 2 && stdOptions.some((s) => s.id === stdA.id) && stdOptions.some((s) => s.id === stdI.id),
+    '核算方法选项异常（仅「现行」的标准可被绑定）',
+  )
 
   const projA = await createPcfProject({
     name: '240mm 全竹碳化筷·摇篮到大门',
@@ -600,8 +607,8 @@ async function main(): Promise<void> {
   })
   console.log(`  项目 ${projA.code} 创建成功（status=${projA.status}, step=${projA.currentStep}）`)
   await T('新建项目按边界 + 行业带出默认生命周期阶段', async () => {
-    const names = (projA.lifecycleStages ?? []).map((s: any) => `${s.name}(${s.rule},${s.included ? '纳入' : '排除'})`)
-    assert(names.length === 2 && names[0].startsWith('原材料获取') && names[1].startsWith('生产制造'),
+    const names = (projA.lifecycleStages ?? []).map((s: any) => `${s.name}(${s.included ? '纳入' : '排除'})`)
+    assert(names.length === 2 && names[0].startsWith('原材料获取') && names[1].startsWith('生产'),
       `实际带出：${names.join('、')}`)
   })
 
@@ -609,13 +616,13 @@ async function main(): Promise<void> {
     const derived = await deriveStages('gate', product.industry)
     const saved = await updatePcfProjectStepOne(projA.id, {
       name: projA.name, ownerOrg: projA.ownerOrg, startDate: projA.startDate, endDate: projA.endDate,
-      remark: '', boundary: 'gate', methodId: 'STD-001', refProductId: product.id,
+      remark: '', boundary: 'gate', methodId: stdA.id, refProductId: product.id,
       productCode: product.code, productName: product.name, productModel: product.model,
       productSpec: product.spec, productCategory: '竹制餐具', productIndustry: product.industry,
       productVersion: 'V1.0', functionalUnit: product.unit, conversionFactor: 1, lifecycleStages: derived,
     })
     assert(saved.currentStep === 2, `步骤应推进到 2，实际 ${saved.currentStep}`)
-    assert(saved.method === 'GB/T 24067-2018', `核算方法回写异常：${saved.method}`)
+    assert(saved.method === 'GB/T 24067-2024', `核算方法回写异常：${saved.method}`)
     assert((saved.lifecycleStages ?? []).length === 2, '阶段数量异常')
   })
 
@@ -624,7 +631,7 @@ async function main(): Promise<void> {
   await T('产品工艺按纳入阶段复制进项目（引用即复制、阶段对齐）', async () => {
     assert(bundleA.operations.length === 5, `应复制 5 道工序，实际 ${bundleA.operations.length}`)
     const stages = new Set(bundleA.operations.map((o: any) => o.processStage))
-    assert(stages.has('原材料获取') && stages.has('生产制造'), `阶段集合异常：${[...stages].join('/')}`)
+    assert(stages.has('原材料获取') && stages.has('生产'), `阶段集合异常：${[...stages].join('/')}`)
     const elec = bundleA.operations.find((o: any) => o.opName === '碳化')
     assert(elec && elec.inputs.some((i: any) => i.name === '电力' && i.formulaCode), '公式未随工序带入')
   })
@@ -674,7 +681,7 @@ async function main(): Promise<void> {
   })
 
   const calcA = await startPcfCalc(projA.id)
-  console.log(`  步骤④ 核算结果 V${calcA.version}：合计 ${calcA.totalEmission} ${calcA.unit}；阶段 ${calcA.stageSummary.map((s: any) => `${s.stage} ${s.emission}(${s.ratio}%)`).join('、')}；排放源 ${calcA.sourceSummary.map((s: any) => `${s.source} ${s.emission}(${s.ratio}%)`).join('、')}`)
+  console.log(`  步骤④ 核算结果 V${calcA.version}：合计 ${calcA.totalEmission} ${calcA.unit}；阶段 ${calcA.stageSummary.map((s: any) => `${s.stage} ${s.emission}(${s.ratio}%)`).join('、')}`)
   await T('步骤④ 核算计算（排放 = 活动量 × 因子值）', async () => {
     const expected = 3.2 * 0.036 + 62 * 0.18 + 42 * 0.581 + 5 * 0.5 + 2.5 * 0.91
     near(calcA.totalEmission, expected, '核算合计与手算不一致')
@@ -682,7 +689,7 @@ async function main(): Promise<void> {
     assert(calcA.operationSummary.length === 5, `工序汇总应 5 行，实际 ${calcA.operationSummary.length}`)
     const byStage = Object.fromEntries(calcA.stageSummary.map((s: any) => [s.stage, s.emission]))
     near(byStage['原材料获取'], 0.1152, '原材料获取阶段排放')
-    near(byStage['生产制造'], 40.337, '生产制造阶段排放')
+    near(byStage['生产'], 40.337, '生产阶段排放')
     const proj = await fetchPcfProject(projA.id)
     assert(proj.status === 'calculated', `项目状态应为 calculated，实际 ${proj.status}`)
   })
@@ -737,8 +744,8 @@ async function main(): Promise<void> {
     refProductId: product.id, productName: product.name, productSpec: product.spec,
     functionalUnit: product.unit,
   })
-  console.log(`  项目 ${projB.code}（grave）默认带出阶段：${(projB.lifecycleStages ?? []).map((s: any) => `${s.name}(${s.rule})`).join('、')}`)
-  await T('grave 边界默认带出 5 个阶段（含分销/使用/末期处理）', async () => {
+  console.log(`  项目 ${projB.code}（grave）默认带出阶段：${(projB.lifecycleStages ?? []).map((s: any) => s.name).join('、')}`)
+  await T('grave 边界默认带出 5 个阶段（含运输/交付/使用/生命末期）', async () => {
     assert((projB.lifecycleStages ?? []).length === 5, `应带出 5 个阶段，实际 ${(projB.lifecycleStages ?? []).length}`)
   })
   const derivedB = await deriveStages('grave', product.industry)
@@ -769,17 +776,17 @@ async function main(): Promise<void> {
   }))
   const checkB = await submitPcfCheck(projB.id)
   console.log(`  首次检测：${checkB.status}，问题 ${checkB.issues.length} 条：${checkB.issues.map((i: any) => `[${i.category}]${i.title}`).join('；')}`)
-  await T('B5 拦截：纳入但无工序数据的阶段被检出（分销/使用/末期处理）', async () => {
+  await T('B5 拦截：纳入但无工序数据的阶段被检出（运输/交付/使用/生命末期）', async () => {
     assert(checkB.status === 'failed', '应检测不通过')
     const b5 = checkB.issues.filter((i: any) => i.category === 'stageCoverage')
     assert(b5.length === 3, `应检出 3 个阶段覆盖问题，实际 ${b5.length}`)
   })
 
-  // 修复方式一：从工艺流程库补充末期处理工艺（addPcfProcess）
+  // 修复方式一：从工艺流程库补充生命末期工艺（addPcfProcess）
   const added = await addPcfProcess(projB.id, 'GY-03')
   console.log(`  addPcfProcess(GY-03) 追加工序 ${added.length} 道：${added.map((o: any) => `${o.processName}/${o.opName}(${o.processStage})`).join('、')}`)
-  // 修复方式二：取消勾选暂不覆盖的分销 / 使用阶段
-  const stagesFixed = derivedB.map((s: any) => ({ ...s, included: s.name === '分销' || s.name === '使用' ? false : s.included }))
+  // 修复方式二：取消勾选暂不覆盖的运输/交付 / 使用阶段
+  const stagesFixed = derivedB.map((s: any) => ({ ...s, included: s.name === '运输/交付' || s.name === '使用' ? false : s.included }))
   await updatePcfProjectStepOne(projB.id, {
     name: projB.name, ownerOrg: projB.ownerOrg, startDate: projB.startDate, endDate: projB.endDate,
     remark: '', boundary: 'grave', methodId: 'STD-001', refProductId: product.id,
@@ -808,13 +815,13 @@ async function main(): Promise<void> {
     const calcB = await startPcfCalc(projB.id)
     const expected = 3.2 * 0.036 + 62 * 0.18 + 42 * 0.581 + 5 * 0.5 + 2.5 * 0.91 + 8.4 * 0.52 + 3 * 0.5
     near(calcB.totalEmission, expected, 'grave 场景核算合计与手算不一致')
-    const eol = calcB.stageSummary.find((s: any) => s.stage === '末期处理')
-    assert(eol && near2(eol.emission, 4.368 + 1.5), `末期处理阶段排放异常：${JSON.stringify(eol)}`)
+    const eol = calcB.stageSummary.find((s: any) => s.stage === '生命末期')
+    assert(eol && near2(eol.emission, 4.368 + 1.5), `生命末期阶段排放异常：${JSON.stringify(eol)}`)
     const reportB = await generatePcfReport(projB.id, 'RPT-PCF-001', { cover: coverFill, sections: sectionFill })
     assert(reportB.cover.productName === product.name, '报告封面异常')
     const confirmed = await confirmPcfReport(projB.id)
     assert(confirmed.status === 'done' && confirmed.locked, 'grave 场景报告未完成')
-    console.log(`  grave 核算合计 ${calcB.totalEmission} kgCO₂e（末期处理 ${eol?.emission}）`)
+    console.log(`  grave 核算合计 ${calcB.totalEmission} kgCO₂e（生命末期 ${eol?.emission}）`)
   })
   function near2(a: number, b: number): boolean {
     return Math.abs(a - b) < 1e-6
@@ -849,8 +856,8 @@ async function main(): Promise<void> {
       allocateRatio: r.direction === 'output' ? 100 : null,
     }
   }))
-  await addPcfOperation(projC.id, { opCode: 'GX-07', stage: '生产制造' }) // 无默认因子 → B1+B2
-  await addPcfOperation(projC.id, { opCode: 'GX-08', stage: '生产制造' }) // 多产出未分配 → B1+B3
+  await addPcfOperation(projC.id, { opCode: 'GX-07', stage: '生产' }) // 无默认因子 → B1+B2
+  await addPcfOperation(projC.id, { opCode: 'GX-08', stage: '生产' }) // 多产出未分配 → B1+B3
   const rowsC = await fetchPcfActivityData(projC.id)
   const checkC = await submitPcfCheck(projC.id)
   console.log(`  检测：${checkC.status}，问题 ${checkC.issues.length} 条：${checkC.issues.map((i: any) => `[${i.level}/${i.category}]${i.title}`).join('；')}`)
@@ -922,7 +929,7 @@ async function main(): Promise<void> {
     imageUrl: '',
     description: '组织自建：标准竹筷基础上增加印花与独立包装工序',
     processes: [{
-      id: '', processCode: 'GY-02', processName: '包装工艺', lifecycleStage: '生产制造', seq: 1,
+      id: '', processCode: 'GY-02', processName: '包装工艺', lifecycleStage: '生产', seq: 1,
       operations: [opCopy('GX-04', '包装', 1,
         [pf('material', '成品筷（散）', 100, '双', '', 'excluded'), pf('material', '纸包装材料', 2.5, 'kg', fmMass.id)],
         [pf('product', '盒装竹筷', 1, '盒', '', 'excluded')])],
@@ -948,24 +955,19 @@ async function main(): Promise<void> {
   finding('F-01', '「我的产品库」（组织自建/引用）与核算入口未打通：createPcfProject 仅认 productStore（平台产品库），传自建产品 id 报「所选产品不存在」；且我的产品列表/详情页均无「发起核算」入口。')
 
   /* ============ ⑥ 场景五：前后台联动 ============ */
-  section('⑥ 场景五：前后台联动（因子禁用 / 产品下架 / E13 回退重算 / 删除约束）')
-  // 6.1 因子停用联动（前台自建因子可停用；后台新建因子写死 preset，停用被拦截）
+  section('⑥ 场景五：前后台联动（因子候选 / 产品下架 / E13 回退重算 / 删除约束）')
+  // 6.1 因子可用性：因子已取消「启用 / 禁用」状态，可用性由「所属库的发布版本」决定
   const fOrg = await createFactor({
-    name: '组织自建电力排放因子', alias: '', category: 'energy', industries: ['竹制品制造'],
+    name: '组织自建电力排放因子', alias: '',
     scenario: '组织自建外购电力', value: 0.61, numeratorUnit: 'kgCO₂e', denominatorUnit: 'kWh',
-    sourceCategory: '组织台账', publishYear: '2025', publishDate: '2025-03',
-    publisherRegion: '中国', publisherFullName: '福建竹业集团', publisherShortName: '',
-    dataSourceFile: '', description: '', source: 'custom',
+    description: '', source: 'custom',
   })
-  await expectThrow('规则拦截：后台新建因子写死 preset、无法停用', () => updateFactorStatus(fBamboo.id, 'disabled'), '不可禁用')
-  finding('F-04', '后台「排放因子库」页面新增因子时 source 写死为 preset（FactorFormPage 非前台模式固定 preset）：预置因子不可禁用 / 不可删除，后台因子库只有「新增」、没有「停用 / 删除」生命周期管理。')
-  await updateFactorStatus(fOrg.id, 'disabled')
+  void fOrg
   const factorOptionsAfter = await fetchPcfFactorOptions()
-  await T('前台自建因子停用 → 核算因子候选实时剔除', async () => {
-    assert(!factorOptionsAfter.some((f: any) => f.id === fOrg.id), '停用因子仍出现在候选项')
-    assert(factorOptionsAfter.length === 6, `候选应剩 6 条，实际 ${factorOptionsAfter.length}`)
+  await T('因子候选 = 已发布库当前版本因子 + 我的因子库因子（已取消启用状态）', async () => {
+    assert(factorOptionsAfter.length > 0, '因子候选不应为空')
+    assert(factorOptionsAfter.some((f: any) => f.id === fBamboo.id) === false, '草稿库因子不应出现在候选项')
   })
-  await updateFactorStatus(fOrg.id, 'enabled')
   const projD = await createPcfProject({
     name: '240mm 全竹碳化筷·因子联动演练',
     ownerOrg: org.name, startDate: '2026-01-01', endDate: '2026-12-31',
@@ -996,11 +998,13 @@ async function main(): Promise<void> {
     const checkD = await submitPcfCheck(projD.id)
     assert(checkD.status === 'passed', `检测未通过：${checkD.issues.map((i: any) => i.title).join('；')}`)
   })
-  // 清理演练项目
-  await T('删除约束：已入流程项目（toCalc）不可删除；新建态可删除', async () => {
+  // 清理演练项目（删除不受状态限制：流程中项目同样可删）
+  await T('删除无状态限制：流程中项目（toCalc）与新建项目均可删除', async () => {
     const cur = await fetchPcfProject(projD.id)
     assert(cur.status === 'toCalc', `projD 状态应为 toCalc，实际 ${cur.status}`)
-    await expectThrow('删除拦截：已入流程项目不可删除', () => deletePcfProject(projD.id), '不可删除')
+    await deletePcfProject(projD.id)
+    const goneD = await fetchPcfProject(projD.id).then(() => false, () => true)
+    assert(goneD, '流程中项目删除后仍可查到')
     const tmp = await createPcfProject({
       name: '临时演练项目', ownerOrg: org.name, startDate: '2026-01-01', endDate: '2026-12-31',
       boundary: 'gate', remark: '', productSource: 'library',
@@ -1022,7 +1026,7 @@ async function main(): Promise<void> {
     })
     await updatePcfProjectStepOne(projE.id, {
       name: projE.name, ownerOrg: projE.ownerOrg, startDate: projE.startDate, endDate: projE.endDate,
-      remark: '', boundary: 'gate', methodId: 'STD-001', refProductId: product.id,
+      remark: '', boundary: 'gate', methodId: stdA.id, refProductId: product.id,
       productCode: product.code, productName: product.name, productModel: product.model,
       productSpec: product.spec, productCategory: '竹制餐具', productIndustry: product.industry,
       productVersion: 'V1.0', functionalUnit: product.unit, conversionFactor: 1,
@@ -1049,7 +1053,7 @@ async function main(): Promise<void> {
     // E13：修改目标与范围 → 回退「进行中」步骤①
     const after = await updatePcfProjectStepOne(projE.id, {
       name: projE.name + '（修订）', ownerOrg: projE.ownerOrg, startDate: projE.startDate, endDate: projE.endDate,
-      remark: '', boundary: 'gate', methodId: 'STD-001', refProductId: product.id,
+      remark: '', boundary: 'gate', methodId: stdA.id, refProductId: product.id,
       productCode: product.code, productName: product.name, productModel: product.model,
       productSpec: product.spec, productCategory: '竹制餐具', productIndustry: product.industry,
       productVersion: 'V1.0', functionalUnit: product.unit, conversionFactor: 1,
@@ -1083,8 +1087,8 @@ async function main(): Promise<void> {
   })
   await updateProductUseStatus(product.id, 'on')
 
-  // 6.4 删除约束
-  await expectThrow('删除约束：已完成项目不可删除', () => deletePcfProject(projA.id), '不可删除')
+  // 6.4 删除约束（已放宽）：任意状态均可删除，含「已完成」；
+  // 断言放在脚本末尾执行，避免影响 6.5 的列表计数
 
   // 6.5 核算列表两层视图
   await T('核算列表两层视图（产品维度分组 → 项目记录）', async () => {
@@ -1128,7 +1132,16 @@ async function main(): Promise<void> {
     console.log(`    断点清单：${gaps.join('；')}`)
   })
   finding('F-02', '表单选项类接口读取 mock 静态常量而非 Store：fetchUnitOptions/fetchMaterialOptions/fetchEnergyOptions/fetchIndustryOptions/fetchLifecycleOptions/fetchPcfWeightUnitOptions 及因子表单的碳单位/行业选项均不随后台维护更新。清空 mock 后这些下拉全空，且后台新增数据也不会进入下拉——新产品/新工序/新因子录入被阻断（P0）。')
-  finding('F-03', '三项系统字典（核算主体组织、核算方法/标准文件、净重单位）无维护入口且仅存于种子常量：一旦清空即阻断「新建项目（核算主体必填）」与「保存步骤①（核算方法必填）」。')
+  finding('F-03', '两项系统字典（核算主体组织、净重单位）无维护入口且仅存于种子常量：一旦清空即阻断「新建项目（核算主体必填）」与「保存步骤①（净重单位必填）」；核算方法已改由标准文件库（A1-3）承载，随其维护状态联动。')
+
+  /* ============ ⑦-补充：删除不受状态限制 ============ */
+  await T('删除无状态限制：已完成项目（done）亦可删除', async () => {
+    const cur = await fetchPcfProject(projA.id)
+    assert(cur.status === 'done', `projA 状态应为 done，实际 ${cur.status}`)
+    await deletePcfProject(projA.id)
+    const gone = await fetchPcfProject(projA.id).then(() => false, () => true)
+    assert(gone, '已完成项目删除后仍可查到')
+  })
 
   /* ============ 汇总 ============ */
   section('走查结果汇总')

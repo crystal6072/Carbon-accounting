@@ -11,11 +11,18 @@ import {
   collectExpandable,
   useToast,
 } from '@/shared/components'
-import type { Column, SelectOption } from '@/shared/components'
+import type { Column } from '@/shared/components'
 import { createCategory, deriveLevel, fetchCategories, updateCategory, updateCategoryStatus } from '@/mock'
 import type { CategoryPayload } from '@/mock'
-import type { CategoryItem, EnableStatus } from '@/types'
-import { ROOT_ID, buildCategoryTree, collectDescendantIds, getDirectChildren, levelText } from '@/shared/utils/tree'
+import type { CategoryItem, EnableStatus, TreeOption } from '@/types'
+import {
+  CATEGORY_MAX_LEVEL,
+  ROOT_ID,
+  buildCategoryTree,
+  collectDescendantIds,
+  getDirectChildren,
+  levelText,
+} from '@/shared/utils/tree'
 import CategoryFormModal from './CategoryFormModal'
 import CategoryViewModal from './CategoryViewModal'
 import CategoryConfirmModal from './CategoryConfirmModal'
@@ -78,6 +85,13 @@ export default function CategoryPage() {
     return list.find((item) => item.id === selectedId)?.name ?? '全部分类'
   }, [list, selectedId])
 
+  /**
+   * 选中节点是否还能新增下级：层级未达上限（六级）时提供入口。
+   * 选中「全部分类」不提供（新增一级分类另有常驻入口）。
+   */
+  const selectedLevel = useMemo(() => list.find((item) => item.id === selectedId)?.level ?? 0, [list, selectedId])
+  const canAddChild = selectedId !== ROOT_ID && selectedLevel < CATEGORY_MAX_LEVEL
+
   const rows = useMemo(() => {
     const parentId = selectedId === ROOT_ID ? null : selectedId
     let data = getDirectChildren(list, parentId)
@@ -100,19 +114,43 @@ export default function CategoryPage() {
 
   const pagedRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const parentOptions = useMemo<SelectOption[]>(() => {
+  /**
+   * 上级分类候选（分级树）：
+   * - 层级未达上限（六级）的分类，**不限启用 / 禁用**；
+   * - 编辑时排除自身及其全部下级，禁止形成环。
+   */
+  const parentOptions = useMemo<TreeOption[]>(() => {
     const excluded = new Set<string>()
     if (form.mode === 'edit' && form.initial) {
       excluded.add(form.initial.id)
       collectDescendantIds(list, form.initial.id).forEach((id) => excluded.add(id))
     }
-    return list
-      .filter((item) => item.level < 3 && item.status === 'enabled' && !excluded.has(item.id))
-      .sort((a, b) => a.level - b.level || (a.sortNo ?? 9999) - (b.sortNo ?? 9999))
-      .map((item) => ({
-        label: `${'　'.repeat(item.level - 1)}${item.name}（${item.code}）`,
-        value: item.id,
-      }))
+    const usable = list.filter((item) => item.level < CATEGORY_MAX_LEVEL && !excluded.has(item.id))
+    const byParent = new Map<string | null, CategoryItem[]>()
+    usable.forEach((item) => {
+      const key = item.parentId ?? null
+      const arr = byParent.get(key) ?? []
+      arr.push(item)
+      byParent.set(key, arr)
+    })
+    const build = (parentId: string | null): TreeOption[] =>
+      (byParent.get(parentId) ?? [])
+        .sort(
+          (a, b) =>
+            a.level - b.level ||
+            (a.sortNo ?? Number.MAX_SAFE_INTEGER) - (b.sortNo ?? Number.MAX_SAFE_INTEGER) ||
+            a.code.localeCompare(b.code),
+        )
+        .map((item) => {
+          const children = build(item.id)
+          return {
+            value: item.id,
+            label: item.name,
+            extra: item.code,
+            children: children.length > 0 ? children : undefined,
+          }
+        })
+    return build(null)
   }, [list, form.mode, form.initial])
 
   const parentName = (parentId: string | null) => {
@@ -164,32 +202,43 @@ export default function CategoryPage() {
     }
   }
 
-  const handleExport = () => {
-    toast(`导出任务已创建，共 ${rows.length} 条（原型模拟）`)
+  /** 查询：输入条件即时过滤；「搜索」按钮保留，点击执行一次当前条件筛选 */
+  const handleSearch = () => {
+    setPage(1)
+    toast('查询完成')
   }
 
   const columns: Column<CategoryItem>[] = [
     {
       key: 'code',
-      title: '分类编码',
+      title: <span data-ann-target="category.col.code">分类编码</span>,
       width: 120,
       render: (row) => (
-        <button className="link mono" onClick={() => setViewItem(row)}>
+        <button
+          className="link mono"
+          data-ann-target="category.row.code"
+          onClick={() => setViewItem(row)}
+        >
           {row.code}
         </button>
       ),
     },
-    { key: 'name', title: '分类名称', width: 150 },
-    { key: 'level', title: '分类层级', width: 90, render: (row) => levelText(row.level) },
+    { key: 'name', title: <span data-ann-target="category.col.name">分类名称</span>, width: 150 },
+    {
+      key: 'level',
+      title: <span data-ann-target="category.col.level">分类层级</span>,
+      width: 90,
+      render: (row) => levelText(row.level),
+    },
     {
       key: 'sortNo',
-      title: '排序号',
+      title: <span data-ann-target="category.col.sortNo">排序号</span>,
       width: 80,
       render: (row) => (row.sortNo == null ? '-' : String(row.sortNo)),
     },
     {
       key: 'status',
-      title: '使用状态',
+      title: <span data-ann-target="category.col.status">使用状态</span>,
       width: 90,
       render: (row) => (
         <Tag tone={row.status === 'enabled' ? 'success' : 'default'}>
@@ -209,20 +258,29 @@ export default function CategoryPage() {
       width: 140,
       render: (row) => (
         <span className="row-actions">
-          <button className="link" onClick={() => setViewItem(row)}>
+          <button className="link" data-ann-target="category.row.view" onClick={() => setViewItem(row)}>
             查看
           </button>
-          <button className="link" onClick={() => openEdit(row)}>
+          <button className="link" data-ann-target="category.row.edit" onClick={() => openEdit(row)}>
             编辑
           </button>
-          <button
-            className={row.status === 'enabled' ? 'link link-danger' : 'link'}
-            onClick={() =>
-              setConfirm({ item: row, target: row.status === 'enabled' ? 'disabled' : 'enabled' })
-            }
-          >
-            {row.status === 'enabled' ? '禁用' : '启用'}
-          </button>
+          {row.status === 'enabled' ? (
+            <button
+              className="link link-danger"
+              data-ann-target="category.row.disable"
+              onClick={() => setConfirm({ item: row, target: 'disabled' })}
+            >
+              禁用
+            </button>
+          ) : (
+            <button
+              className="link"
+              data-ann-target="category.row.enable"
+              onClick={() => setConfirm({ item: row, target: 'enabled' })}
+            >
+              启用
+            </button>
+          )}
         </span>
       ),
     },
@@ -231,21 +289,19 @@ export default function CategoryPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '产品库', '产品分类']}
-        title="产品分类"
-        description="轻量配置 · 左树 + 右表 + 弹窗；V0.1 不提供删除与导入入口"
+        breadcrumb={['系统管理', '产品库', '产品分类']}
+        title={<span data-ann-target="category.page.global">产品分类</span>}
         actions={
-          <Button variant="primary" onClick={() => openCreate(null, false)}>
+          <Button variant="primary" data-ann-target="category.add.level1" onClick={() => openCreate(null, false)}>
             新增
           </Button>
         }
       />
 
       <div className="card workbench">
-        <aside className="workbench-tree">
+        <aside className="workbench-tree" data-ann-target="category.page.tree">
           <div className="workbench-tree-header">
             <span className="workbench-tree-title">分类树</span>
-            <span className="toolbar-tip">三级</span>
           </div>
           <Tree
             data={treeData}
@@ -254,11 +310,11 @@ export default function CategoryPage() {
             onSelect={(node) => setSelectedId(node.id)}
           />
           <div className="workbench-tree-actions">
-            <Button size="small" onClick={() => openCreate(null, true)}>
+            <Button size="small" data-ann-target="category.add.level1" onClick={() => openCreate(null, true)}>
               + 新增一级分类
             </Button>
-            {selectedId !== ROOT_ID && (
-              <Button size="small" onClick={() => openCreate(selectedId, true)}>
+            {canAddChild && (
+              <Button size="small" data-ann-target="category.add.child" onClick={() => openCreate(selectedId, true)}>
                 + 新增下级分类
               </Button>
             )}
@@ -266,7 +322,7 @@ export default function CategoryPage() {
         </aside>
 
         <section className="workbench-main">
-          <div className="query-bar">
+          <div className="query-bar" data-ann-target="category.query.bar">
             <div className="query-item">
               <span className="query-label">分类编码</span>
               <Input
@@ -296,8 +352,10 @@ export default function CategoryPage() {
               />
             </div>
             <div className="query-actions">
-              <Button onClick={() => setQuery(EMPTY_QUERY)}>重置</Button>
-              <Button variant="primary" onClick={() => toast('查询完成')}>
+              <Button data-ann-target="category.query.reset" onClick={() => setQuery(EMPTY_QUERY)}>
+                重置
+              </Button>
+              <Button variant="primary" data-ann-target="category.query.search" onClick={handleSearch}>
                 搜索
               </Button>
             </div>
@@ -306,12 +364,11 @@ export default function CategoryPage() {
           <div className="toolbar">
             <div className="flex gap-sm">
               <span className="toolbar-title">{selectedName}</span>
-              <span className="toolbar-tip">共 {rows.length} 条 · 展示所选节点的直接子级【待确认】</span>
+              <span className="toolbar-tip">共 {rows.length} 条</span>
             </div>
-            <Button onClick={handleExport}>导出</Button>
           </div>
 
-          <div className="workbench-table-wrap">
+          <div className="workbench-table-wrap" data-ann-target="category.page.list">
             <Table columns={columns} data={pagedRows} rowKey={(row) => row.id} loading={loading} />
           </div>
 

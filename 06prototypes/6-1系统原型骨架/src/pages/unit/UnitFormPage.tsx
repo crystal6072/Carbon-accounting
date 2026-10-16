@@ -193,7 +193,7 @@ export default function UnitFormPage() {
     return (
       <>
         <PageHeader
-          breadcrumb={['后台管理', '基础库', '计量单位库']}
+          breadcrumb={['系统管理', '基础库', '计量单位库']}
           title={isEdit ? '编辑单位' : '新增单位'}
         />
         <div className="card">
@@ -207,7 +207,7 @@ export default function UnitFormPage() {
     return (
       <>
         <PageHeader
-          breadcrumb={['后台管理', '基础库', '计量单位库']}
+          breadcrumb={['系统管理', '基础库', '计量单位库']}
           title="编辑单位"
         />
         <div className="card">
@@ -220,7 +220,7 @@ export default function UnitFormPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['后台管理', '基础库', '计量单位库', isEdit ? '编辑单位' : '新增单位']}
+        breadcrumb={['系统管理', '基础库', '计量单位库', isEdit ? '编辑单位' : '新增单位']}
         title={isEdit ? '编辑单位' : '新增单位'}
         description={
           isEdit
@@ -237,7 +237,7 @@ export default function UnitFormPage() {
           </div>
           <div className="unit-section-body">
             <div className="form-grid">
-              <FormField label="单位名称" required error={errors.name}>
+              <FormField label="单位名称" required error={errors.name} annTarget="unit.form.name">
                 <Input
                   value={form.name}
                   placeholder="如 千克"
@@ -245,7 +245,7 @@ export default function UnitFormPage() {
                   onChange={(e) => updateForm({ name: e.target.value })}
                 />
               </FormField>
-              <FormField label="单位符号" required error={errors.symbol}>
+              <FormField label="单位符号" required error={errors.symbol} annTarget="unit.form.symbol">
                 <Input
                   value={form.symbol}
                   placeholder="如 kg（不得包含空格）"
@@ -253,7 +253,7 @@ export default function UnitFormPage() {
                   onChange={(e) => updateForm({ symbol: e.target.value })}
                 />
               </FormField>
-              <FormField label="单位类型" required error={errors.unitType}>
+              <FormField label="单位类型" required error={errors.unitType} annTarget="unit.form.unitType">
                 <Select
                   value={form.unitType}
                   placeholder="请选择单位类型"
@@ -263,7 +263,7 @@ export default function UnitFormPage() {
                   onChange={(e) => handleTypeChange(e.target.value as '' | UnitType)}
                 />
               </FormField>
-              <FormField label="是否基准单位" required>
+              <FormField label="是否基准单位" required annTarget="unit.form.isBase">
                 <Select
                   value={form.isBase}
                   options={isBaseSelectOptions}
@@ -271,7 +271,7 @@ export default function UnitFormPage() {
                   onChange={(e) => handleIsBaseChange(e.target.value as 'yes' | 'no')}
                 />
               </FormField>
-              <FormField label="关联基准单位" required={!isBaseYes && !isQuantity} error={errors.baseUnitId}>
+              <FormField label="关联基准单位" required={!isBaseYes && !isQuantity} error={errors.baseUnitId} annTarget="unit.form.baseUnit">
                 <Select
                   value={form.baseUnitId}
                   placeholder={isQuantity ? '数量类无基准单位' : '仅可选同类型基准单位'}
@@ -281,7 +281,7 @@ export default function UnitFormPage() {
                   onChange={(e) => updateForm({ baseUnitId: e.target.value })}
                 />
               </FormField>
-              <FormField label="换算系数" required={!isBaseYes && !isQuantity} error={errors.factor}>
+              <FormField label="换算系数" required={!isBaseYes && !isQuantity} error={errors.factor} annTarget="unit.form.factor">
                 <Input
                   type="number"
                   min="0"
@@ -293,7 +293,7 @@ export default function UnitFormPage() {
                   onChange={(e) => updateForm({ factor: e.target.value })}
                 />
               </FormField>
-              <FormField label="备注" full error={errors.remark}>
+              <FormField label="备注" full error={errors.remark} annTarget="unit.form.remark">
                 <Textarea
                   value={form.remark}
                   rows={3}
@@ -321,8 +321,8 @@ export default function UnitFormPage() {
 
         <section className="card">
           <div className="unit-form-footer">
-            <Button onClick={() => navigate(-1)}>取消</Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            <Button data-ann-target="unit.form.cancel" onClick={() => navigate(-1)}>取消</Button>
+            <Button variant="primary" data-ann-target="unit.form.save" onClick={handleSubmit} disabled={submitting}>
               {submitting ? '保存中…' : '保存'}
             </Button>
           </div>
@@ -339,6 +339,7 @@ export default function UnitFormPage() {
             <Button onClick={() => setPendingPayload(null)}>取消</Button>
             <Button
               variant="primary"
+              data-ann-target="unit.form.factorConfirm"
               onClick={() => {
                 const payload = pendingPayload
                 setPendingPayload(null)

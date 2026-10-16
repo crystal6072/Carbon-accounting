@@ -46,7 +46,7 @@ export default function UnitBatchConfirmModal({
         </>
       }
     >
-      <div className="modal-confirm-text">
+      <div className="modal-confirm-text" data-ann-target="unit.batch.confirm">
         <span style={{ color: 'var(--color-warning)', display: 'flex' }}>
           <Icon name="warning" size={16} />
         </span>

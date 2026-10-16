@@ -551,24 +551,5 @@ export const calcFormulaAnnotations: Annotation[] = [
   },
 ]
 
-/** 可匹配批注（按锚点分组） */
-export const matchedAnnotations = calcFormulaAnnotations.filter((item) => item.matchStatus === 'matched')
-
-/** 全局标注（未匹配 + 文档级） */
+/** 全局标注（未匹配 + 文档级）：进入「全局批注」抽屉 */
 export const globalAnnotationList = calcFormulaAnnotations.filter((item) => item.global)
-
-/** 锚点 → 批注列表（selector 与 matchTargets 均纳入映射，同 target 去重） */
-export function buildTargetMap(): Map<string, Annotation[]> {
-  const map = new Map<string, Annotation[]>()
-  matchedAnnotations.forEach((item) => {
-    const keys = new Set<string>()
-    if (item.selector) keys.add(item.selector)
-    ;(item.matchTargets ?? []).forEach((target) => keys.add(target.selector))
-    keys.forEach((key) => {
-      const list = map.get(key) ?? []
-      if (!list.includes(item)) list.push(item)
-      map.set(key, list)
-    })
-  })
-  return map
-}

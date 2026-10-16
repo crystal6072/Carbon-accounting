@@ -1,0 +1,297 @@
+/* 标准文件库（基础库 A1-3）：列表 + 独立详情页 + 独立新增 / 编辑页 */
+
+/* 页面纵向分块（详情 / 表单页） */
+.standard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 分块标题栏 */
+.standard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.standard-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.standard-section-body {
+  padding: var(--space-lg);
+}
+.standard-section-flush {
+  padding: 0;
+}
+/* 分块底部说明（规则口径提示） */
+.standard-section-tip {
+  border-top: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* 详情页跨行字段 */
+.detail-item.full {
+  grid-column: 1 / -1;
+}
+
+/* 列表：列较多，容器内横向滚动兜底，并收紧单元格留白避免窄窗口下内容折行 */
+.standard-table-wrap {
+  overflow-x: auto;
+}
+.standard-table-wrap .data-table thead th,
+.standard-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 表单页底部操作栏 */
+.standard-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+
+/* 只读提示条（被引用标准 R-007） */
+.standard-readonly-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin: 0 var(--space-lg) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-base);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-lg);
+}
+
+/* 附件（选填、可多个；仅限内部查阅） */
+.standard-attach-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+.standard-attach-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  font-size: var(--font-size-sm);
+}
+.standard-attach-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.standard-attach-meta {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+.standard-attach-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+}
+.standard-attach-picker input[type='file'] {
+  display: none;
+}
+/* 附件版权边界提示（§5 A3：仅限内部查阅，不得作为对外交付物） */
+.standard-attach-tip {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* ============ 附件在线预览（全屏模拟预览控件，与报告 Word 预览同口径） ============ */
+
+.standard-preview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.standard-preview-dialog {
+  width: min(1120px, 100%);
+  height: min(88vh, 880px);
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+.standard-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.standard-preview-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.standard-preview-file-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.standard-preview-file-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 460px;
+}
+
+.standard-preview-badge {
+  flex: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.standard-preview-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.standard-preview-body {
+  flex: 1;
+  overflow: auto;
+  background: #eef1f5;
+  padding: 18px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.standard-preview-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.standard-preview-image {
+  max-width: 90%;
+  max-height: calc(88vh - 160px);
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+}
+
+.standard-preview-frame {
+  width: 100%;
+  height: calc(88vh - 150px);
+  border: 0;
+  background: #fff;
+}
+
+.standard-preview-doc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.standard-preview-sheet {
+  width: 720px;
+  max-width: 92%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+}
+
+.standard-preview-sheet-inner {
+  position: relative;
+  min-height: 420px;
+  padding: 44px 48px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.standard-preview-sheet-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.standard-preview-sheet-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(15, 23, 42, 0.06);
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  transform: rotate(-16deg);
+  pointer-events: none;
+}
+
+.standard-preview-line {
+  height: 10px;
+  border-radius: 4px;
+  background: #eef1f5;
+}
+
+.standard-preview-sheet-footer {
+  padding: 8px 0;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  border-top: 1px solid #eef1f5;
+}
+
+.standard-preview-tip {
+  padding: 8px 14px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
