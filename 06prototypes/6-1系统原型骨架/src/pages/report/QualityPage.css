@@ -92,6 +92,375 @@
   margin-bottom: 16px;
 }
 
+/* 定量步骤：跳过勾选 */
+.q-skip-quantitative {
+  margin-bottom: 12px;
+}
+
+.q-skip-tip {
+  margin-bottom: 16px;
+}
+
+/* 结果页：未评分提示 */
+.q-result-empty {
+  margin-bottom: 16px;
+}
+
+/* 结果页·定性数据质量评价：指标名 + 描述（斑马纹） */
+.q-qual-result {
+  border: 1px solid var(--td-component-stroke, #e7eaf0);
+  border-radius: var(--td-radius-small, 3px);
+  overflow: hidden;
+}
+
+.q-qual-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 16px;
+}
+
+.q-qual-row:nth-child(even) {
+  background: #fafbfc;
+}
+
+.q-qual-row + .q-qual-row {
+  border-top: 1px solid var(--td-component-stroke, #eef0f3);
+}
+
+.q-qual-label {
+  width: 128px;
+  flex: none;
+  font-size: 13px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-qual-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--td-text-color-secondary, #5e6470);
+  word-break: break-all;
+}
+
+/* 结果页·定量数据质量评价：摘要条（对齐竞品：名称 + 结果/DQR/不确定度） */
+.q-quant-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #e8f5ef 0%, #e6f4f7 60%, #e8f0fe 100%);
+  border-radius: var(--td-radius-small, 3px);
+}
+
+.q-quant-banner-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.q-quant-banner-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-quant-banner-sub {
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-quant-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.q-quant-stat {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #5e6470);
+  white-space: nowrap;
+}
+
+.q-quant-stat b {
+  font-size: 15px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 定量步骤：批量工具栏 */
+.q-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--td-bg-color-page, #f3f5f8);
+  border-radius: var(--td-radius-small, 3px);
+}
+
+.q-batch-count {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-batch-count b {
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* ============ 评分弹窗（数据质量评估） ============ */
+.q-sd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.q-sd-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 头部右侧：项目名 + 批量切换 + 完成进度 */
+.q-sd-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.q-sd-meta-item {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a94a6);
+  white-space: nowrap;
+}
+
+.q-sd-meta-item b {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
+.q-sd-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.q-sd-name {
+  min-width: 120px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 底部：依据信息（左） + 当前评分与确定（右） */
+.q-sd-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.q-sd-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+.q-sd-footer-info b {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
+.q-sd-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.q-sd-dqr {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+  white-space: nowrap;
+}
+
+.q-sd-dqr-num {
+  color: #17b26a;
+  font-size: 16px;
+}
+
+.q-score-section {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 评分列表（版式对齐竞品）：每个指标一组，组内逐行选择分值 */
+.q-score-list {
+  border: 1px solid var(--td-component-stroke, #e7eaf0);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.q-slg-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.q-slg-group + .q-slg-group {
+  border-top: 1px dashed var(--td-component-stroke, #e7eaf0);
+}
+
+/* 组左侧指标列 */
+.q-slg-label {
+  width: 180px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px;
+  background: var(--td-bg-color-page, #f7f9fb);
+  border-right: 1px solid var(--td-component-stroke, #e7eaf0);
+}
+
+.q-slg-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-slg-chosen {
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+.q-slg-rows {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.q-slg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.q-slg-row + .q-slg-row {
+  border-top: 1px dashed var(--td-component-stroke, #eef0f3);
+}
+
+.q-slg-row:not(.is-disabled):hover {
+  background: var(--td-bg-color-container-hover, #f5f7fa);
+}
+
+.q-slg-row.is-selected {
+  background: #f0faf4;
+}
+
+.q-slg-row.is-disabled {
+  cursor: not-allowed;
+}
+
+/* 隐藏 tdesign 单选圆点，用自定义绿色圆点呈现选中态 */
+.q-score-list .t-radio__icon {
+  display: none;
+}
+
+.q-score-list .t-radio {
+  margin: 0;
+  height: auto;
+  flex: none;
+}
+
+.q-slg-radio {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 1.5px solid #c2c8d4;
+  background: #fff;
+  position: relative;
+  transition: border-color 0.12s ease;
+}
+
+.q-slg-row.is-selected .q-slg-radio {
+  border-color: #17b26a;
+}
+
+.q-slg-row.is-selected .q-slg-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #17b26a;
+}
+
+/* 分值徽标：按分档配色（1 绿 → 5 红） */
+.q-slg-badge {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.q-slg-badge.q-sm-c1 {
+  color: #349a67;
+  background: #e3f5eb;
+}
+
+.q-slg-badge.q-sm-c2 {
+  color: #2ba3a3;
+  background: #e2f5f5;
+}
+
+.q-slg-badge.q-sm-c3 {
+  color: #e08a2e;
+  background: #fbf1e0;
+}
+
+.q-slg-badge.q-sm-c4 {
+  color: #e2762d;
+  background: #fbeadd;
+}
+
+.q-slg-badge.q-sm-c5 {
+  color: #e04f4f;
+  background: #fbe6e6;
+}
+
+.q-slg-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--td-text-color-secondary, #4b5361);
+  word-break: break-all;
+}
+
+.q-slg-row.is-selected .q-slg-text {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
 /* 定性步骤 表单行 */
 .q-form-like {
   display: flex;
@@ -116,32 +485,7 @@
   flex: 1;
 }
 
-/* 评分面板（展开行） */
-.q-score-panel {
-  padding: 16px;
-  background: var(--td-bg-color-page, #f3f5f8);
-  border-radius: 6px;
-}
-
-.q-score-dims {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.q-score-dim {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.q-score-dim-label {
-  width: 104px;
-  flex: none;
-  color: var(--td-text-color-secondary, #5e6470);
-  font-size: 13px;
-}
-
+/* 评分弹窗：数据项依据信息 + 评分预览 */
 .q-score-basis {
   margin-top: 16px;
 }
@@ -153,41 +497,13 @@
   color: var(--td-text-color-primary, #1c2333);
 }
 
-/* 结果页 */
-.q-result-overview {
-  margin-bottom: 16px;
-}
-
-.q-result-stat {
-  display: flex;
-  align-items: center;
-}
-
-.q-result-levels {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  margin-left: 12px;
-}
-
-.q-result-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.q-key-sources {
-  margin-top: 12px;
-  font-size: 13px;
-}
-
 @media (max-width: 960px) {
-  .q-result-grid {
-    grid-template-columns: 1fr;
+  .q-slg-label {
+    width: 112px;
+    padding: 12px;
   }
-  .q-score-dims {
-    grid-template-columns: 1fr;
+  .q-quant-banner-stats {
+    gap: 12px;
   }
 }
 
@@ -198,7 +514,7 @@
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 12px 32px;
   background: var(--td-bg-color-container, #fff);

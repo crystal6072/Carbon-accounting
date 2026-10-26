@@ -17,6 +17,18 @@
   color: var(--td-text-color-secondary, #666);
 }
 
+.sa-breadcrumb-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--td-text-color-secondary, #666);
+  background: var(--td-bg-color-container-active, #f3f6f8);
+  border-radius: var(--td-radius-default, 4px);
+  vertical-align: middle;
+}
+
 .sa-page-title {
   display: flex;
   align-items: center;

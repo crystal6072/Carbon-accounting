@@ -22,6 +22,7 @@ export interface AnnotationMatchTarget {
  * - list：分条列表（ordered=true 时为有序列表）；
  * - steps：纵向编号步骤，每一步单独一行；
  * - table：简短对比/说明表格（columns 为表头，rows 为数据行）；
+ * - flow：流程图（Mermaid 源码，原样渲染为图形，不用文字代替）；
  * - callout：辅助信息（待确认、提示、备注等），弱化展示。
  * 文本中的 **关键词** 渲染为加粗，仅用于突出关键条件 / 限制 / 结果。
  */
@@ -31,6 +32,7 @@ export type AnnotationBlock =
   | { type: 'list'; ordered?: boolean; items: string[] }
   | { type: 'steps'; items: string[] }
   | { type: 'table'; columns: string[]; rows: string[][] }
+  | { type: 'flow'; chart: string; caption?: string }
   | { type: 'callout'; text: string }
 
 export interface Annotation {
@@ -87,6 +89,3 @@ export function isRdVisible(annotation: Annotation): boolean {
 
 /** 批注锚点属性名：挂到操作按钮 / 操作项上，供批注层定位 */
 export const ANNOTATION_TARGET_ATTR = 'data-ann-target'
-
-/** 批注作用域：仅核算引擎（计算公式）路由下展示 */
-export const ANNOTATION_SCOPE_PREFIX = '/model/calc-engine'

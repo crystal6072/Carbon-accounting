@@ -1,0 +1,180 @@
+/* 成员管理（租户端 · 系统管理）：列表 + 新建 / 关联 / 编辑 + 停启用 / 移出 / 重置密码 / 有效权限 / 详情 */
+
+.member-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 列表：列较多，容器内横向滚动兜底 */
+.member-table-wrap {
+  overflow-x: auto;
+}
+.member-table-wrap .data-table thead th,
+.member-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 角色标签组 */
+.member-role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 「主管理员」与「本人」标记 */
+.member-primary-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-error-bg, rgba(214, 73, 51, 0.08));
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+.member-self-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-primary-bg, rgba(0, 82, 217, 0.08));
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+}
+
+/* 表单：加入方式切换 */
+.member-join-modes {
+  display: flex;
+  gap: var(--space-lg);
+}
+.member-join-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 表单：手机号 + 查找账号按钮同行 */
+.member-mobile-field {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+.member-mobile-field > :first-child {
+  flex: 1;
+}
+
+/* 关联已有账号：命中账号信息卡 */
+.member-link-hit {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
+  background: var(--color-success-bg, rgba(0, 168, 112, 0.08));
+  margin-bottom: var(--space-md);
+}
+.member-link-hit-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+
+/* 重置密码：方式单选 */
+.member-reset-modes {
+  display: flex;
+  gap: var(--space-lg);
+}
+.member-reset-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 一次性密码展示框 */
+.member-onetime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px dashed var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg, rgba(230, 162, 60, 0.08));
+}
+.member-onetime-code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 2px;
+  color: var(--color-warning);
+}
+
+/* 影响确认勾选项 */
+.member-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-lg);
+  cursor: pointer;
+}
+
+/* 移出：名下业务数据提示 */
+.member-remove-data {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg, rgba(230, 162, 60, 0.08));
+  margin-bottom: var(--space-md);
+}
+.member-remove-data-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+}
+
+/* 有效权限：角色清单 + 功能点表 */
+.member-perm-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
+}
+.member-perm-table-wrap {
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.member-perm-check {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 详情弹窗：操作记录表 */
+.member-detail-logs {
+  margin-top: var(--space-md);
+}
+
+/* 已禁用 / 已移出成员行置灰展示 */
+.member-row-disabled td {
+  color: var(--color-text-tertiary, #bbb);
+  background: var(--color-fill-tertiary, rgba(0, 0, 0, 0.02));
+}
+.member-row-disabled .mono,
+.member-row-disabled .nowrap,
+.member-row-disabled .member-role-tags {
+  opacity: 0.6;
+}
+
+/* 操作列：禁用态按钮（用于唯一管理员等防误操作场景） */
+.row-actions .link:disabled,
+.row-actions-menu-item.is-disabled {
+  color: var(--color-text-disabled, #ccc);
+  cursor: not-allowed;
+}

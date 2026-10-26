@@ -556,7 +556,7 @@ const ProjectStepOne = forwardRef<ProjectStepOneHandle, ProjectStepOneProps>(
                   label="系统边界"
                   required
                   error={errors.boundary}
-                  hint="引用「平台支撑 · 数据字典 · 系统边界」，仅展示已启用的边界项（卡片式单选）"
+                  hint="引用「组织与权限 · 数据字典 · 系统边界」，仅展示已启用的边界项（卡片式单选）"
                 >
                   <div className="pcf-boundary-cards is-stacked" data-ann-target="pcf.step1.boundary">
                     {boundaryDict.length === 0 && <span className="pcf-placeholder">暂无启用的系统边界字典项</span>}

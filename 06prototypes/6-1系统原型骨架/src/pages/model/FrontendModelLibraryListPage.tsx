@@ -148,12 +148,12 @@ export default function FrontendModelLibraryListPage() {
     <>
       <PageHeader
         breadcrumb={['产品碳足迹', '模型管理', '模型库']}
-        title="模型库"
+        title={<span data-ann-target="lib.page.global">模型库</span>}
         description="平台已发布的核算模型模板：可直接用于新建核算项目，或「加入我的模型」形成本组织私有副本（复制式，后续编辑不联动源模型）。"
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="lib.filters">
           <div className="query-item">
             <span className="query-label">产品分类</span>
             <CascaderSelect
@@ -200,7 +200,7 @@ export default function FrontendModelLibraryListPage() {
       <section className="model-lib-main">
         <div className="model-lib-toolbar">
           <div className="model-lib-filters">
-            <label className="model-lib-toggle">
+            <label className="model-lib-toggle" data-ann-target="lib.only-collected">
               <input
                 type="checkbox"
                 checked={onlyCollected}
@@ -212,10 +212,10 @@ export default function FrontendModelLibraryListPage() {
               共 {rows.length} 个模型 · 已加入 {collectedSourceIds.size} 个
             </span>
           </div>
-          <Button onClick={() => navigate('/pcf/my-model')}>前往我的模型</Button>
+          <Button data-ann-target="lib.goto-mym" onClick={() => navigate('/pcf/my-model')}>前往我的模型</Button>
         </div>
 
-        <div className="model-lib-grid">
+        <div className="model-lib-grid" data-ann-target="lib.grid">
           {loading && <div className="model-grid-empty">加载中…</div>}
           {!loading && pagedRows.length === 0 && (
             <div className="model-grid-empty">
@@ -253,7 +253,7 @@ export default function FrontendModelLibraryListPage() {
                       {collected ? (
                         <span className="toolbar-tip">已加入我的模型</span>
                       ) : (
-                        <button className="link" onClick={() => void handleCollect(model)}>
+                        <button className="link" data-ann-target="lib.join" onClick={() => void handleCollect(model)}>
                           加入我的模型
                         </button>
                       )}

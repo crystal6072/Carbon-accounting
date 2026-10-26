@@ -5,8 +5,8 @@ import type { PcfCaliberKey, PcfDataItemDirection, PcfDataItemType, PcfEmissionT
  * 字段口径见《数据质量评价字段清单》（`02prd/02-2前台业务功能/06报告管理/数据质量评价字段清单.md`），
  * 业务规则见《数据质量评价业务PRD》R-083 ~ R-100。
  *
- * 结构：数据质量评价 1 ── 1 定性覆盖范围（时间 / 地理 / 技术）
- *                      └── N 评价数据项（复制核算项目阶段数据项）── 1 谱系评分（十维 1–5）
+ * 结构：数据质量评价 1 ── 1 定性覆盖范围（时间 / 地理 / 技术 / 完整性 / 代表性 / 一致性 / 再现性 / 数据来源 / 信息的不确定性）
+ *                      └── N 评价数据项（复制核算项目阶段数据项）── 1 谱系评分（四项 1–5）
  *                      └── 1 评价结果（整体 DQR + 等级 + 不确定度 + 分布）
  */
 
@@ -20,32 +20,18 @@ export type DqrLevel = 'excellent' | 'good' | 'fair' | 'poor' | 'veryPoor'
 export type ScoreSource = 'manual' | 'batch'
 
 /**
- * 谱系评分（十维，每维 1–5，1 最优）。
- * 维度口径（对应数据质量定量评价指标维度 a~j）：
- * a 时间覆盖范围 / b 地理覆盖范围 / c 技术覆盖范围 / d 精度 / e 完整性 /
- * f 代表性 / g 一致性 / h 再现性 / i 数据来源 / j 信息的不确定性。
+ * 谱系评分（四项，每维 1–5，1 最优），口径与竞品一致（TiR / TeR / GeR / C）：
+ * a 时间代表性 TiR / b 技术代表性 TeR / c 地理代表性 GeR / d 完整性 C。
  */
 export interface PedigreeScore {
-  /** a) 时间覆盖范围：数据年份与所收集数据的最小时间长度 */
+  /** a) 时间代表性 TiR：基准年 / 有效期与数据集年份的相差程度 */
   temporal: number
-  /** b) 地理覆盖范围：单元过程数据的地理位置 */
-  geographical: number
-  /** c) 技术覆盖范围：具体的技术或技术组合 */
+  /** b) 技术代表性 TeR：核算过程技术与数据集代表技术的一致性 */
   technological: number
-  /** d) 精度：对每个数据值可变性的度量（例如方差） */
-  precision: number
-  /** e) 完整性：测量或测算的流所占的比例 */
+  /** c) 地理代表性 GeR：核算地域与数据集代表地理范围的一致性 */
+  geographical: number
+  /** d) 完整性 C：核算过程所需数据的覆盖程度 */
   completeness: number
-  /** f) 代表性：对实际关注人群（时间/地理/技术覆盖等）关注程度的真实情况 */
-  representativeness: number
-  /** g) 一致性：研究方法学能否在敏感性分析不同组成部分中统一应用 */
-  consistency: number
-  /** h) 再现性：其他独立从业人员用同一方法学和数值信息重现相同研究结果的程度 */
-  reproducibility: number
-  /** i) 数据来源 */
-  dataSource: number
-  /** j) 信息的不确定性 */
-  informationUncertainty: number
   /** 评分来源（手工 / 批量） */
   scoreSource: ScoreSource
 }
@@ -82,7 +68,7 @@ export interface QualityAssessmentItem {
   emission: number
   /** 贡献率（%） */
   contribution: number
-  /** 十维评分（未评分 = null） */
+  /** 四项谱系评分（未评分 = null） */
   score: PedigreeScore | null
   /** 数据项 DQR 分值（派生） */
   dqr: number | null
@@ -92,7 +78,7 @@ export interface QualityAssessmentItem {
   uncertainty: number | null
 }
 
-/** 定性覆盖范围（字段清单 §3） */
+/** 定性覆盖范围（字段清单 §3），共 9 个定性维度 */
 export interface QualitativeCoverage {
   /** 时间覆盖范围 */
   temporalCoverage: string
@@ -100,11 +86,26 @@ export interface QualitativeCoverage {
   geographicalCoverage: string
   /** 技术覆盖范围 */
   technologicalCoverage: string
+  /** 完整性 */
+  completeness: string
+  /** 代表性 */
+  representativeness: string
+  /** 一致性 */
+  consistency: string
+  /** 再现性 */
+  reproducibility: string
+  /** 数据来源 */
+  dataSource: string
+  /** 信息的不确定性 */
+  informationUncertainty: string
   /** 是否已确认（步骤① → ②） */
   confirmed: boolean
   confirmedBy: string | null
   confirmedAt: string | null
 }
+
+/** 定性覆盖范围可编辑文本（步骤① 表单字段，剔除确认元信息） */
+export type QualitativeTexts = Omit<QualitativeCoverage, 'confirmed' | 'confirmedBy' | 'confirmedAt'>
 
 /** DQR 等级分布（评价结果 §6） */
 export interface DqrLevelDistribution {

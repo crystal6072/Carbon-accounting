@@ -398,7 +398,7 @@ export default function FactorFormPage() {
 
   const breadcrumb = isMy
     ? ['产品碳足迹', '因子管理', '我的因子库', isEdit ? '编辑因子' : '手工新增因子']
-    : ['系统管理', '核算配置', '因子库管理', isEdit ? '编辑因子' : '新增因子']
+    : ['系统管理', '模型管理', '因子库管理', isEdit ? '编辑因子' : '新增因子']
   const title = isEdit ? '编辑因子' : isMy ? '手工新增因子' : '新增因子'
 
   if (loading) {

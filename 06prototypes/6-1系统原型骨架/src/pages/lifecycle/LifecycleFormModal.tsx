@@ -260,7 +260,7 @@ export default function LifecycleFormModal({ open, stageId, onClose, onSaved }: 
             label="适用系统边界"
             full
             annTarget="lifecycle.form.boundaries"
-            hint="引用「平台支撑 · 数据字典 · 系统边界」；可多选，为空 = 全边界通用"
+            hint="引用「组织与权限 · 数据字典 · 系统边界」；可多选，为空 = 全边界通用"
           >
             <MultiSelect
               value={form.boundaries}

@@ -142,7 +142,7 @@ export default function ReportPreview({ report }: { report: PcfFootprintReport }
   const total = sheets.length
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="rp-preview" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="rp-preview-toolbar">
         <FileIcon size="20px" />
         <span className="rp-file">{report.fileName}</span>

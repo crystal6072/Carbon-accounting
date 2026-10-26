@@ -8,11 +8,14 @@ export default function AppSidebar() {
   const location = useLocation()
   const [expanded, setExpanded] = useState<string[]>([])
 
+  // 顶栏已承载一级导航，侧栏只渲染当前一级分组下的内容
+  const menu = menuConfig
+
   // 路由变化时自动展开当前路径的祖先分组
   useEffect(() => {
-    const ancestors = findAncestorKeys(menuConfig, location.pathname) ?? []
+    const ancestors = findAncestorKeys(menu, location.pathname) ?? []
     setExpanded((prev) => Array.from(new Set([...prev, ...ancestors])))
-  }, [location.pathname])
+  }, [location.pathname, menu])
 
   const toggle = (key: string) => {
     setExpanded((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
@@ -57,11 +60,9 @@ export default function AppSidebar() {
     })
 
   // 顶栏已承载一级导航，侧栏只渲染当前一级分组下的内容
-  const activeTopGroup = menuConfig.find(
-    (node) => node.children && isNodeActive(node, location.pathname),
-  )
+  const activeTopGroup = menu.find((node) => node.children && isNodeActive(node, location.pathname))
   const group = activeTopGroup?.children ? activeTopGroup : undefined
-  const sidebarNodes = group ? (group.children as MenuNode[]) : menuConfig.filter((n) => !n.children)
+  const sidebarNodes = group ? (group.children as MenuNode[]) : menu.filter((n) => !n.children)
 
   return <aside className="app-sidebar">{renderNodes(sidebarNodes, 0)}</aside>
 }

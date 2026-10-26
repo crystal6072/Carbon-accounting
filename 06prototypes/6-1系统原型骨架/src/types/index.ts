@@ -593,6 +593,9 @@ export interface DictItem {
 /** 系统边界字典类型编码（约定值，供前台「核算边界」与生命周期阶段「适用系统边界」引用） */
 export const DICT_TYPE_SYSTEM_BOUNDARY = 'SYSTEM_BOUNDARY'
 
+/** 租户类型字典类型编码（约定值，租户开户「租户类型」枚举取值来源，数据字典维护） */
+export const DICT_TYPE_TENANT_TYPE = 'TENANT_TYPE'
+
 /* ============ 标准文件库（系统管理 → 基础库 → 标准文件库，A1-3 / P05；轻量基础数据） ============ */
 
 /**
@@ -1145,8 +1148,14 @@ export interface PcfProject {
   /** 项目编号，系统生成 `PCF-YYYYMMDD-NNN`，不可修改 */
   code: string
   name: string
-  /** 核算主体组织（决定数据权限归属） */
+  /** 核算主体组织名称（**仅展示**，字符串，不参与任何权限判定） */
   ownerOrg: string
+  /** 数据归属租户 id：行级隔离的唯一依据，服务端注入、创建后不可改 */
+  tenantId: string
+  /** 数据归属组织节点 id（部门树节点，创建时快照）：判定「本部门 / 本部门及下级」 */
+  deptId: string
+  /** 数据责任人账号 id（判定「仅本人」，按责任人而非创建人） */
+  ownerId: string
   /** 统计时间（起止）：**V0.5 由原「核算年度 + 核算周期」合并** */
   startDate: string
   endDate: string
@@ -2003,4 +2012,654 @@ export interface PcfModelOption {
   updatedAt: string
   /** 我的模型来源二态标记（`source = my` 时有值） */
   origin?: MyModelOrigin
+}
+
+/* ===================== 平台账号（平台后台 · 平台账号） ===================== */
+
+/**
+ * 账号状态（字段清单 §1 `status`）：
+ * - `enabled` 启用：放行登录（平台侧还需角色数 ≥ 1）
+ * - `disabled` 停用：拦截登录，会话即时失效
+ * - `canceled` 注销：终态，不可逆
+ */
+export type AccountStatus = 'enabled' | 'disabled' | 'canceled'
+
+/**
+ * 平台角色别名（**只引用不重写**：角色定义与功能码归用户体系 PRD §5.3 / §5.7 角色管理）。
+ * 平台账号靠平台角色取权限，不建成员关系、不占租户名额。
+ * @deprecated 角色统一定义在 Role（scope = 'platform' 即平台切片），本别名仅为兼容既有引用保留。
+ */
+export type PlatformRole = Role
+
+/** 账号名下的租户身份（停用影响提示用：告知 N 个租户身份将同时失效） */
+export interface TenantMembership {
+  id: string
+  /** 所属组织（租户）id：供「组织管理」跳转；历史数据可为空 */
+  tenantId?: string
+  /** 租户名称 */
+  tenantName: string
+  /** 是否该租户的主管理员 */
+  primary: boolean
+  /** 成员关系状态 */
+  status: 'active' | 'removed'
+}
+
+/**
+ * 平台账号（字段清单 §1 `account`：**全系统账号表**，不按域拆表）。
+ * 同一账号可同时持有平台角色与租户成员关系，二者不互斥。
+ */
+export interface PlatformAccount {
+  id: string
+  /** 登录名（全局唯一，不区分大小写判重，禁 11 位纯数字，创建后不可改） */
+  loginName: string
+  /** 手机号（全局唯一，登录凭证之一，可编辑） */
+  mobile: string
+  /** 姓名 */
+  displayName: string
+  /** 邮箱（**非必填**，登录凭证与通知通道；原型不校验重复） */
+  email?: string
+  /** 头像（**非必填**，原型以 data URL 存储；未上传时展示姓名首字占位） */
+  avatarUrl?: string
+  /** 密码展示值（前端只呈现掩码，不回显明文；明文仅在生成时一次性展示） */
+  passwordMask: string
+  /** 持有的平台角色 id（1 ~ 5，至少 1 个） */
+  roleIds: string[]
+  /** 账号状态 */
+  status: AccountStatus
+  /**
+   * 强制改密标记（对应账号表字段 `must_change_password`）：
+   * - 新建账号、租户开户建主管理员、任何一次密码重置 → 置 `true`；
+   * - 登录成功后若为 `true`，不允许进入系统，必须先完成改密；
+   * - 改密成功 → 置 `false`；中途关闭浏览器不影响，下次登录仍被拦截。
+   */
+  mustChangePassword: boolean
+  /** 名下有效租户成员关系（停用影响提示；平台账号不占租户名额） */
+  tenantMemberships: TenantMembership[]
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+  /** 最近登录时间（原型以种子数据模拟；未登录过为空） */
+  lastLoginAt?: string
+}
+
+/** 密码重置方式（字段清单 §3 `reset_type`；member = 租户管理员在成员管理重置，D14） */
+export type PasswordResetType = 'admin' | 'initial' | 'member'
+
+/** 密码重置记录（字段清单 §3 `platform_password_reset_log`） */
+export interface PasswordResetLog {
+  id: string
+  /** 目标账号 id */
+  targetAccountId: string
+  /** 目标账号姓名 */
+  targetName: string
+  /** 重置方式 */
+  resetType: PasswordResetType
+  /** 密码生成方式（随机生成 / 自定义；建号初始密码固定为随机生成） */
+  passwordMode: PasswordResetMode
+  /** 操作人 */
+  operatorName: string
+  /** 重置原因（超管重置必填；建号初始密码为空） */
+  reason: string
+  /** 结果 */
+  result: 'success' | 'failed'
+  /** 失败原因（结果为失败时必填） */
+  failReason: string
+  /** 客户端 IP */
+  clientIp: string
+  createdAt: string
+}
+
+/** 账号操作记录（审计日志，详情页「操作记录」展示；不展示密码重置明细） */
+export interface AccountOperationLog {
+  id: string
+  /** 目标账号 id */
+  accountId: string
+  /** 操作类型 */
+  action: 'create' | 'update' | 'assign_role' | 'disable' | 'enable' | 'cancel' | 'reset_password' | 'change_password'
+  /** 操作类型中文 */
+  actionText: string
+  /** 操作人 */
+  operatorName: string
+  /** 变更摘要（如角色变动前后、状态变动等） */
+  summary: string
+  /** 客户端 IP */
+  clientIp: string
+  createdAt: string
+}
+
+/** 新建 / 编辑平台账号的表单载荷 */
+export interface AccountPayload {
+  /** 登录名：仅新建时提交，编辑时不可改（服务端忽略该字段） */
+  loginName?: string
+  displayName: string
+  mobile: string
+  /** 头像（非必填，data URL；空串 = 未上传） */
+  avatarUrl?: string
+  /** 邮箱（非必填） */
+  email?: string
+  roleIds: string[]
+}
+
+/** 重置密码方式：随机生成 / 自定义（§5.6） */
+export type PasswordResetMode = 'random' | 'custom'
+
+/* ===================== 租户管理（平台后台 · 租户管理） ===================== */
+
+/**
+ * 租户类型：沿用功能码目录既有的 TenantType（enterprise 企业 / government 政府单位 / org 机构）。
+ * 类型参与租户端功能点「适用租户类型」过滤（用户体系 PRD §5.4.1-5、§5.7.2-4），创建后不可改。
+ */
+
+/**
+ * 租户状态（字段清单 §1 `status`）：
+ * - `enabled` 启用：放行登录与写操作
+ * - `disabled` 停用：拒绝登录、冻结数据、拒绝写操作
+ * 删除为物理删除，不落状态值（业务 PRD D01）。
+ */
+export type TenantStatus = 'enabled' | 'disabled'
+
+/** 租户状态变更类型（字段清单 §4 `change_type`） */
+export type TenantChangeType = 'create' | 'disable' | 'enable'
+
+/**
+ * 主管理员卸任去向（字段清单 §3 `relieved_reason`）：
+ * - `demote` 降级为普通成员（保留成员身份，收回「租户管理员」角色，且须至少保留 1 个其他角色）
+ * - `disable` 禁用（收回角色并停用该成员登录）
+ * - `remove` 移出租户（成员关系置已移出，账号侧租户身份失效）
+ */
+export type AdminRelievedReason = 'demote' | 'disable' | 'remove'
+
+/** 租户成员状态（成员关系表投影，本模块只引用不维护） */
+export type TenantMemberStatus = 'enabled' | 'disabled' | 'removed'
+
+/** 成员加入方式（字段清单 §1 joined_via）：仅手工新建（关联已有账号入口已移除） */
+export type MemberJoinVia = 'manual'
+
+/** 成员移出方式（字段清单 §1 removed_type）：管理员移出 / 本人主动退出 */
+export type MemberRemovedType = 'admin' | 'self'
+
+/**
+ * 租户（字段清单 §1 `tenant`）。
+ * 主管理员身份由主管理员关系表承载，本表只冗余在任主管理员的账号快照供展示；
+ * 开户表单直接指定主管理员（姓名 + 手机号），建租户即回填 admin 快照与主管理员关系。
+ */
+export interface Tenant {
+  id: string
+  /** 租户编号（内部标识，全平台唯一，创建后不可改；统一社会信用代码由扩展档案按租户类型承载） */
+  unifiedCode: string
+  /** 租户名称（不要求唯一，删除时须输入全名匹配） */
+  name: string
+  /** 租户类型 */
+  type: TenantType
+  /** 联系人姓名（非必填，与 contactPhone 成对填写） */
+  contactName: string
+  /** 联系人手机号（非必填，与 contactName 成对填写） */
+  contactPhone: string
+  /** 有效期开始（非必填，空表示长期有效） */
+  validFrom: string
+  /** 有效期结束（非必填，空表示长期有效） */
+  validTo: string
+  /** 扩展档案字段值（key = 字段编码，value 统一按字符串存储） */
+  profile: Record<string, string>
+  /** 成员数上限（1 至 1000，新建默认 1000；属「授权与配额」，不属主档展示字段） */
+  memberLimit: number
+  /** 租户状态 */
+  status: TenantStatus
+  /**
+   * 在任主管理员账号 id（关联全系统账号表；未指定时为空串）。
+   * **投影字段**：唯一真相源为 `TenantAdminHistory` 中 status = active 的记录，
+   * 本字段由 `syncTenantAdminProjection()` 在开户 / 交接 / 删除后统一回写，禁止独立修改。
+   */
+  adminAccountId: string
+  /** 在任主管理员姓名（快照，随 adminAccountId 同步刷新） */
+  adminName: string
+  /** 在任主管理员手机号（快照，随 adminAccountId 同步刷新） */
+  adminMobile: string
+  /** 已授权的租户端模块编码（按组：产品碳足迹应用 / 系统管理） */
+  moduleCodes: string[]
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+}
+
+/** 扩展档案字段类型（字段清单 §2 field_type） */
+export type TenantProfileFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'multi_select'
+  | 'region'
+  | 'boolean'
+
+/** 扩展档案字段定义（字段清单 §2 tenant_profile_field_def） */
+/**
+ * 扩展档案字段归属（租户管理业务 PRD V0.8 §1.3 / 字段清单 V0.6 §2）：
+ * - platform：平台独占，纳入开户必填，租户端只读 + 走变更申请；
+ * - tenant：租户自助维护，平台只读复核，不作为开户必填；
+ * - both：双方可维护并留痕（缺省按 tenant）。
+ */
+export type TenantProfileScope = 'platform' | 'tenant' | 'both'
+
+export interface TenantProfileFieldDef {
+  /** 字段编码（稳定标识） */
+  code: string
+  /** 字段名称 */
+  name: string
+  /** 字段类型 */
+  type: TenantProfileFieldType
+  /** 是否必填（platform 档参与开户校验；tenant 档只驱动租户端待完善清单） */
+  required: boolean
+  /** 字段归属（缺省 tenant） */
+  editableScope?: TenantProfileScope
+  /** 是否平台审核过的准入 / 监管依据（仅 platform 档允许） */
+  needReview?: boolean
+  /**
+   * 是否允许租户在「租户信息」页直接修改（MVP极简版，业务 PRD V0.10 §4.14）：
+   * false = 法定资质类，纯只读（灰底），提示「如需修改请联系平台」；
+   * true（缺省）= 业务属性类，租户管理员可直接编辑（白底），保存后立即生效。
+   * 前端读取平台端扩展表单模板（tenant_profile_field_def）后按本属性决定渲染输入框还是只读文本。
+   */
+  tenantEditable?: boolean
+  /** 文本最大长度 */
+  maxLength?: number
+  /** 单选 / 多选选项 */
+  options?: { label: string; value: string }[]
+  /** 填写提示 */
+  placeholder?: string
+  /** 是否公共字段（四类租户共用） */
+  isPublic?: boolean
+}
+
+/** 主管理员关系（字段清单 §3 `tenant_admin_relation`：每租户同时仅 1 条生效，历史保留） */
+export interface TenantAdminHistory {
+  id: string
+  tenantId: string
+  /** 账号 id（关联全系统账号表） */
+  accountId: string
+  accountName: string
+  accountMobile: string
+  /** 关系状态：生效 / 已卸任 */
+  status: 'active' | 'relieved'
+  /** 卸任去向（仅卸任时有值） */
+  relievedReason: AdminRelievedReason | ''
+  appointedBy: string
+  appointedAt: string
+  relievedBy: string
+  relievedAt: string
+}
+
+/** 租户状态变更记录（字段清单 §4 `tenant_status_change_log`） */
+export interface TenantStatusLog {
+  id: string
+  tenantId: string
+  /** 变更类型 */
+  changeType: TenantChangeType
+  /** 变更前状态（新建时为空） */
+  beforeStatus: TenantStatus | ''
+  /** 变更后状态 */
+  afterStatus: TenantStatus
+  /** 操作原因（选填） */
+  reason: string
+  operatorName: string
+  operatedAt: string
+}
+
+/**
+ * 租户成员（成员关系表 `tenant_member` 投影：账号在租户上的挂载，不复制账号）。
+ * 登录名 / 手机号 / 姓名 / 邮箱 / 密码写在账号表（全局唯一），本对象冗余投影供列表与详情展示；
+ * 主管理员身份不建标记字段，按 tenant_admin_relation 生效记录派生（tenant.adminAccountId）。
+ */
+export interface TenantMemberItem {
+  id: string
+  tenantId: string
+  /** 挂载的账号 id（account 表主键） */
+  accountId: string
+  /** 登录名（账号级，全局唯一，创建后不可改） */
+  loginName: string
+  /** 姓名（账号级） */
+  name: string
+  /** 手机号（账号级，全局唯一，可改） */
+  mobile: string
+  /** 邮箱（账号级，选填） */
+  email: string
+  /** 密码展示值（只呈现掩码，不回显明文；明文仅在生成时一次性展示） */
+  passwordMask: string
+  /** 所属组织节点 id（dept_id 语义等于 org.id；可空，为空按「仅本人」） */
+  deptId: string | null
+  /** 部门名称（冗余，便于展示） */
+  deptName: string
+  /** 持有的租户角色（1 至 5 个，至少 1 个；走 role_member，member_type = 2） */
+  roleNames: string[]
+  /** 成员状态：启用 / 停用 / 已移出（停用与移出均计入成员数，D12） */
+  status: TenantMemberStatus
+  /** 加入方式：手工新建 / 关联已有账号 */
+  joinedVia: MemberJoinVia
+  /** 加入时间（不可改） */
+  joinedAt: string
+  /** 移出方式（仅已移出时有值） */
+  removedType: MemberRemovedType | null
+  /** 移出人（操作人或本人） */
+  removedBy: string
+  /** 移出时间（非空表示已移出） */
+  removedAt: string
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+}
+
+/** 成员详情（含派生标识：是否主管理员、可登录本租户） */
+export interface MemberDetail extends TenantMemberItem {
+  /** 是否在任主管理员（按 tenant_admin_relation 派生） */
+  primaryAdmin: boolean
+  /** 是否本人（当前登录的租户端操作者） */
+  self: boolean
+  /** 账号状态（两层闸门：账号启用 且 成员启用 且 租户启用才放行登录） */
+  accountStatus: AccountStatus
+}
+
+/** 新建成员表单载荷（建账号 + 建成员关系 + 写角色关联） */
+export interface MemberCreatePayload {
+  displayName: string
+  loginName: string
+  mobile: string
+  email?: string
+  /** 密码方式：随机生成 / 自定义（均一次性展示明文并置首登改密） */
+  passwordMode: PasswordResetMode
+  customPassword?: string
+  /** 角色 1 至 5 个 */
+  roleNames: string[]
+  /** 部门（组织节点 id，可空） */
+  deptId: string | null
+}
+
+/** 编辑成员表单载荷（姓名 / 手机号 / 邮箱改账号级字段，部门与角色改租户域字段；登录名不可改） */
+export interface MemberUpdatePayload {
+  displayName: string
+  mobile: string
+  email?: string
+  roleNames: string[]
+  deptId: string | null
+}
+
+/** 成员操作记录（审计日志；只增不改不删） */
+export interface MemberOperationLog {
+  id: string
+  /** 目标成员 id */
+  memberId: string
+  /** 目标成员姓名 */
+  memberName: string
+  /** 操作类型 */
+  action: 'create' | 'update' | 'disable' | 'enable' | 'reset_password' | 'view_permission'
+  /** 操作类型中文 */
+  actionText: string
+  /** 变更摘要（字段前后值等） */
+  summary: string
+  /** 操作人 */
+  operatorName: string
+  /** 客户端 IP */
+  clientIp: string
+  createdAt: string
+}
+
+/** 有效权限行（按功能点分列读 / 写范围） */
+export interface MemberPermissionRow {
+  menuId: string
+  /** 功能点名称 */
+  menuName: string
+  /** 所属一级功能（如 产品碳足迹 / 系统管理） */
+  groupName: string
+  /** 读范围 */
+  read: boolean
+  /** 写范围 */
+  write: boolean
+}
+
+/** 成员有效权限（§5.8：所持角色 + 合并功能点 + 分列读写范围；页面只读） */
+export interface MemberPermissions {
+  /** 所持角色清单 */
+  roleNames: string[]
+  /** 角色共勾选功能点数（含未开通模块内的勾选） */
+  roleGrantedCount: number
+  /** 合并生效功能点数（已开通模块内功能点 ∩ 角色勾选） */
+  effectiveCount: number
+  /** 分功能点读写范围 */
+  rows: MemberPermissionRow[]
+}
+
+/**
+ * 新建租户表单载荷（开户即指定主管理员）：主档统一字段 + 按类型扩展档案 + 配额与主管理员。
+ * 租户编号由系统自动生成；编辑可改主档与扩展档案，类型创建后不可改。
+ */
+export interface TenantPayload {
+  name: string
+  type: TenantType
+  /** 联系人（非必填，成对填写） */
+  contactName: string
+  contactPhone: string
+  /** 有效期（非必填） */
+  validFrom: string
+  validTo: string
+  /** 扩展档案字段值 */
+  profile: Record<string, string>
+  memberLimit: number
+  /**
+   * 主管理员账号 id：开户时指定，候选范围为全局 account 表
+   * （含平台账号与租户成员账号，排除停用 / 注销与超级管理员）；也可开户时新建管理员账号后取其 id。
+   */
+  adminAccountId: string
+}
+
+/** 租户管理审计条目（审计日志模块的投影，本模块写不删） */
+export interface TenantAuditEntry {
+  id: string
+  tenantId: string
+  tenantName: string
+  action: string
+  detail: string
+  operatorName: string
+  createdAt: string
+}
+
+/* ===================== 组织管理（平台后台 · 组织管理 / 组织架构） ===================== */
+
+/**
+ * 组织架构节点（用户体系 PRD §5.6 部门管理的落地形态）：
+ * 每个组织（租户）维护一棵自己的组织架构树，层级上限 5 层，同一上级下名称不重复。
+ */
+export interface OrgNode {
+  id: string
+  /** 所属租户 id（原 orgId，语义为 tenant_id） */
+  orgId: string
+  /** 组织编码（租户内唯一，可手填或系统生成） */
+  code: string
+  /** 节点名称 */
+  name: string
+  /** 组织类型名称（来自本租户组织类型字典） */
+  typeName: string
+  /** 上级节点 id；租户根组织为 null */
+  parentId: string | null
+  /**
+   * 是否租户根组织：创建租户时由系统自动初始化（组织名称 = 租户名称），
+   * 租户内唯一且不可删除、不可移动、不可再建同级；组织名称 / 类型 / 负责人 / 排序可改。
+   */
+  isRoot: boolean
+  /** 层级：顶级为 1 */
+  level: number
+  /** 层级路径（形如 /ON001/ON002/，用于「含下级」查询与移动校验） */
+  path: string
+  /** 负责人 */
+  leader: string
+  /** 同级排序 */
+  sort: number
+  /** 节点状态：停用后不可挂新成员，存量成员数据范围不变 */
+  status: EnableStatus
+  createdAt: string
+  updatedAt: string
+}
+
+/** 组织架构节点表单载荷（新增时确定上级；编辑可改名称 / 类型 / 负责人 / 排序，移动单独操作） */
+export interface OrgNodePayload {
+  code: string
+  name: string
+  typeName: string
+  leader: string
+  sort: number
+}
+
+/** 组织架构规模（列表页概览：节点数 / 最大层级 / 停用节点数） */
+export interface OrgSummary {
+  orgId: string
+  nodeCount: number
+  /** 最大层级，未配置为 0 */
+  maxLevel: number
+  disabledCount: number
+}
+
+/* ===================== 角色管理（用户体系 PRD §5.3 / §5.7；字段清单见《角色管理字段清单》） ===================== */
+
+/** 角色归属类型（字段清单 §1 scope_type）：平台角色挂平台账号，租户角色挂成员关系 */
+export type RoleScope = 'platform' | 'tenant'
+
+/** 角色状态（字段清单 §1 status） */
+export type RoleStatus = 'enabled' | 'disabled' | 'deleted'
+
+/**
+ * 数据范围五档（角色管理业务 PRD §5.5-1）。
+ * 数据范围是租户切片的专属配置：平台角色不产生数据范围，表单不含该字段（§1.3）。
+ */
+export type DataScope = 'all' | 'dept_below' | 'dept' | 'self' | 'specified'
+
+/**
+ * 角色与菜单关联（统一数据源：角色的功能菜单权限从菜单管理清单勾选）。
+ * 平台角色只配功能菜单；租户角色按「角色 × 功能点」另配读写各一档数据范围（§5.5-1）。
+ */
+export interface MenuGrant {
+  /** 菜单 id（指向菜单管理 menu_function.id） */
+  menuId: string
+  /** 读数据范围（仅租户角色；平台角色为空） */
+  readScope?: DataScope
+  /** 写数据范围（仅租户角色；不得宽于读范围，§5.5-2） */
+  writeScope?: DataScope
+  /**
+   * 读范围 = 「指定部门」时的部门 id 列表（§5.5-10）。
+   * 读写分别持有独立集合，避免「读 A 部门、写 B 部门」无法表达。
+   */
+  scopeDeptIds?: string[]
+  /** 写范围 = 「指定部门」时的部门 id 列表；未填时回退 `scopeDeptIds`（兼容旧数据） */
+  writeDeptIds?: string[]
+}
+
+/** 角色成员引用（字段清单 §4 role_member）：平台角色为平台账号，租户角色为成员关系 */
+export interface RoleMemberRef {
+  id: string
+  /** 成员姓名 */
+  name: string
+  /** 次要信息：平台账号为登录名，租户成员为部门 */
+  sub: string
+  /** 成员自身状态 */
+  status: 'active' | 'disabled'
+}
+
+/**
+ * 角色（字段清单 §1 `role`）：按归属类型分平台 / 租户两类。
+ * 内置不可改不可删；超级管理员为保护角色，不可删、不可停用。
+ */
+export interface Role {
+  id: string
+  /** 归属类型，新建时固定不可改 */
+  scope: RoleScope
+  /** 角色标识（如 SUPER_ADMIN），归属范围内唯一，创建后不可改 */
+  code: string
+  /** 角色名称，归属范围内唯一（平台内唯一 / 租户内唯一） */
+  name: string
+  /** 角色描述 */
+  description: string
+  /** 是否内置角色 */
+  builtin: boolean
+  /** 是否超级管理员保护角色 */
+  superAdmin: boolean
+  /**
+   * 租户角色所属租户（租户管理 PRD V0.9 §4.17：租户角色只在租户内生效，不跨租户复用）。
+   * 平台角色不写该字段。
+   */
+  tenantId?: string
+  /** 所属租户名称（列表与详情展示「生效租户」用） */
+  tenantName?: string
+  /** 是否租户内置保护角色（「租户管理员」：不可删除、不可停用，功能与范围可调，可复制） */
+  protectedRole?: boolean
+  /** 角色状态 */
+  status: RoleStatus
+  /** 勾选的功能菜单（仅菜单引用，不含数据范围） */
+  menuGrants: MenuGrant[]
+  /** 成员引用（平台查平台账号，租户查成员关系） */
+  members: RoleMemberRef[]
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+}
+
+/** 新建 / 修改角色的表单载荷（授权走独立的「分配权限」弹窗） */
+export interface RolePayload {
+  name: string
+  /** 角色标识：仅新建时提交，编辑时不可改（服务端忽略该字段） */
+  code?: string
+  description: string
+}
+
+/* ===================== 菜单管理（用户体系：统一功能 / 菜单数据源；角色权限从此清单勾选） ===================== */
+
+/** 租户类型（字段清单 §1 tenant_types）：沿用既有口径，仅供租户模块使用，与菜单配置无关 */
+export type TenantType = 'enterprise' | 'government' | 'org' | 'park'
+
+/**
+ * 功能的适用端（用户体系 PRD §5.3 / §5.4.1：功能码同表，用适用端区分，勾选列表互不出现对方条目）：
+ * - platform：平台运营端功能，只出现在平台角色的勾选清单里；
+ * - tenant：租户端功能，只出现在租户角色的勾选清单、租户模块授权清单里。
+ */
+export type MenuScope = 'platform' | 'tenant'
+
+/**
+ * 菜单（功能）目录：前后台统一的功能 / 菜单数据源。
+ * 配置「功能名称 / 路由 / 排序」三项核心属性，外加上级菜单（构成菜单树）、启停状态与适用端。
+ * 角色管理的功能菜单权限即从本清单勾选，菜单树本身不按端拆分，端的差异由「适用端 + 角色勾选」表达。
+ */
+export interface MenuFunction {
+  /** 菜单 id */
+  id: string
+  /** 功能名称（菜单展示名） */
+  name: string
+  /** 路由（前端路由路径） */
+  route: string
+  /** 排序号，同级从小到大 */
+  sort: number
+  /** 上级菜单 id；null 表示一级菜单 */
+  parentId: string | null
+  /** 状态：启用 / 停用（停用的菜单不渲染、不出现在角色勾选树中） */
+  status: EnableStatus
+  /** 适用端：平台运营端 / 租户端（角色勾选与租户模块授权按此过滤） */
+  scope: MenuScope
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+}
+
+/** 菜单（功能）表单载荷（核心三字段：功能名称 / 路由 / 排序，外加构成树的上一级与启停状态） */
+export interface MenuPayload {
+  /** 功能名称 */
+  name: string
+  /** 路由 */
+  route: string
+  /** 上级菜单 id（null = 一级菜单） */
+  parentId: string | null
+  /** 排序 */
+  sort: number
+  /** 状态：启用 / 停用（表单不维护，由后台固定 / 列表启停；可不传） */
+  status?: EnableStatus
 }

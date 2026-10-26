@@ -1,3 +1,4 @@
+import type { PcfCaliberKey } from '@/types'
 import type {
   PedigreeScore,
   QualityAssessment,
@@ -5,6 +6,7 @@ import type {
   QualityProjectOption,
   QualityResult,
   QualityStatus,
+  QualitativeTexts,
   ScoreSource,
 } from '@/types/quality'
 import {
@@ -23,8 +25,8 @@ import {
  *
  * 口径说明（与《数据质量评价业务PRD》§6 对齐）：
  * - 创建评价时**复制**核算项目阶段数据项（引用即复制），与主链解耦；
- * - DQR = 十维算术平均；整体 DQR 按贡献率加权（总贡献为 0 时退化为算术平均）；
- * - 不确定度 = 十维平方和开方（单项）→ 贡献率平方和传播（整体）；
+ * - DQR = 四项（TiR/TeR/GeR/C）算术平均；整体 DQR 按贡献率加权（总贡献为 0 时退化为算术平均）；
+ * - 不确定度 = 四项平方和开方（单项）→ 贡献率平方和传播（整体）；
  * - 等级映射见 qualityMeta.dqrLevelOf；谱系系数见 qualityMeta.UNCERTAINTY_BY_SCORE。
  *
  * 演示数据为**自包含快照**（不依赖核算主链 store），保证来源项目、数据清单与评价结果三者自洽。
@@ -318,7 +320,7 @@ const sourceProjects: SourceProjectSnapshot[] = [
 
 /**
  * 构造谱系评分。`values` 顺序须与 `PEDIGREE_DIMS`（qualityMeta）一致：
- * [时间覆盖范围, 地理覆盖范围, 技术覆盖范围, 精度, 完整性, 代表性, 一致性, 再现性, 数据来源, 信息不确定性]
+ * [时间代表性 TiR, 技术代表性 TeR, 地理代表性 GeR, 完整性 C]
  */
 function makeScore(values: number[], source: ScoreSource): PedigreeScore {
   const dims = defaultDims()
@@ -359,29 +361,16 @@ function refreshStatus(assessment: QualityAssessment): void {
   assessment.status = assessment.qualitative.confirmed && allScored ? 'completed' : 'unfinished'
 }
 
-/** 批量评估默认口径（业务 PRD §6.4 / 数据质量定量指标 a~j） */
+/** 批量评估默认口径（竞品四项 TiR/TeR/GeR/C 口径） */
 function defaultScore(item: QualityAssessmentItem): PedigreeScore {
-  const sourceByType: Record<string, number> = {
-    measured: 1,
-    statistics: 2,
-    supplier: 3,
-    estimate: 4,
-    database: 2,
-  }
   const hasBackgroundFactor = Boolean(item.factorSource)
   const isPrimary = item.dataSource === 'measured' || item.dataSource === 'supplier'
   return makeScore(
     [
-      1, // a 时间覆盖范围：默认与核算期一致
-      hasBackgroundFactor ? 1 : 3, // b 地理覆盖范围
-      /Ecoinvent|商业|ecoinvent/i.test(item.factorSource) ? 3 : 2, // c 技术覆盖范围
-      item.hasVoucher ? 2 : 4, // d 精度
-      item.hasVoucher ? 1 : 3, // e 完整性
-      isPrimary ? 2 : 3, // f 代表性
-      2, // g 一致性
-      hasBackgroundFactor ? 2 : 4, // h 再现性
-      sourceByType[item.dataSource] ?? (item.hasVoucher ? 3 : 4), // i 数据来源
-      item.hasVoucher ? 2 : 4, // j 信息不确定性
+      isPrimary ? 1 : 3, // a 时间代表性：一次数据默认与核算期一致，次级数据默认 3 分
+      hasBackgroundFactor ? 2 : 3, // b 技术代表性
+      hasBackgroundFactor ? 1 : 3, // c 地理代表性
+      item.hasVoucher ? 2 : 3, // d 完整性
     ],
     'batch',
   )
@@ -391,13 +380,19 @@ function makeAssessmentNo(seq: number): string {
   return `PCF-DQ-${formatDateOnly(Date.now())}${String(seq).padStart(3, '0')}`
 }
 
-/** 定性覆盖初稿（字段清单 §3 / 业务 PRD R-086） */
+/** 定性覆盖初稿（字段清单 §3 / 业务 PRD R-086），共 9 个定性维度 */
 function buildQualitativeInitial(source: SourceProjectSnapshot): QualityAssessment['qualitative'] {
   const regions = Array.from(new Set(source.items.map((item) => item.factorSource).filter(Boolean))).join('、')
   return {
     temporalCoverage: `初级数据来自 ${source.productName} 企业的 ${source.statisticalPeriod} 生产数据。次级数据采用 ${regions || '背景数据库'}。`,
     geographicalCoverage: `特定数据采集自 国内制造商。次级数据的地理位置包括 ${regions || '全球'}。`,
     technologicalCoverage: '采集数据均代表当前技术水平。',
+    completeness: '生命周期范围内所有单元过程均已涵盖，排除的数据低于5%。',
+    representativeness: '参见上述时间、地理及技术覆盖范围。',
+    consistency: '研究方法在分析的各个部分均统一应用。',
+    reproducibility: '基于相同方法可复现研究结果。',
+    dataSource: '原材料消耗、运输及能源数据均来自特定数据。',
+    informationUncertainty: '所有数据及假设均通过提供的证据进行确认。',
     confirmed: false,
     confirmedBy: null,
     confirmedAt: null,
@@ -443,12 +438,12 @@ function buildSeedAssessments(): QualityAssessment[] {
       // 已完成：全部评分，整体「良」
       source: sourceProjects[0],
       resultUpdatedAt: '2026-10-12 16:11:09',
-      // 顺序：[时间, 地理, 技术, 精度, 完整性, 代表性, 一致性, 再现性, 数据来源, 信息不确定性]
+      // 顺序：[时间代表性 TiR, 技术代表性 TeR, 地理代表性 GeR, 完整性 C]
       scores: {
-        'Q1-01': makeScore([1, 1, 1, 1, 1, 1, 2, 2, 1, 1], 'manual'),
-        'Q1-02': makeScore([2, 3, 3, 2, 2, 2, 2, 3, 3, 2], 'manual'),
-        'Q1-03': makeScore([1, 1, 1, 1, 1, 1, 1, 2, 1, 1], 'manual'),
-        'Q1-04': makeScore([2, 2, 2, 3, 3, 3, 2, 3, 2, 3], 'batch'),
+        'Q1-01': makeScore([1, 1, 1, 1], 'manual'),
+        'Q1-02': makeScore([2, 3, 2, 2], 'manual'),
+        'Q1-03': makeScore([1, 1, 1, 1], 'manual'),
+        'Q1-04': makeScore([2, 2, 2, 3], 'batch'),
       },
     },
     {
@@ -456,9 +451,9 @@ function buildSeedAssessments(): QualityAssessment[] {
       source: sourceProjects[1],
       resultUpdatedAt: '2026-09-28 19:00:05',
       scores: {
-        'Q2-01': makeScore([1, 1, 1, 1, 1, 1, 2, 2, 1, 1], 'manual'),
-        'Q2-02': makeScore([2, 3, 3, 2, 2, 2, 2, 3, 3, 2], 'manual'),
-        'Q2-03': makeScore([1, 1, 1, 1, 1, 1, 1, 2, 1, 1], 'manual'),
+        'Q2-01': makeScore([1, 1, 1, 1], 'manual'),
+        'Q2-02': makeScore([2, 3, 2, 2], 'manual'),
+        'Q2-03': makeScore([1, 1, 1, 1], 'manual'),
       },
     },
     {
@@ -467,10 +462,10 @@ function buildSeedAssessments(): QualityAssessment[] {
       statusOverride: 'stale',
       resultUpdatedAt: '2026-10-08 09:30:22',
       scores: {
-        'Q1-01': makeScore([1, 1, 1, 1, 1, 1, 2, 2, 1, 1], 'manual'),
-        'Q1-02': makeScore([2, 3, 3, 2, 2, 2, 2, 3, 3, 2], 'manual'),
-        'Q1-03': makeScore([1, 1, 1, 1, 1, 1, 1, 2, 1, 1], 'manual'),
-        'Q1-04': makeScore([2, 2, 2, 3, 3, 3, 2, 3, 2, 3], 'batch'),
+        'Q1-01': makeScore([1, 1, 1, 1], 'manual'),
+        'Q1-02': makeScore([2, 3, 2, 2], 'manual'),
+        'Q1-03': makeScore([1, 1, 1, 1], 'manual'),
+        'Q1-04': makeScore([2, 2, 2, 3], 'batch'),
       },
     },
     {
@@ -478,8 +473,8 @@ function buildSeedAssessments(): QualityAssessment[] {
       source: sourceProjects[2],
       resultUpdatedAt: '2026-09-23 14:05:47',
       scores: {
-        'Q3-01': makeScore([3, 3, 3, 3, 3, 3, 2, 3, 3, 3], 'manual'),
-        'Q3-02': makeScore([1, 1, 1, 1, 1, 1, 1, 2, 1, 1], 'manual'),
+        'Q3-01': makeScore([3, 3, 3, 3], 'manual'),
+        'Q3-02': makeScore([1, 1, 1, 1], 'manual'),
       },
     },
   ]
@@ -627,17 +622,12 @@ export async function createQualityAssessment(projectId: string): Promise<Qualit
   return cloneAssessment(assessment)
 }
 
-/** 保存定性覆盖（步骤①） */
-export async function saveQualitative(
-  id: string,
-  coverage: { temporalCoverage: string; geographicalCoverage: string; technologicalCoverage: string },
-): Promise<void> {
+/** 保存定性覆盖（步骤①，9 个定性维度） */
+export async function saveQualitative(id: string, coverage: QualitativeTexts): Promise<void> {
   const assessment = qualityStore.find((item) => item.id === id)
   if (!assessment) throw new Error('数据质量评价不存在或已被删除')
   await delay(120)
-  assessment.qualitative.temporalCoverage = coverage.temporalCoverage
-  assessment.qualitative.geographicalCoverage = coverage.geographicalCoverage
-  assessment.qualitative.technologicalCoverage = coverage.technologicalCoverage
+  Object.assign(assessment.qualitative, coverage)
 }
 
 /** 定性确认（步骤① → ②，业务 PRD R-086） */
@@ -652,13 +642,16 @@ export async function confirmQualitative(id: string): Promise<void> {
   refreshStatus(assessment)
 }
 
-/** 批量评估（业务 PRD §6.4 / R-091） */
-export async function batchAssess(id: string): Promise<QualityAssessmentItem[]> {
+/** 批量评估（业务 PRD §6.4 / R-091）；`dataItemIds` 为空时评估全部数据项 */
+export async function batchAssess(id: string, dataItemIds?: string[]): Promise<QualityAssessmentItem[]> {
   const assessment = qualityStore.find((item) => item.id === id)
   if (!assessment) throw new Error('数据质量评价不存在或已被删除')
   if (assessment.status === 'stale') throw new Error('来源核算数据已更新，请先更新基准')
   await delay(420)
-  assessment.items.forEach((item) => applyScoreToItem(item, defaultScore(item)))
+  const ids = dataItemIds?.length ? new Set(dataItemIds) : null
+  const targets = ids ? assessment.items.filter((item) => ids.has(item.dataItemId)) : assessment.items
+  if (!targets.length) throw new Error('请先勾选需要批量评估的数据项')
+  targets.forEach((item) => applyScoreToItem(item, defaultScore(item)))
   recompute(assessment)
   refreshStatus(assessment)
   return assessment.items.map((item) => ({ ...item }))
@@ -717,6 +710,32 @@ export async function deleteQualityAssessment(id: string): Promise<void> {
   if (!assessment) throw new Error('数据质量评价不存在或已被删除')
   await delay(260)
   qualityStore = qualityStore.filter((item) => item.id !== id)
+}
+
+/** 指标口径排放拆分比例（演示口径：化石 70% / 生物源 22% / 直接土地利用变化 8%，工程上应来自核算结果分口径明细） */
+function caliberEmissionOf(emission: number, caliber: PcfCaliberKey): number {
+  if (caliber === 'total' || !emission) return emission
+  const ratio = caliber === 'fossil' ? 0.7 : caliber === 'biogenic' ? 0.22 : 0.08
+  return Math.round(emission * ratio * 1000) / 1000
+}
+
+/** 切换评价指标口径：同步该指标对应的数据项排放与贡献率，并重算评价结果（评分沿用当前口径结果） */
+export async function switchCaliber(id: string, caliber: PcfCaliberKey): Promise<void> {
+  const assessment = qualityStore.find((item) => item.id === id)
+  if (!assessment) throw new Error('数据质量评价不存在或已被删除')
+  await delay(120)
+  const source = sourceProjects.find((item) => item.id === assessment.sourceProjectId)
+  assessment.caliber = caliber
+  assessment.items.forEach((item) => {
+    const seed = source?.items.find((row) => row.dataItemId === item.dataItemId)
+    const base = seed ? seed.emission : item.emission
+    item.emission = caliberEmissionOf(base, caliber)
+  })
+  const totalEmission = assessment.items.reduce((acc, item) => acc + item.emission, 0)
+  assessment.items.forEach((item) => {
+    item.contribution = totalEmission > 0 ? Math.round((item.emission / totalEmission) * 1000) / 10 : 0
+  })
+  recompute(assessment)
 }
 
 /** 深拷贝（避免页面直接改 store） */

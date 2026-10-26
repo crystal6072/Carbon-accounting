@@ -413,3 +413,72 @@
   background: var(--color-bg-disabled);
   color: var(--color-text-placeholder);
 }
+
+/* 「查看全部」入口 */
+.dash-report-more {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.dash-report-more:hover {
+  text-decoration: underline;
+}
+
+/* 碳报告列表 */
+.dash-report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.dash-report-item-wrap + .dash-report-item-wrap {
+  border-top: 1px solid var(--color-border-secondary);
+  padding-top: var(--space-xs);
+}
+.dash-report-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-xs);
+  border-radius: var(--radius-base);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.dash-report-item:hover {
+  background: var(--color-bg-spotlight);
+}
+.dash-report-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dash-report-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-report-sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-report-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-tertiary);
+}
+.dash-report-date {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}

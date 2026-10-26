@@ -11,7 +11,6 @@ import {
   Popconfirm,
   Space,
   Table,
-  Tag,
 } from 'tdesign-react'
 import type { PrimaryTableCol } from 'tdesign-react'
 import type { EnterprisePayload, EnterpriseRecord } from '@/types/enterprise'
@@ -92,21 +91,14 @@ export default function EnterprisePage() {
     { colKey: 'seq', title: '序号', width: 64 },
     {
       colKey: 'companyName',
-      title: '企业名称',
+      title: <span data-ann-target="ent.col.companyName">企业名称</span>,
       width: 260,
       cell: ({ row }) => <span style={{ fontWeight: 600 }}>{row.companyName}</span>,
     },
-    { colKey: 'unifiedSocialCreditCode', title: '统一社会信用代码', width: 200 },
-    { colKey: 'legalPerson', title: '法定代表人', width: 120 },
-    { colKey: 'contactPhone', title: '联系方式', width: 140 },
-    { colKey: 'contactPerson', title: '联系人', width: 100 },
-    {
-      colKey: 'reportCount',
-      title: '关联报告',
-      width: 100,
-      cell: ({ row }) =>
-        row.reportCount > 0 ? <Tag theme="primary" variant="light">{`${row.reportCount} 份`}</Tag> : <span>-</span>,
-    },
+    { colKey: 'unifiedSocialCreditCode', title: <span data-ann-target="ent.col.creditCode">统一社会信用代码</span>, width: 200 },
+    { colKey: 'legalPerson', title: <span data-ann-target="ent.col.legalPerson">法定代表人</span>, width: 120 },
+    { colKey: 'contactPhone', title: <span data-ann-target="ent.col.contactPhone">联系方式</span>, width: 140 },
+    { colKey: 'contactPerson', title: <span data-ann-target="ent.col.contactPerson">联系人</span>, width: 100 },
     { colKey: 'updatedAt', title: '更新时间', width: 170 },
     {
       colKey: 'op',
@@ -114,7 +106,7 @@ export default function EnterprisePage() {
       width: 120,
       cell: ({ row }) => (
         <Space className="rp-table-op">
-          <a className="rp-link" onClick={() => openEdit(row)}>
+          <a className="rp-link" data-ann-target="ent.row.edit" onClick={() => openEdit(row)}>
             编辑
           </a>
           <Popconfirm
@@ -122,7 +114,7 @@ export default function EnterprisePage() {
             theme="danger"
             onConfirm={() => handleDelete(row)}
           >
-            <a className="rp-link" style={{ color: 'var(--td-error-color, #d54941)' }}>
+            <a className="rp-link" data-ann-target="ent.row.delete" style={{ color: 'var(--td-error-color, #d54941)' }}>
               删除
             </a>
           </Popconfirm>
@@ -143,12 +135,11 @@ export default function EnterprisePage() {
         <span>企业信息维护</span>
       </div>
 
-      <div className="rp-title-row">
+      <div className="rp-title-row" data-ann-target="ent.page.global">
         <div>
           <h2>企业信息维护</h2>
-          <p className="rp-page-desc">统一维护报告主体（企业）信息，供报告编制引用到封面、基本信息表与表 1</p>
         </div>
-        <Button theme="primary" onClick={openCreate}>
+        <Button theme="primary" onClick={openCreate} data-ann-target="ent.add">
           新增企业
         </Button>
       </div>
@@ -156,11 +147,12 @@ export default function EnterprisePage() {
       <Alert
         theme="info"
         style={{ marginBottom: 16 }}
+        data-ann-target="ent.alert"
         message="报告编制时可直接引用本库记录自动带入企业字段；引用后报告内仍可按需修改（仅影响该报告）。本库记录更新后，引用该记录的报告将标记为「待更新」。"
       />
 
       <Card>
-        <Form layout="inline" labelWidth={76}>
+        <Form layout="inline" labelWidth={76} data-ann-target="ent.query.bar">
           <Form.FormItem label="企业名称">
             <Input
               value={keyword}

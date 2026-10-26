@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import type { Annotation } from './types'
 import { isRdVisible } from './types'
 import { buildTargetMap, resolveAnnotationScope, type AnnotationScope } from './registry'
+import { SYSTEM_ANNOTATION_CHAPTERS, type SystemAnnotationChapter } from './systemAnnotations'
 
 const STORAGE_KEY = 'pcf.annotation.visible'
 
@@ -20,8 +21,12 @@ interface AnnotationContextValue {
   annotations: Annotation[]
   /** 锚点 → 批注列表 */
   targetMap: Map<string, Annotation[]>
-  /** 全局批注（未匹配 / 文档级） */
+  /** 全局批注（未匹配 / 文档级，仅当前模块） */
   globalAnnotations: Annotation[]
+  /** 系统级批注（跨模块，与模块全局批注相互独立） */
+  systemAnnotations: Annotation[]
+  /** 系统级批注章节（供独立抽屉按章展示） */
+  systemChapters: SystemAnnotationChapter[]
 }
 
 const AnnotationContext = createContext<AnnotationContextValue | null>(null)
@@ -40,7 +45,7 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
   const [visible, setVisibleState] = useState<boolean>(readStoredVisible)
   const location = useLocation()
 
-  /** 按路由前缀解析当前批注作用域（计算公式 / 产品分类 / 后续模块） */
+  /** 按路由前缀解析当前批注作用域（产品分类 / 后续模块） */
   const scope = useMemo(() => resolveAnnotationScope(location.pathname), [location.pathname])
 
   const setVisible = useCallback((next: boolean) => {
@@ -75,6 +80,24 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
     [rdVisibleAnnotations],
   )
 
+  /**
+   * 系统级批注：与路由无关，全系统一套；
+   * 同样按研发视图过滤，但**不并入** scope.globalAnnotations（两层互不混用）。
+   */
+  const systemChapters = useMemo<SystemAnnotationChapter[]>(
+    () =>
+      SYSTEM_ANNOTATION_CHAPTERS.map((chapter) => ({
+        ...chapter,
+        annotations: chapter.annotations.filter(isRdVisible),
+      })).filter((chapter) => chapter.annotations.length > 0),
+    [],
+  )
+
+  const systemAnnotations = useMemo(
+    () => systemChapters.flatMap((chapter) => chapter.annotations),
+    [systemChapters],
+  )
+
   const value = useMemo<AnnotationContextValue>(
     () => ({
       visible,
@@ -84,8 +107,19 @@ export function AnnotationProvider({ children }: { children: ReactNode }) {
       annotations: rdVisibleAnnotations,
       targetMap,
       globalAnnotations: scope ? scope.globalAnnotations.filter(isRdVisible) : [],
+      systemAnnotations,
+      systemChapters,
     }),
-    [visible, setVisible, toggleVisible, scope, rdVisibleAnnotations, targetMap],
+    [
+      visible,
+      setVisible,
+      toggleVisible,
+      scope,
+      rdVisibleAnnotations,
+      targetMap,
+      systemAnnotations,
+      systemChapters,
+    ],
   )
 
   return <AnnotationContext.Provider value={value}>{children}</AnnotationContext.Provider>

@@ -91,9 +91,11 @@ export default function MyModelDetailPage() {
       <ModelDetailView
         model={model}
         notice={
-          isCollected
-            ? `收藏副本 · 只读：由平台模型库「${model.sourceModelName || model.sourceModelId || '-'}」复制生成，修改源模型不影响本副本。`
-            : undefined
+          isCollected ? (
+            <span data-ann-target="mym.detail.readonly">
+              收藏副本 · 只读：由平台模型库「{model.sourceModelName || model.sourceModelId || '-'}」复制生成，修改源模型不影响本副本。
+            </span>
+          ) : undefined
         }
       />
     </>

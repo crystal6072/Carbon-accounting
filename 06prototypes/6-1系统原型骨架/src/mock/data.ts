@@ -4,7 +4,7 @@
  *
  * 组成：
  * - 基础库：分类 / 行业 / 生命周期阶段 / 计量单位 / 物料 / 能源
- * - 核算配置：排放因子 / 计算公式
+ * - 因子库：多库（商业数据库 / 自建库）+ 库版本 / 标准公式（建模侧工序流绑定用）
  * - 工艺库：工序 / 工艺流程 / 产品（含工艺工序组合）
  * - 前台核算：2 个「待核算」演示项目（同一产品、两个核算边界）：
  *   **PJ01 摇篮到大门**（原材料获取 + 生产）与 **PJ02 摇篮到坟墓**（+ 运输/交付 + 使用 + 生命末期）；
@@ -69,7 +69,7 @@ import type {
   UnitItem,
   UnitReferenceItem,
 } from '@/types'
-import { DICT_TYPE_SYSTEM_BOUNDARY } from '@/types'
+import { DICT_TYPE_SYSTEM_BOUNDARY, DICT_TYPE_TENANT_TYPE } from '@/types'
 import { gbt4754LeafIndustryNames, industryGbt4754Seed } from './standards/industryGbt4754'
 
 /* ===================== 种子构造助手 ===================== */
@@ -532,6 +532,18 @@ export const dictTypeSeed: DictType[] = [
     updatedBy: MASTER_BY,
     updatedAt: MASTER_AT,
   },
+  {
+    id: 'DT-TENANT-TYPE',
+    code: DICT_TYPE_TENANT_TYPE,
+    name: '租户类型',
+    remark: '租户开户的租户类型枚举（tenant_type：1 企业 / 2 政府单位 / 3 机构 / 4 园区）',
+    status: 'enabled',
+    builtin: true,
+    createdBy: MASTER_BY,
+    createdAt: MASTER_AT,
+    updatedBy: MASTER_BY,
+    updatedAt: MASTER_AT,
+  },
 ]
 
 /** 字典项种子：系统边界（大门到大门 / 摇篮到大门 / 摇篮到坟墓） */
@@ -569,6 +581,58 @@ export const dictItemSeed: DictItem[] = [
     label: '摇篮到坟墓',
     sort: 30,
     remark: 'Cradle-to-Grave：含使用与生命周期末期',
+    status: 'enabled',
+    createdBy: MASTER_BY,
+    createdAt: MASTER_AT,
+    updatedBy: MASTER_BY,
+    updatedAt: MASTER_AT,
+  },
+  {
+    id: 'DI-TT-01',
+    typeId: 'DT-TENANT-TYPE',
+    code: 'enterprise',
+    label: '企业',
+    sort: 10,
+    remark: '核算主体',
+    status: 'enabled',
+    createdBy: MASTER_BY,
+    createdAt: MASTER_AT,
+    updatedBy: MASTER_BY,
+    updatedAt: MASTER_AT,
+  },
+  {
+    id: 'DI-TT-02',
+    typeId: 'DT-TENANT-TYPE',
+    code: 'government',
+    label: '政府单位',
+    sort: 20,
+    remark: '监管方，按辖区只读',
+    status: 'enabled',
+    createdBy: MASTER_BY,
+    createdAt: MASTER_AT,
+    updatedBy: MASTER_BY,
+    updatedAt: MASTER_AT,
+  },
+  {
+    id: 'DI-TT-03',
+    typeId: 'DT-TENANT-TYPE',
+    code: 'org',
+    label: '机构',
+    sort: 30,
+    remark: '金融 / 认证，授权范围内只读',
+    status: 'enabled',
+    createdBy: MASTER_BY,
+    createdAt: MASTER_AT,
+    updatedBy: MASTER_BY,
+    updatedAt: MASTER_AT,
+  },
+  {
+    id: 'DI-TT-04',
+    typeId: 'DT-TENANT-TYPE',
+    code: 'park',
+    label: '园区',
+    sort: 40,
+    remark: '园区运营方，多租户聚集管理',
     status: 'enabled',
     createdBy: MASTER_BY,
     createdAt: MASTER_AT,
@@ -1154,7 +1218,7 @@ export const myFactorSeed: MyFactor[] = [
   },
 ]
 
-/* ===================== 计算引擎配置 · 计算公式 ===================== */
+/* ===================== 计算公式（标准公式库：建模侧工序流绑定） ===================== */
 
 const formulaFactor = (
   id: string,
@@ -1486,8 +1550,63 @@ export const pcfStageDataSeed: PcfStageDataItem[] = [
   { id: 'PJ02-SD-10', projectId: 'PJ02', stageId: 'LS15', stageName: '焚烧和底渣分选，填埋和促进分解的排放', nodeId: null, direction: 'input', name: '废弃竹筷卫生填埋（40%）', itemType: 'material', emissionType: null, quantity: 0.0048, unit: 'kg', factorId: 'FAC08', factorName: '废弃竹制品卫生填埋排放因子', factorValue: 0.09 },
 ]
 
-/** 核算结果：演示项目 PJ01 为「待核算」态，进入步骤④点击「开始核算」后由系统真实计算产出 */
-export const pcfCalcResultSeed: PcfCalcResult[] = []
+/**
+ * 核算结果（**演示种子**，与《PCF核算全链路走查报告》口径一致，等于「开始核算」真实产出值）：
+ * - PJ01 摇篮到大门：清单合计 0.037981 kgCO₂e / 双（生产 0.026677 + 原材料获取 0.011304）；
+ * - PJ02 摇篮到坟墓：清单合计 0.03898756 kgCO₂e / 双
+ *   （生产 0.026677 + 原材料获取 0.011304 + 生命末期 0.00087696 + 运输/交付 0.0001296 + 使用 0）。
+ * 注：PJ01 仍保留「待核算」态用于演示步骤④「开始核算」流程（重算时版本号递增、不覆盖本种子）；
+ * PJ02 置「已完成」作为工作台「碳排放总览 / 碳足迹概览」的展示来源。
+ */
+export const pcfCalcResultSeed: PcfCalcResult[] = [
+  {
+    projectId: 'PJ01',
+    version: 1,
+    calculatedAt: '2026-09-18 16:30',
+    totalEmission: 0.037981,
+    fossilEmission: 0.037981,
+    biogenicEmission: 0,
+    lulucEmission: 0,
+    caliberEmission: { total: 0.037981, fossil: 0.037981, biogenic: 0, luluc: 0 },
+    unit: '双',
+    unitEmission: 0.037981,
+    unitEmissionBreakdown: [
+      { unit: '双', value: 0.037981 },
+      { unit: 'kg', value: 3.1639 },
+    ],
+    stageSummary: [
+      { stage: '生产', emission: 0.026677, ratio: 70.2 },
+      { stage: '原材料获取', emission: 0.011304, ratio: 29.8 },
+    ],
+    operationSummary: [],
+    details: [],
+  },
+  {
+    projectId: 'PJ02',
+    version: 1,
+    calculatedAt: '2026-09-19 10:20',
+    totalEmission: 0.03898756,
+    fossilEmission: 0.03898756,
+    biogenicEmission: 0,
+    lulucEmission: 0,
+    caliberEmission: { total: 0.03898756, fossil: 0.03898756, biogenic: 0, luluc: 0 },
+    unit: '双',
+    unitEmission: 0.03898756,
+    unitEmissionBreakdown: [
+      { unit: '双', value: 0.03898756 },
+      { unit: 'kg', value: 3.2476 },
+    ],
+    stageSummary: [
+      { stage: '生产', emission: 0.026677, ratio: 68.4 },
+      { stage: '原材料获取', emission: 0.011304, ratio: 29.0 },
+      { stage: '生命末期', emission: 0.00087696, ratio: 2.2 },
+      { stage: '运输/交付', emission: 0.0001296, ratio: 0.3 },
+      { stage: '使用', emission: 0, ratio: 0 },
+    ],
+    operationSummary: [],
+    details: [],
+  },
+]
 
 /** 演示工序（报告编制中示例）：本期无 */
 export const pcfDemoOperationSeed: PcfOperationConfig[] = []
@@ -1510,6 +1629,9 @@ export const pcfProjectSeed: PcfProject[] = [
     code: 'PCF-20260901-001',
     name: '240mm 全竹碳化筷 · 摇篮到大门',
     ownerOrg: '福建竹业集团 · 工厂A1',
+    tenantId: 'T001',
+    deptId: '',
+    ownerId: 'A003',
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     productSource: 'library',
@@ -1551,6 +1673,9 @@ export const pcfProjectSeed: PcfProject[] = [
     code: 'PCF-20260901-002',
     name: '240mm 全竹碳化筷 · 摇篮到坟墓',
     ownerOrg: '福建竹业集团 · 工厂A1',
+    tenantId: 'T001',
+    deptId: '',
+    ownerId: 'A003',
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     productSource: 'library',
@@ -1570,7 +1695,7 @@ export const pcfProjectSeed: PcfProject[] = [
     convertedUnit: 'kg',
     boundary: 'grave',
     currentStep: 4,
-    status: 'toCalc',
+    status: 'done',
     remark: '覆盖下游阶段：运输/交付、使用、生命末期（焚烧 60% + 卫生填埋 40%）。',
     method: 'GB/T 24067-2024',
     methodId: 'STD-001',

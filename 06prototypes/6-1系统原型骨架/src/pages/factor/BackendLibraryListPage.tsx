@@ -145,7 +145,7 @@ export default function BackendLibraryListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['系统管理', '核算配置', '因子库管理']}
+        breadcrumb={['系统管理', '模型管理', '因子库管理']}
         title={<span data-ann-target="factor.page.global">因子库管理</span>}
         description="平台可维护多个因子库：商业数据库（整库导入、库内只读、带 ISIC 门类分类）+ 自建库（可维护）；发布后前台可见。"
         actions={

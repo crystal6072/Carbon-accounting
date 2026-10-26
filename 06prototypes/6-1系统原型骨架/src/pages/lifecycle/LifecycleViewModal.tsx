@@ -119,7 +119,7 @@ export default function LifecycleViewModal({ open, stageId, onClose, onEdit }: L
                       ))}
                     </span>
                   )}
-                  <span className="form-tip">引用「平台支撑 · 数据字典 · 系统边界」；为空表示适用于全部系统边界</span>
+                  <span className="form-tip">引用「组织与权限 · 数据字典 · 系统边界」；为空表示适用于全部系统边界</span>
                 </span>
               </div>
             </div>

@@ -271,6 +271,7 @@ export default function ScenarioDataDrawer({ analysis, scenario, caliber, onClos
       visible
       header={`填写情景 ${scenario.seq} 数据`}
       size="960px"
+      data-ann-target="sa.drawer"
       onClose={onClose}
       footer={
         <div className="sa-drawer-footer">

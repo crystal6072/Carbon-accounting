@@ -1,0 +1,301 @@
+/* 平台角色管理（平台后台 · 只维护平台角色）：列表 + 表单（功能树）+ 详情 */
+
+.role-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 分块标题栏（复用平台账号分块样式口径） */
+.role-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.role-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.role-section-body {
+  padding: var(--space-lg);
+}
+.role-section-tip {
+  border-top: 1px solid var(--color-border-secondary);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* 列表：列较多，容器内横向滚动兜底 */
+.role-table-wrap {
+  overflow-x: auto;
+}
+.role-table-wrap .data-table thead th,
+.role-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+
+
+/* 角色名称旁标记：内置 / 保护角色 / 自定义 */
+.role-name-cell {
+  display: inline-flex;
+  align-items: center;
+}
+.role-name-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+.role-name-badge {
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.04));
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.role-name-badge.protect {
+  background: var(--color-error-bg, rgba(180, 40, 40, 0.08));
+  color: var(--color-error, #b42828);
+}
+
+/* 分配权限弹窗头部：说明 + 展开折叠 / 全选 */
+.role-assign-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.role-assign-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  white-space: nowrap;
+}
+.role-assign-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+/* 功能树模块折叠按钮 */
+.role-fn-collapse {
+  margin-right: 6px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 功能勾选树（表单）：模块 → 功能 → 读写范围 */
+.role-fn-tree {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+}
+.role-fn-module {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.03));
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+.role-fn-module + .role-fn-module {
+  border-top: 1px solid var(--color-border-secondary);
+}
+.role-fn-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-sm);
+}
+.role-fn-row:hover {
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.02));
+}
+.role-fn-row.checked {
+  background: var(--color-primary-bg, rgba(0, 82, 217, 0.05));
+}
+.role-fn-row.locked {
+  opacity: 0.55;
+}
+.role-fn-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 220px;
+  cursor: pointer;
+}
+.role-fn-code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.role-fn-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.role-fn-scope .select {
+  min-width: 130px;
+}
+.role-fn-scope .multi-select {
+  min-width: 180px;
+}
+.role-fn-scope-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error, #b42828);
+}
+.role-fn-locked-tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ===================== 租户端分配权限弹窗（视觉稿口径） ===================== */
+
+/* 顶部提示条：贴住弹窗左右边缘的浅灰说明条 */
+.role-assign-notice {
+  margin: calc(var(--space-lg) * -1) calc(var(--space-lg) * -1) var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-bg-spotlight);
+  border-bottom: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+}
+.role-assign-notice-num {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 工具栏：搜索框 + 已选徽标 / 展开·折叠 / 全选 */
+.role-assign-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.role-assign-search {
+  width: 240px;
+  height: 28px;
+}
+.role-assign-toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  white-space: nowrap;
+}
+.role-assign-count {
+  padding: 0 8px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+}
+.role-assign-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-base);
+  cursor: pointer;
+}
+.role-assign-link:hover {
+  color: var(--color-primary-hover);
+}
+.role-assign-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--color-border);
+}
+
+/* 勾选树（租户端）：去掉外框，行卡片化，选中淡蓝底 */
+.role-fn-tree.role-fn-tree-tenant {
+  border: none;
+  border-radius: 0;
+  /* 菜单树内部滚动，避免弹窗过长超出视口 */
+  max-height: min(48vh, 440px);
+  min-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.role-fn-tree-tenant .role-fn-row {
+  border-top: none;
+  margin-bottom: 2px;
+  border-radius: var(--radius-sm);
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+.role-fn-tree-tenant .role-fn-row.checked {
+  background: var(--color-primary-bg);
+}
+.role-fn-tree-tenant .role-fn-row.group {
+  background: transparent;
+}
+.role-fn-tree-tenant .role-fn-title {
+  font-weight: var(--font-weight-semibold);
+}
+.role-fn-tree-tenant .role-fn-caret {
+  width: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.role-fn-tree-tenant .role-fn-scope {
+  margin-left: auto;
+  gap: var(--space-xs);
+}
+.role-fn-tree-tenant .role-fn-scope .select {
+  width: 96px;
+  min-width: 96px;
+}
+.role-fn-tree-tenant .role-fn-scope .multi-select {
+  min-width: 160px;
+}
+.role-fn-tree-tenant .role-fn-scope.is-empty {
+  opacity: 0.9;
+}
+.role-fn-tree-tenant .role-fn-scope.is-empty .select {
+  border-color: var(--color-border-secondary);
+  background: var(--color-bg-disabled);
+}
+
+/* 表单页底部操作栏 */
+.role-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+
+/* 详情页跨行字段 */
+.detail-item.full {
+  grid-column: 1 / -1;
+}

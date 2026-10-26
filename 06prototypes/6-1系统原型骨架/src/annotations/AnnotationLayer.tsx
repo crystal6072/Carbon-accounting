@@ -2,21 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAnnotationContext } from './AnnotationContext'
 import { ANNOTATION_TARGET_ATTR } from './types'
-import type { Annotation, AnnotationBlock } from './types'
+import type { Annotation } from './types'
+import { AnnotationCard, PRIORITY_TEXT } from './AnnotationCard'
+import SystemAnnotationDrawer from './SystemAnnotationDrawer'
 import './annotations.css'
-
-const PRIORITY_TEXT: Record<NonNullable<Annotation['priority']>, string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
-}
-
-const MATCH_TYPE_TEXT: Record<Annotation['matchType'], string> = {
-  exact: '精确匹配',
-  fuzzy: '模糊匹配',
-  region: '区域匹配',
-  none: '未匹配',
-}
 
 interface BadgeInstance {
   target: string
@@ -31,201 +20,24 @@ interface PopoverState {
 }
 
 /**
- * 行内文本渲染：支持 `反引号` 行内代码与 **加粗** 关键词。
- * 返回值可直接作为 React 子节点；保留原有遗留文本的兼容渲染。
- */
-function renderInline(text: string): React.ReactNode[] {
-  return text
-    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-    .filter((part) => part !== '')
-    .map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-        return <strong key={index}>{part.slice(2, -2)}</strong>
-      }
-      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
-        return <code key={index}>{part.slice(1, -1)}</code>
-      }
-      return <span key={index}>{part}</span>
-    })
-}
-
-/** 遗留纯文本渲染（无 blocks 时兜底；兼容 `反引号` 行内代码） */
-function renderContent(content: string) {
-  return content.split(/(`[^`]+`)/g).map((part, index) =>
-    part.startsWith('`') && part.endsWith('`') && part.length > 2 ? (
-      <code key={index}>{part.slice(1, -1)}</code>
-    ) : (
-      <span key={index}>{part}</span>
-    ),
-  )
-}
-
-/** 结构化内容块渲染：标题 / 正文 / 列表 / 步骤 / 表格 / 辅助提示 */
-function renderBlocks(blocks: AnnotationBlock[]) {
-  return (
-    <div className="ann-blocks">
-      {blocks.map((block, index) => {
-        switch (block.type) {
-          case 'heading':
-            return (
-              <div className="ann-block-heading" key={index}>
-                {renderInline(block.text)}
-              </div>
-            )
-          case 'paragraph':
-            return (
-              <p className="ann-block-para" key={index}>
-                {renderInline(block.text)}
-              </p>
-            )
-          case 'list':
-            return block.ordered ? (
-              <ol className="ann-block-list ann-block-list-ordered" key={index}>
-                {block.items.map((item, i) => (
-                  <li key={i}>{renderInline(item)}</li>
-                ))}
-              </ol>
-            ) : (
-              <ul className="ann-block-list" key={index}>
-                {block.items.map((item, i) => (
-                  <li key={i}>{renderInline(item)}</li>
-                ))}
-              </ul>
-            )
-          case 'steps':
-            return (
-              <ol className="ann-block-steps" key={index}>
-                {block.items.map((item, i) => (
-                  <li key={i}>{renderInline(item)}</li>
-                ))}
-              </ol>
-            )
-          case 'table':
-            return (
-              <table className="ann-block-table" key={index}>
-                <thead>
-                  <tr>
-                    {block.columns.map((col, i) => (
-                      <th key={i}>{renderInline(col)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.rows.map((row, r) => (
-                    <tr key={r}>
-                      {row.map((cell, c) => (
-                        <td key={c}>{renderInline(cell)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )
-          case 'callout':
-            return (
-              <div className="ann-block-callout" key={index}>
-                {renderInline(block.text)}
-              </div>
-            )
-          default:
-            return null
-        }
-      })}
-    </div>
-  )
-}
-
-function AnnotationCard({ item, compact = false }: { item: Annotation; compact?: boolean }) {
-  return (
-    <div className="ann-card">
-      {!compact && (
-        <div className="ann-card-head">
-          <span className="ann-card-title">{item.title}</span>
-          <span className="ann-card-head-right">
-            {item.code && <span className="ann-card-code">{item.code}</span>}
-            {item.priority && (
-              <span className={`ann-priority ann-priority-${item.priority}`}>{PRIORITY_TEXT[item.priority]}</span>
-            )}
-          </span>
-        </div>
-      )}
-      <div className="ann-card-content">
-        {item.blocks ? renderBlocks(item.blocks) : renderContent(item.content ?? '')}
-      </div>
-      <dl className="ann-card-meta">
-        {item.source && (
-          <div>
-            <dt>来源</dt>
-            <dd>{item.source}</dd>
-          </div>
-        )}
-        {item.formula && (
-          <div>
-            <dt>涉及公式</dt>
-            <dd>{item.formula}</dd>
-          </div>
-        )}
-        {item.operation && (
-          <div>
-            <dt>涉及操作</dt>
-            <dd>{item.operation}</dd>
-          </div>
-        )}
-        {item.buttonText && (
-          <div>
-            <dt>期望按钮</dt>
-            <dd>{item.buttonText}</dd>
-          </div>
-        )}
-        <div>
-          <dt>匹配状态</dt>
-          <dd>
-            {item.matchStatus === 'matched'
-              ? `已匹配 · ${MATCH_TYPE_TEXT[item.matchType]}`
-              : '未匹配 · 全局标注'}
-          </dd>
-        </div>
-        {item.matchTargets && item.matchTargets.length > 0 && (
-          <div>
-            <dt>匹配位置</dt>
-            <dd>
-              <ul className="ann-match-list">
-                {item.matchTargets.map((target) => (
-                  <li key={`${target.selector}-${target.label}`}>
-                    <strong>{target.label}</strong>
-                    <span className="ann-match-reason">{target.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        )}
-        {item.unmatchedReason && (
-          <div>
-            <dt>未匹配原因</dt>
-            <dd>{item.unmatchedReason}</dd>
-          </div>
-        )}
-      </dl>
-    </div>
-  )
-}
-
-/**
- * 批注展示层（按已登记的路由作用域生效：计算公式 / 产品分类 / 后续模块）：
- * - 扫描 [data-ann-target] 锚点，在操作按钮旁渲染批注标记；
- * - 点击标记弹Popover查看批注详情；
- * - 右下角固定入口：统一开关（显示/隐藏批注）+ 全局批注抽屉（未匹配/文档级批注）；
- * - 展示层独立，不触碰任何业务逻辑。
+ * 批注展示层（作用域由 registry 按路由前缀解析）：
+ * - 扫描 [data-ann-target] 锚点，在操作按钮旁渲染批注标记，点击查看详情（模块批注）；
+ * - 右下角固定入口：
+ *   · 统一开关（显示 / 隐藏批注）；
+ *   · **系统批注**：全系统一套的跨模块口径，独立抽屉，任何页面可打开；
+ *   · **全局批注**：当前模块的未匹配 / 文档级批注，仅在有批注作用域时出现。
+ * 两类批注数据源、入口、抽屉完全分离，互不混用；展示层不触碰任何业务逻辑。
  */
 export default function AnnotationLayer() {
   const location = useLocation()
-  const { visible, toggleVisible, scope, targetMap, globalAnnotations } = useAnnotationContext()
+  const { visible, toggleVisible, scope, targetMap, globalAnnotations, systemAnnotations, systemChapters } =
+    useAnnotationContext()
   const inScope = !!scope
 
   const [badges, setBadges] = useState<BadgeInstance[]>([])
   const [popover, setPopover] = useState<PopoverState | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [systemOpen, setSystemOpen] = useState(false)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
   const layerRef = useRef<HTMLDivElement>(null)
 
@@ -284,16 +96,17 @@ export default function AnnotationLayer() {
 
   /* 打开弹窗 / 抽屉时关闭另一个；ESC 关闭 */
   useEffect(() => {
-    if (!popover && !drawerOpen) return
+    if (!popover && !drawerOpen && !systemOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setPopover(null)
         setDrawerOpen(false)
+        setSystemOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [popover, drawerOpen])
+  }, [popover, drawerOpen, systemOpen])
 
   /* 点击批注层之外关闭 Popover */
   useEffect(() => {
@@ -306,6 +119,15 @@ export default function AnnotationLayer() {
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
   }, [popover])
+
+  /* 隐藏批注时收起抽屉，避免残留半开状态 */
+  useEffect(() => {
+    if (!visible) {
+      setDrawerOpen(false)
+      setSystemOpen(false)
+      setPopover(null)
+    }
+  }, [visible])
 
   const openPopover = useCallback((badge: BadgeInstance) => {
     const width = 360
@@ -322,11 +144,9 @@ export default function AnnotationLayer() {
   const toggleExpand = (id: string) =>
     setExpandedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
 
-  if (!inScope) return null
-
   return (
     <>
-      {visible && (
+      {visible && inScope && (
         <div className="ann-layer" ref={layerRef}>
           {badges.map((badge) => {
             const items = targetMap.get(badge.target)
@@ -361,7 +181,7 @@ export default function AnnotationLayer() {
             </button>
           </div>
           <div className="ann-popover-body">
-            {popoverItems.map((item) => (
+            {popoverItems.map((item: Annotation) => (
               <AnnotationCard key={item.id} item={item} />
             ))}
           </div>
@@ -375,18 +195,44 @@ export default function AnnotationLayer() {
         {visible && (
           <button
             type="button"
+            className="ann-dock-btn ann-dock-entry ann-dock-system"
+            onClick={() => {
+              setSystemOpen((prev) => !prev)
+              setDrawerOpen(false)
+              setPopover(null)
+            }}
+            title="跨模块的系统级口径（账号 / 租户 / 权限 / 三条业务链）"
+          >
+            系统批注({systemAnnotations.length})
+          </button>
+        )}
+        {visible && inScope && (
+          <button
+            type="button"
             className="ann-dock-btn ann-dock-entry"
-            onClick={() => setDrawerOpen((prev) => !prev)}
+            onClick={() => {
+              setDrawerOpen((prev) => !prev)
+              setSystemOpen(false)
+              setPopover(null)
+            }}
+            title="本模块的未匹配 / 文档级批注"
           >
             全局批注({globalAnnotations.length})
           </button>
         )}
       </div>
 
-      {visible && drawerOpen && (
+      {visible && systemOpen && (
+        <SystemAnnotationDrawer chapters={systemChapters} onClose={() => setSystemOpen(false)} />
+      )}
+
+      {visible && inScope && drawerOpen && (
         <aside className="ann-drawer">
           <header className="ann-drawer-head">
-            <span className="ann-drawer-title">全局批注（{globalAnnotations.length}）</span>
+            <div className="ann-sys-head-text">
+              <span className="ann-drawer-title">全局批注（{globalAnnotations.length}）</span>
+              <span className="ann-sys-head-sub">当前模块：{scope?.label} · 与「系统批注」相互独立</span>
+            </div>
             <div className="ann-drawer-actions">
               <button type="button" onClick={() => setExpandedIds(allGlobalIds)}>
                 全部展开

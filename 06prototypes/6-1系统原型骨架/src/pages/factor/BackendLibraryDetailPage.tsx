@@ -363,7 +363,7 @@ export default function BackendLibraryDetailPage() {
   if (!library) {
     return (
       <>
-        <PageHeader breadcrumb={['系统管理', '核算配置', '因子库管理']} title="因子库详情" />
+        <PageHeader breadcrumb={['系统管理', '模型管理', '因子库管理']} title="因子库详情" />
         <div className="card">
           <div className="empty">{loading ? '加载中…' : '因子库不存在或已被删除'}</div>
         </div>
@@ -374,7 +374,7 @@ export default function BackendLibraryDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['系统管理', '核算配置', '因子库管理', library.name]}
+        breadcrumb={['系统管理', '模型管理', '因子库管理', library.name]}
         title={library.name}
         description={`${library.code} · ${libraryTypeText[library.type]} · 维护方 ${library.maintainer}`}
         onBack={() => navigate('/model/factor-lib')}

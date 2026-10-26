@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
@@ -46,6 +46,9 @@ const MAX_DESC = 500
 export default function SensitivityDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  /** 只读模式（`?mode=view`）：仅数据查看，无编辑 / 核算 / 删除 / 更新基准入口（业务 PRD S09 / R-080） */
+  const readonly = searchParams.get('mode') === 'view'
 
   const [analysis, setAnalysis] = useState<SensitivityAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
@@ -213,8 +216,11 @@ export default function SensitivityDetailPage() {
           placeholder="请输入"
           autosize
           maxlength={MAX_DESC}
+          readonly={readonly}
           onChange={(value) => patchScenarioDescription(row.id, String(value ?? ''))}
-          onBlur={() => void commitDescription(row.id, row.description)}
+          onBlur={() => {
+            if (!readonly) void commitDescription(row.id, row.description)
+          }}
         />
       ),
     },
@@ -276,20 +282,23 @@ export default function SensitivityDetailPage() {
       colKey: 'op',
       title: '操作',
       width: 180,
-      cell: ({ row }: { row: SensitivityScenario }) => (
-        <Space size="small">
-          <a className="sa-link" onClick={() => setDrawerScenarioId(row.id)}>
-            编辑情景数据
-          </a>
-          <Popconfirm
-            theme="danger"
-            content="删除后不可恢复，该情景的结果将一并移除。确认删除？"
-            onConfirm={() => setDeleteScenarioTarget(row)}
-          >
-            <a className="sa-link sa-link-danger">删除</a>
-          </Popconfirm>
-        </Space>
-      ),
+      cell: ({ row }: { row: SensitivityScenario }) =>
+        readonly ? (
+          <span className="sa-empty-cell">-</span>
+        ) : (
+          <Space size="small">
+            <a className="sa-link" onClick={() => setDrawerScenarioId(row.id)}>
+              编辑情景数据
+            </a>
+            <Popconfirm
+              theme="danger"
+              content="删除后不可恢复，该情景的结果将一并移除。确认删除？"
+              onConfirm={() => setDeleteScenarioTarget(row)}
+            >
+              <a className="sa-link sa-link-danger">删除</a>
+            </Popconfirm>
+          </Space>
+        ),
     },
   ]
 
@@ -357,6 +366,7 @@ export default function SensitivityDetailPage() {
     <div className="sa-page">
       <div className="sa-page-head">
         <div className="sa-breadcrumb">产品碳足迹 / 报告管理 / 敏感性分析 / {analysis.analysisNo}</div>
+        {readonly ? <span className="sa-breadcrumb-tag">只读</span> : null}
         <div className="sa-detail-head">
           <h2 className="sa-page-title">
             {analysis.sourceProjectName} 敏感性分析
@@ -370,33 +380,33 @@ export default function SensitivityDetailPage() {
             <Button variant="outline" onClick={() => navigate('/report/sensitivity')}>
               返回
             </Button>
-            <Button variant="outline" onClick={handleExportCompare} disabled={compareRows.length === 0}>
+            <Button variant="outline" onClick={handleExportCompare} disabled={compareRows.length === 0} data-ann-target="sa.export">
               导出对比
             </Button>
           </Space>
         </div>
-        <p className="sa-page-desc">
-          敏感性分析：用于估计与产品碳足迹研究结果相关假设、方法和数据的选择影响的系统方法
-        </p>
       </div>
 
       {stale ? (
         <Alert
           theme="warning"
           className="sa-stale-alert"
+          data-ann-target="sa.detail.alert"
           message={`来源核算数据已更新（基准版本 V${analysis.baselineVersion} → V${
             analysis.baselineVersion + 1
           }），当前结论可能失效。`}
           operation={
-            <Button theme="primary" size="small" onClick={() => setUpdateBaselineOpen(true)}>
-              更新基准
-            </Button>
+            readonly ? undefined : (
+              <Button theme="primary" size="small" onClick={() => setUpdateBaselineOpen(true)}>
+                更新基准
+              </Button>
+            )
           }
         />
       ) : null}
 
       {/* 来源信息条 */}
-      <Card bordered>
+      <Card bordered data-ann-target="sa.detail.source">
         <Descriptions column={4} size="small">
           <Descriptions.DescriptionsItem label="核算项目">
             <span className={analysis.sourceDeleted ? 'sa-deleted' : undefined}>
@@ -426,7 +436,7 @@ export default function SensitivityDetailPage() {
       </Card>
 
       {/* 基准情景 */}
-      <Card bordered title="基准情景">
+      <Card bordered title="基准情景" data-ann-target="sa.detail.baseline">
         <div className="sa-baseline">
           <div className="sa-baseline-form">
             <div className="sa-field-label sa-required">情景描述</div>
@@ -435,8 +445,11 @@ export default function SensitivityDetailPage() {
               placeholder="请输入"
               autosize={{ minRows: 2, maxRows: 4 }}
               maxlength={MAX_DESC}
+              readonly={readonly}
               onChange={(value) => patchBaselineDescription(String(value ?? ''))}
-              onBlur={() => void commitDescription(null, analysis.baselineDescription)}
+              onBlur={() => {
+                if (!readonly) void commitDescription(null, analysis.baselineDescription)
+              }}
             />
             <div className="sa-counter">
               {analysis.baselineDescription.length} / {MAX_DESC}
@@ -456,8 +469,9 @@ export default function SensitivityDetailPage() {
       <Card
         bordered
         title="变更情景"
+        data-ann-target="sa.detail.scenario"
         actions={
-          stale ? (
+          readonly ? null : stale ? (
             <span className="sa-card-tip">来源数据已更新，请先更新基准</span>
           ) : (
             <Button variant="dashed" onClick={() => void handleAddScenario()}>
@@ -478,7 +492,7 @@ export default function SensitivityDetailPage() {
 
       {/* 情景对比 */}
       {compareRows.length > 0 ? (
-        <Card bordered title="情景对比" actions={<span className="sa-card-tip">按 |变化率| 降序</span>}>
+        <Card bordered title="情景对比" actions={<span className="sa-card-tip">按 |变化率| 降序</span>} data-ann-target="sa.detail.compare">
           <Table rowKey="id" data={compareRows} columns={compareColumns} size="small" />
         </Card>
       ) : null}

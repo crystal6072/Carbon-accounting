@@ -248,7 +248,7 @@ export default function ModelStepOne({
             />
           </div>
           <div className="pcf-grid" style={{ marginTop: 'var(--space-md)' }}>
-            <FormField label="产品图片">
+            <FormField label="产品图片" annTarget="mym.form.image">
               <ImagePreview value={draft.productImageUrl} />
             </FormField>
           </div>
@@ -282,7 +282,7 @@ export default function ModelStepOne({
       <div className="pcf-step-form">
         <PcfPanel title="基本信息" tip="模型名称与分类用于模型库检索与引用">
           <div className="pcf-grid">
-            <FormField label="模型名称" required error={errors.name}>
+            <FormField label="模型名称" required error={errors.name} annTarget="mym.form.name">
               <Input
                 value={draft.name}
                 placeholder="如：全竹碳化筷 · 摇篮到大门核算模型"
@@ -290,7 +290,7 @@ export default function ModelStepOne({
                 onChange={(e) => onChange({ name: e.target.value })}
               />
             </FormField>
-            <FormField label="核算标准" required error={errors.standardId} hint="引用标准文件库（仅现行）">
+            <FormField label="核算标准" required error={errors.standardId} hint="引用标准文件库（仅现行）" annTarget="mym.form.standard">
               <Select
                 value={draft.standardId}
                 placeholder="请选择"
@@ -299,7 +299,7 @@ export default function ModelStepOne({
                 onChange={(e) => onChange({ standardId: e.target.value })}
               />
             </FormField>
-            <FormField label="行业标签" hint="模型库按行业筛选的依据，可多选；可与产品「所属行业」不同">
+            <FormField label="行业标签" hint="模型库按行业筛选的依据，可多选；可与产品「所属行业」不同" annTarget="mym.form.industries">
               <MultiSelect
                 value={draft.industries}
                 options={industryOptions}
@@ -347,7 +347,7 @@ export default function ModelStepOne({
                 onChange={(e) => onChange({ productSpec: e.target.value })}
               />
             </FormField>
-            <FormField label="产品分类" required error={errors.categoryId} hint="引用统计用产品分类目录">
+            <FormField label="产品分类" required error={errors.categoryId} hint="引用统计用产品分类目录" annTarget="mym.form.category">
               <CascaderSelect
                 value={draft.categoryId}
                 options={categoryTree}
@@ -381,7 +381,7 @@ export default function ModelStepOne({
                 onChange={(value) => onChange({ functionalUnit: value })}
               />
             </FormField>
-            <FormField label="产品图片" required error={errors.productImageUrl} full>
+            <FormField label="产品图片" required error={errors.productImageUrl} full annTarget="mym.form.image">
               <ImageUpload
                 value={draft.productImageUrl}
                 invalid={!!errors.productImageUrl}
@@ -399,7 +399,8 @@ export default function ModelStepOne({
                 label="系统边界"
                 required
                 error={errors.boundary}
-                hint="引用「平台支撑 · 数据字典 · 系统边界」，仅展示已启用的边界项（卡片式单选）"
+                hint="引用「组织与权限 · 数据字典 · 系统边界」，仅展示已启用的边界项（卡片式单选）"
+                annTarget="mym.form.boundary"
               >
                 <div className="pcf-boundary-cards is-stacked">
                   {boundaryDict.length === 0 && <span className="pcf-placeholder">暂无启用的系统边界字典项</span>}
@@ -429,7 +430,7 @@ export default function ModelStepOne({
             </div>
 
             <div className="pcf-boundary-layout-right">
-              <div className="pcf-lifecycle-summary">
+              <div className="pcf-lifecycle-summary" data-ann-target="mym.form.stages">
                 <span className="pcf-lifecycle-summary-count">
                   已纳入 {includedStages.length} / {draft.lifecycleStages.length} 个阶段
                 </span>

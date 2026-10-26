@@ -3,13 +3,14 @@ import { Button, FormField, Input, Modal, PageHeader, Table, Tag, Textarea, useT
 import type { Column, TagTone } from '@/shared/components'
 import {
   createDictItem,
+  createDictType,
   deleteDictItem,
   fetchDictItems,
   fetchDictTypes,
   updateDictItem,
   updateDictItemStatus,
 } from '@/mock'
-import type { DictItemPayload } from '@/mock'
+import type { DictItemPayload, DictTypePayload } from '@/mock'
 import type { DictItem, DictType, EnableStatus } from '@/types'
 import './DictPage.css'
 
@@ -28,7 +29,7 @@ interface ItemFormState {
 const EMPTY_QUERY = { code: '', label: '' }
 
 /**
- * 平台支撑 · 数据字典：字典类型（左）+ 字典项（右）的轻量维护。
+ * 组织与权限 · 数据字典：字典类型（左）+ 字典项（右）的轻量维护。
  * 本期内置「系统边界」类型，其字典项（大门到大门 / 摇篮到大门 / 摇篮到坟墓）供
  * 前台「核算边界」下拉与生命周期阶段「适用系统边界」复选引用。
  */
@@ -42,6 +43,10 @@ export default function DictListPage() {
   const [query, setQuery] = useState(EMPTY_QUERY)
 
   const [itemForm, setItemForm] = useState<ItemFormState>({ open: false, mode: 'create', initial: null })
+  const [typeFormOpen, setTypeFormOpen] = useState(false)
+  const [typeForm, setTypeForm] = useState({ code: '', name: '', remark: '' })
+  const [typeErrors, setTypeErrors] = useState<Record<string, string>>({})
+  const [typeSubmitting, setTypeSubmitting] = useState(false)
   const [form, setForm] = useState({ code: '', label: '', sort: '', remark: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -155,6 +160,41 @@ export default function DictListPage() {
     }
   }
 
+  const openTypeCreate = () => {
+    setTypeForm({ code: '', name: '', remark: '' })
+    setTypeErrors({})
+    setTypeFormOpen(true)
+  }
+
+  const handleTypeSubmit = async () => {
+    const next: Record<string, string> = {}
+    if (!typeForm.code.trim()) next.code = '请输入字典类型编码'
+    if (!typeForm.name.trim()) next.name = '请输入字典类型名称'
+    setTypeErrors(next)
+    if (Object.keys(next).length > 0) {
+      toast('请先完善必填项', 'error')
+      return
+    }
+    const payload: DictTypePayload = {
+      code: typeForm.code.trim(),
+      name: typeForm.name.trim(),
+      remark: typeForm.remark.trim(),
+    }
+    setTypeSubmitting(true)
+    try {
+      const created = await createDictType(payload)
+      toast('字典类型已创建')
+      setTypeFormOpen(false)
+      const list = await fetchDictTypes()
+      setTypes(list)
+      setActiveTypeId(created.id)
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '保存失败', 'error')
+    } finally {
+      setTypeSubmitting(false)
+    }
+  }
+
   const columns: Column<DictItem>[] = [
     {
       key: 'code',
@@ -207,9 +247,9 @@ export default function DictListPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['系统管理', '平台支撑', '数据字典']}
+        breadcrumb={['系统管理', '组织与权限', '数据字典']}
         title="数据字典"
-        description="平台级枚举口径维护：字典类型 + 字典项；「系统边界」字典供前台核算边界与生命周期阶段适用边界引用"
+        description="平台级枚举口径维护：字典类型 + 字典项；「系统边界」字典供核算边界与生命周期阶段引用，「租户类型」字典供租户开户类型枚举引用"
       />
 
       <div className="card dict-workbench">
@@ -217,6 +257,9 @@ export default function DictListPage() {
           <div className="dict-types-header">
             <span className="dict-types-title">字典类型</span>
             <span className="toolbar-tip">共 {types.length} 类</span>
+          </div>
+          <div style={{ padding: '0 0 var(--space-xs)' }}>
+            <Button onClick={openTypeCreate}>新增类型</Button>
           </div>
           <ul className="dict-type-list">
             {types.map((type) => (
@@ -331,6 +374,48 @@ export default function DictListPage() {
               maxLength={200}
               placeholder="选填，如口径 / 英文名"
               onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
+            />
+          </FormField>
+        </div>
+      </Modal>
+
+      <Modal
+        open={typeFormOpen}
+        title="新增字典类型"
+        onClose={() => setTypeFormOpen(false)}
+        footer={
+          <>
+            <Button onClick={() => setTypeFormOpen(false)}>取消</Button>
+            <Button variant="primary" disabled={typeSubmitting} onClick={handleTypeSubmit}>
+              {typeSubmitting ? '保存中…' : '保存'}
+            </Button>
+          </>
+        }
+      >
+        <div className="dict-item-form">
+          <FormField label="字典类型编码" required error={typeErrors.code} hint="全局唯一，大写字母开头，仅含大写字母 / 数字 / 下划线">
+            <Input
+              value={typeForm.code}
+              placeholder="如 TENANT_TYPE"
+              invalid={!!typeErrors.code}
+              onChange={(e) => setTypeForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+            />
+          </FormField>
+          <FormField label="字典类型名称" required error={typeErrors.name}>
+            <Input
+              value={typeForm.name}
+              placeholder="如 租户类型"
+              invalid={!!typeErrors.name}
+              onChange={(e) => setTypeForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="说明">
+            <Textarea
+              value={typeForm.remark}
+              rows={2}
+              maxLength={200}
+              placeholder="选填，描述取值口径与引用方"
+              onChange={(e) => setTypeForm((prev) => ({ ...prev, remark: e.target.value }))}
             />
           </FormField>
         </div>

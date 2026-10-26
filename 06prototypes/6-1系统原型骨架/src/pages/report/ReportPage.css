@@ -1,5 +1,5 @@
 .report-wrap {
-  padding: 16px 24px 40px;
+  padding: 16px 24px 80px;
 }
 
 .rp-breadcrumb {
@@ -341,68 +341,50 @@
   line-height: 26px;
 }
 
-/* 报告正文编辑区 */
-.rp-section-edit-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* ============ 分步向导（编制中） ============ */
+.rp-steps-wrap {
+  margin: 4px 0 8px;
 }
-.rp-section-edit {
+.rp-step-card {
+  margin-top: 16px;
+}
+
+/* 底部冻结操作栏（与数据质量评价页一致：固定右下） */
+.rp-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 32px;
+  background: var(--td-bg-color-container, #fff);
+  border-top: 1px solid var(--td-component-stroke, #e7e7e7);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 20;
+}
+
+/* 内联预览（步骤② 预览与生成报告）：把报告预览塞进固定高度容器内 */
+.rp-inline-preview {
+  height: 72vh;
+  display: flex;
   border: 1px solid var(--td-component-stroke, #e7e7e7);
   border-radius: 6px;
-  padding: 16px;
-  background: #fafbfc;
+  overflow: hidden;
 }
-.rp-section-edit-head {
+.rp-inline-preview > .rp-preview {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  flex-direction: column;
+  min-width: 0;
 }
-.rp-section-edit-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--td-text-color-primary, #1d2129);
+/* 内联场景下让预览滚动区自适应容器高度，而非整屏 */
+.rp-inline-preview .rp-preview-scroll {
+  height: auto;
+  flex: 1;
+  min-height: 0;
 }
-.rp-table-edit {
-  margin-top: 12px;
-  border-top: 1px dashed var(--td-component-stroke, #e7e7e7);
-  padding-top: 10px;
-}
-.rp-table-edit-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--td-text-color-secondary, #8a8f99);
-  margin-bottom: 6px;
-}
-.rp-table-edit-scroll {
-  overflow-x: auto;
-  margin-bottom: 6px;
-}
-.rp-edit-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  background: #fff;
-}
-.rp-edit-table th,
-.rp-edit-table td {
-  border: 1px solid #e7e7e7;
-  padding: 2px 4px;
-  vertical-align: middle;
-}
-.rp-edit-table th {
-  background: #f3f3f3;
-  font-weight: 600;
-  white-space: nowrap;
-  padding: 6px 8px;
-}
-.rp-edit-op {
-  width: 56px;
-  text-align: center;
-  white-space: nowrap;
-}
-.rp-edit-total td {
-  font-weight: 600;
-  background: #f7f8fa;
+.rp-inline-preview .rp-preview-toolbar {
+  flex: 0 0 auto;
 }

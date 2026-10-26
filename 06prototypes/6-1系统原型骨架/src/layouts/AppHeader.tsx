@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
 import Icon from '@/shared/components/Icon'
 import { findFirstLeaf, isNodeActive, menuConfig } from '@/router/menu'
+import { useAuth } from '@/context/AuthContext'
+import UserMenu from './UserMenu'
 
 export default function AppHeader() {
   const location = useLocation()
+  const { session } = useAuth()
 
   return (
     <header className="app-header">
@@ -24,13 +27,25 @@ export default function AppHeader() {
         })}
       </nav>
       <div className="app-header-right">
+        {/* 单租户模式：一个账号只绑定一个租户，顶栏仅展示当前租户，不提供切换入口 */}
+        {session && (
+          <span className="text-tertiary" style={{ fontSize: 13 }}>
+            {session.tenantName}
+          </span>
+        )}
+        <Link
+          to="/panorama"
+          className={['app-header-entry', location.pathname.startsWith('/panorama') ? 'active' : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <Icon name="layers" size={16} />
+          <span>功能全景</span>
+        </Link>
         <span className="text-tertiary" style={{ display: 'flex' }}>
           <Icon name="search" size={16} />
         </span>
-        <span className="app-user">
-          <span className="app-avatar">管</span>
-          <span>系统管理员</span>
-        </span>
+        <UserMenu />
       </div>
     </header>
   )

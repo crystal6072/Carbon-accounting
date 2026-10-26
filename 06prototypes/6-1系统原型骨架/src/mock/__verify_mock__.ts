@@ -28,7 +28,6 @@ import {
   startPcfCalc,
   fetchPcfReportTemplates,
 } from './index'
-import { listPublishedFormulaOptions } from '@/pages/formula/formulaMeta'
 
 const stats = { pass: 0, fail: 0 }
 const failures: string[] = []
@@ -83,12 +82,11 @@ const PROJECTS: Array<{
 
 async function main() {
   log('\n================ Mock 数据一致性 + 前后台串联校验 ================')
-  const [products, orgs, standards, formulas, stages, units, factors, materials, energies] =
+  const [products, orgs, standards, stages, units, factors, materials, energies] =
     await Promise.all([
       fetchPcfMyProductOptions(),
       fetchPcfOrgOptions(),
       fetchPcfStandardOptions(),
-      Promise.resolve(listPublishedFormulaOptions()),
       fetchLifecycleStages(),
       fetchUnitOptions(),
       fetchPcfFactorOptions(),
@@ -97,7 +95,7 @@ async function main() {
     ])
   log(
     `后台基础数据：组织 ${orgs.length} / 现行标准 ${standards.filter((s) => s.status === '现行').length} / ` +
-      `已发布公式 ${formulas.length} / 阶段 ${stages.length} / 单位字典 ${units.length} / ` +
+      `阶段 ${stages.length} / 单位字典 ${units.length} / ` +
       `可匹配因子 ${factors.length} / 物料 ${materials.length} / 能源 ${energies.length}`,
   )
 

@@ -10,6 +10,11 @@
  *   npx vite build --ssr src/mock/__verify_ui__.ts --outDir dist-ui --emptyOutDir
  *   node dist-ui/__verify_ui__.js
  * ========================================================================== */
+
+/** 本地断言：脚本独立运行，不依赖 node:assert 的全局声明 */
+function assert(condition: unknown, message: string): void {
+  if (!condition) throw new Error(message)
+}
 import {
   fetchLifecycleStages,
   fetchPcfCurrentUserOrg,

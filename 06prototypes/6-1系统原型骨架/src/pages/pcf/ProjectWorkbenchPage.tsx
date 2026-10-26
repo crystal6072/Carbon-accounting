@@ -9,6 +9,7 @@ import {
   fetchPcfProject,
   fetchPcfSourceModel,
   fetchProduct,
+  getMockSession,
 } from '@/mock'
 import type { PcfProject, ProductItem } from '@/types'
 import PcfSteps from './PcfSteps'
@@ -61,11 +62,16 @@ async function buildDraft(options: { productId?: string; modelId?: string }): Pr
     modelId ? fetchPcfSourceModel(modelId) : Promise.resolve(null),
   ])
 
+  // 草稿也带数据归属三列：保存时会原样落库，权限判定只认这三列
+  const session = getMockSession()
   const base: PcfProject = {
     id: '',
     code: '',
     name: '新建碳足迹核算',
     ownerOrg: org.name,
+    tenantId: session.tenantId,
+    deptId: session.deptId,
+    ownerId: session.ownerId,
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     productSource: 'custom',

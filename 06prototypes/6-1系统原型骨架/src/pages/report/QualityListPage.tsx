@@ -24,7 +24,7 @@ import {
   fetchQualityAssessments,
 } from '@/mock/quality'
 import type { QualityAssessment, QualityProjectOption, QualityStatus } from '@/types/quality'
-import { DQR_LEVEL_TEXT, DQR_LEVEL_THEME, QUALITY_STATUS_TEXT, QUALITY_STATUS_THEME, formatDqr } from './qualityMeta'
+import { QUALITY_STATUS_TEXT, QUALITY_STATUS_THEME } from './qualityMeta'
 import './QualityPage.css'
 
 const PAGE_SIZE = 10
@@ -145,22 +145,6 @@ export default function QualityListPage() {
       cell: ({ row }: { row: QualityAssessment }) => row.productName,
     },
     {
-      colKey: 'overallDqr',
-      title: '整体 DQR',
-      width: 150,
-      cell: ({ row }: { row: QualityAssessment }) =>
-        row.overallDqr == null ? (
-          <span className="q-empty-cell">-</span>
-        ) : (
-          <span className="q-num">
-            {formatDqr(row.overallDqr)} ·{' '}
-            <Tag theme={DQR_LEVEL_THEME[row.overallLevel ?? 'fair']} variant="light">
-              {DQR_LEVEL_TEXT[row.overallLevel ?? 'fair']}
-            </Tag>
-          </span>
-        ),
-    },
-    {
       colKey: 'resultUpdatedAt',
       title: '评价结果更新时间',
       width: 200,
@@ -179,18 +163,21 @@ export default function QualityListPage() {
     {
       colKey: 'op',
       title: '操作',
-      width: 140,
+      width: 160,
       cell: ({ row }: { row: QualityAssessment }) => (
         <Space size="small">
-          <a className="q-link" onClick={() => navigate(`/report/quality/${row.id}`)}>
+          <a className="q-link" onClick={() => navigate(`/report/quality/${row.id}?mode=view`)}>
             查看
+          </a>
+          <a className="q-link" onClick={() => navigate(`/report/quality/${row.id}`)}>
+            编辑
           </a>
           <Popconfirm
             theme="danger"
             content="删除数据质量评价将同时移除全部评分，不影响来源核算项目，删除后不可恢复。确认删除？"
             onConfirm={() => setDeleteTarget(row)}
           >
-            <a className="q-link q-link-danger">删除</a>
+            <a className="q-link q-link-danger" data-ann-target="dq.delete">删除</a>
           </Popconfirm>
         </Space>
       ),
@@ -201,12 +188,11 @@ export default function QualityListPage() {
     <div className="q-page">
       <div className="q-page-head">
         <div className="q-breadcrumb">产品碳足迹 / 报告管理 / 数据质量评价</div>
-        <h2 className="q-page-title">数据质量评价</h2>
-        <p className="q-page-desc">基于已核算项目，量化活动数据与排放因子的不确定性，评估清单分析结果的数据质量</p>
+        <h2 className="q-page-title" data-ann-target="dq.page.title">数据质量评价</h2>
       </div>
 
       <Card bordered>
-        <Form layout="inline" labelWidth="auto">
+        <Form layout="inline" labelWidth="auto" data-ann-target="dq.filter">
           <Form.FormItem label="核算项目">
             <Input value={keywordProject} placeholder="请输入" clearable onChange={(value) => setKeywordProject(String(value ?? ''))} />
           </Form.FormItem>
@@ -242,11 +228,10 @@ export default function QualityListPage() {
           </Form.FormItem>
         </Form>
 
-        <div className="q-toolbar">
+        <div className="q-toolbar" data-ann-target="dq.toolbar">
           <span className="q-toolbar-title">共 {list.length} 条</span>
-          <span className="q-toolbar-tip">默认按评价结果更新时间倒序</span>
           <span className="q-toolbar-action">
-            <Button theme="primary" onClick={openCreate}>
+            <Button theme="primary" onClick={openCreate} data-ann-target="dq.add">
               新增数据质量评价
             </Button>
           </span>
@@ -256,17 +241,19 @@ export default function QualityListPage() {
           <Empty description="暂无数据质量评价" action={<span className="q-empty-tip">请先在「产品碳足迹核算」中完成核算后创建</span>} />
         ) : (
           <>
-            <Table
-              rowKey="id"
-              data={pagedRows}
-              columns={columns}
-              loading={loading}
-              size="small"
-              maxHeight="100%"
-              empty="暂无数据"
-            />
-            <div className="q-pagination">
-              <Pagination current={page} total={list.length} pageSize={PAGE_SIZE} onChange={(info) => setPage(info.current)} />
+            <div data-ann-target="dq.table">
+              <Table
+                rowKey="id"
+                data={pagedRows}
+                columns={columns}
+                loading={loading}
+                size="small"
+                maxHeight="100%"
+                empty="暂无数据"
+              />
+              <div className="q-pagination">
+                <Pagination current={page} total={list.length} pageSize={PAGE_SIZE} onChange={(info) => setPage(info.current)} />
+              </div>
             </div>
           </>
         )}
@@ -335,7 +322,7 @@ export default function QualityListPage() {
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               取消
             </Button>
-            <Button theme="danger" onClick={handleDelete}>
+            <Button theme="danger" onClick={handleDelete} data-ann-target="dq.confirm.ok">
               确认删除
             </Button>
           </>

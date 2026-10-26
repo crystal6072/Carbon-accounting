@@ -7,8 +7,15 @@ import {
   copyPcfProject,
   deletePcfProject,
   fetchPcfProjects,
+  getMockSession,
   systemBoundaryItems,
 } from '@/mock'
+import {
+  deptIdsWithDescendants,
+  effectiveReadScopes,
+  inAnyScope,
+} from '@/mock/scope'
+import type { ScopeContext, ScopeGrant } from '@/mock/scope'
 import type { PcfProject } from '@/types'
 import {
   PCF_EDITABLE_STATUSES,
@@ -23,6 +30,9 @@ import type { ProjectCreateMode } from './NewProjectModelMenu'
 import './PcfPage.css'
 
 const PAGE_SIZE = 20
+
+/** 核算项目列表对应的租户端功能点：数据范围按该功能点的读范围解析 */
+const PROJECT_LIST_MENU_ID = 'M101'
 
 /** 碳排放量展示（只展示总值）：最多 4 位小数、去尾零，附 kgCO₂e 单位 */
 function formatEmission(value: number | null | undefined): string {
@@ -52,6 +62,9 @@ export default function ProjectListPage() {
   const [deleteTarget, setDeleteTarget] = useState<PcfProject | null>(null)
   /** 选模型弹窗：null = 关闭；'platform' / 'my' = 打开的默认 Tab */
   const [pickerSource, setPickerSource] = useState<'platform' | 'my' | null>(null)
+  /** 当前会话的数据权限上下文（租户 + 部门 + 责任人）与读范围授权（多角色并集） */
+  const [scopeCtx, setScopeCtx] = useState<ScopeContext | null>(null)
+  const [scopeGrants, setScopeGrants] = useState<ScopeGrant[]>([])
 
   /** 系统边界下拉（取值：数据字典「系统边界」中**已启用**的字典项） */
   const boundaryOptions: SelectOption[] = useMemo(
@@ -67,7 +80,20 @@ export default function ProjectListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setList(await fetchPcfProjects())
+      const session = getMockSession()
+      const [projects, grants, deptWithDescendants] = await Promise.all([
+        fetchPcfProjects(),
+        effectiveReadScopes(session.tenantId, session.ownerId, PROJECT_LIST_MENU_ID),
+        deptIdsWithDescendants(session.tenantId, session.deptId),
+      ])
+      setList(projects)
+      setScopeGrants(grants)
+      setScopeCtx({
+        accountId: session.ownerId,
+        tenantId: session.tenantId,
+        deptId: session.deptId,
+        deptWithDescendants,
+      })
     } finally {
       setLoading(false)
     }
@@ -80,6 +106,9 @@ export default function ProjectListPage() {
   const rows = useMemo(() => {
     const kw = applied.keyword.trim().toLowerCase()
     return list.filter((item) => {
+      // 数据范围参与查询（租户边界 + 部门 + 责任人），不做"前端默认全可见"。
+      // 无授权信息时（当前账号在本租户无成员关系）运行时本应 403；原型为兼容种子演示数据暂不做行级过滤。
+      if (scopeCtx && scopeGrants.length > 0 && !inAnyScope(item, scopeGrants, scopeCtx)) return false
       if (kw) {
         const hit =
           item.productName.toLowerCase().includes(kw) ||
@@ -93,7 +122,7 @@ export default function ProjectListPage() {
       if (applied.to && day > applied.to) return false
       return true
     })
-  }, [list, applied])
+  }, [list, applied, scopeCtx, scopeGrants])
 
   useEffect(() => {
     setPage(1)

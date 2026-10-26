@@ -1055,14 +1055,6 @@ export function fetchReportTemplates(): Promise<ReportTemplate[]> {
   ])
 }
 
-/** 封面必填项（生成正式报告前必须填写） */
-const REQUIRED_COVER_FIELDS: Array<{ key: keyof ReportCover; label: string }> = [
-  { key: 'productName', label: '产品名称' },
-  { key: 'productSpecModel', label: '产品规格型号' },
-  { key: 'companyName', label: '生产者名称' },
-  { key: 'reportDate', label: '报告日期' },
-]
-
 /** 新增报告：先创建编制中草稿，补录封面信息后由用户触发「生成正式报告」 */
 export async function generateReport(projectId: string): Promise<PcfFootprintReport> {
   const source = sourceProjects.find((item) => item.id === projectId)
@@ -1112,18 +1104,17 @@ export async function regenerateReport(id: string): Promise<PcfFootprintReport> 
   return cloneReport(rebuilt)
 }
 
-/** 生成正式报告：校验封面必填项并置为 reportReady */
+/** 生成正式报告：报告日期自动取生成时间，不再做封面校验，直接置为 reportReady */
 export async function finalizeReport(id: string): Promise<PcfFootprintReport> {
   const target = reportStore.find((item) => item.id === id)
   if (!target) throw new Error('报告不存在或已被删除')
-  const missing = REQUIRED_COVER_FIELDS.filter((item) => !String(target.cover[item.key] ?? '').trim())
-  if (missing.length) {
-    throw new Error(`请完善封面信息：${missing.map((item) => item.label).join('、')}`)
-  }
   await delay(600)
+  const now = formatNow()
+  // 报告模板中的报告日期由系统自动取生成时间（R-104：封面概况自动取值）
+  target.cover.reportDate = now.slice(0, 10)
   target.status = 'reportReady'
-  target.generatedAt = formatNow()
-  target.updatedAt = formatNow()
+  target.generatedAt = now
+  target.updatedAt = now
   target.updatedBy = '张核算'
   return cloneReport(target)
 }
@@ -1206,26 +1197,6 @@ export async function saveReportCover(
   if (conclusionSection && patch.productName !== undefined) {
     conclusionSection.content = target.cover.conclusion
   }
-  target.updatedAt = formatNow()
-  target.updatedBy = '张核算'
-}
-
-/** 保存 / 补录报告正文（章节段落 + 表格），仅写本报告快照，不回写主链（R-104 例外） */
-export async function saveReportSections(
-  id: string,
-  sections: ReportSection[],
-): Promise<void> {
-  const target = reportStore.find((item) => item.id === id)
-  if (!target) throw new Error('报告不存在或已被删除')
-  await delay(200)
-  // 深拷贝，避免引用污染
-  const cloned: ReportSection[] = JSON.parse(JSON.stringify(sections))
-  // 结论章节（S7）与基本信息表（SB）中的结论联动封面，保持一致性
-  const s7 = cloned.find((s) => s.sectionCode === 'S7')
-  if (s7) target.cover.conclusion = s7.content
-  const sb = cloned.find((s) => s.sectionCode === 'SB')
-  if (sb) sb.content = `结论：${s7?.content ?? target.cover.conclusion}`
-  target.sections = cloned
   target.updatedAt = formatNow()
   target.updatedBy = '张核算'
 }

@@ -61,11 +61,11 @@ export default function FrontendModelDetailPage() {
     <>
       <PageHeader
         breadcrumb={['产品碳足迹', '模型管理', '模型库', model.name]}
-        title={model.name}
+        title={<span data-ann-target="lib.detail">{model.name}</span>}
         description={`${model.code} · ${model.standardName} · 更新 ${model.updatedAt} · 只读预览`}
         onBack={() => navigate('/pcf/model-libraries')}
         actions={
-          <Button variant="primary" onClick={() => void handleCollect()}>
+          <Button variant="primary" data-ann-target="lib.join" onClick={() => void handleCollect()}>
             加入我的模型
           </Button>
         }

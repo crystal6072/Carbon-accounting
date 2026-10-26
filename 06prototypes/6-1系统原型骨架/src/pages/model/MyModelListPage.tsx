@@ -9,7 +9,6 @@ import {
   Pagination,
   Select,
   Table,
-  Tag,
   useToast,
 } from '@/shared/components'
 import type { Column, MultiSelectOption, SelectOption } from '@/shared/components'
@@ -21,12 +20,10 @@ import {
   fetchPcfStandardOptions,
 } from '@/mock'
 import type { MyModel } from '@/mock'
-import type { MyModelOrigin, PcfStandardOption, TreeOption } from '@/types'
+import type { PcfStandardOption, TreeOption } from '@/types'
 import {
   EMPTY_MODEL_FILTER,
   MODEL_PAGE_SIZE,
-  MY_MODEL_ORIGIN_TEXT,
-  MY_MODEL_ORIGIN_TONE,
   categoryNameOf,
   flattenCategoryTree,
   industryLabelOf,
@@ -38,8 +35,9 @@ import '@/pages/pcf/PcfPage.css'
 import './ModelPage.css'
 
 /**
- * 前台 · 我的模型（组织级，**列表版式**）：来源二态「自己新增（可编辑）/ 收藏副本（只读）」。
+ * 前台 · 我的模型（组织级，**列表版式**）：
  * 顶部条件查询 + 表格列表 + 分页；新建 / 编辑走两步向导，与模型库卡片网格区分开（信息密度优先）。
+ * 收藏自平台模型库的副本在详情 / 操作中按只读处理，不在列表额外展示来源列。
  */
 export default function MyModelListPage() {
   const navigate = useNavigate()
@@ -51,7 +49,6 @@ export default function MyModelListPage() {
   const [industries, setIndustries] = useState<string[]>([])
   const [filter, setFilter] = useState<ModelFilterValue>(EMPTY_MODEL_FILTER)
   const [keyword, setKeyword] = useState('')
-  const [origin, setOrigin] = useState<'' | MyModelOrigin>('')
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
 
@@ -81,15 +78,11 @@ export default function MyModelListPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [filter, keyword, origin])
+  }, [filter, keyword])
 
   const rows = useMemo(
-    () =>
-      list.filter((item) => {
-        if (origin && item.origin !== origin) return false
-        return matchesModelFilter(item, filter, keyword, categoryTree)
-      }),
-    [list, filter, keyword, origin, categoryTree],
+    () => list.filter((item) => matchesModelFilter(item, filter, keyword, categoryTree)),
+    [list, filter, keyword, categoryTree],
   )
 
   const pagedRows = rows.slice((page - 1) * MODEL_PAGE_SIZE, page * MODEL_PAGE_SIZE)
@@ -105,11 +98,6 @@ export default function MyModelListPage() {
     () => standards.map((item) => ({ label: `${item.code} ${item.name}`, value: item.id })),
     [standards],
   )
-  const originOptions: SelectOption[] = [
-    { label: '自己新增', value: 'manual' },
-    { label: '收藏副本', value: 'collected' },
-  ]
-
   const handleDelete = async (model: MyModel) => {
     if (!window.confirm(`确认删除模型「${model.name}」？删除后不可恢复。`)) return
     try {
@@ -124,7 +112,6 @@ export default function MyModelListPage() {
   const resetAll = () => {
     setFilter(EMPTY_MODEL_FILTER)
     setKeyword('')
-    setOrigin('')
   }
 
   const columns: Column<MyModel>[] = [
@@ -133,21 +120,11 @@ export default function MyModelListPage() {
       title: '模型名称',
       render: (row) => (
         <div className="model-list-name">
-          <button className="link" onClick={() => navigate(`/pcf/my-model/${row.id}`)}>
+          <button className="link" data-ann-target="mym.row.name" onClick={() => navigate(`/pcf/my-model/${row.id}`)}>
             {row.name}
           </button>
           <span className="model-list-code mono">{row.code}</span>
         </div>
-      ),
-    },
-    {
-      key: 'origin',
-      title: '来源',
-      width: 116,
-      render: (row) => (
-        <Tag tone={MY_MODEL_ORIGIN_TONE[row.origin]}>
-          {row.origin === 'collected' ? '收藏副本 · 只读' : MY_MODEL_ORIGIN_TEXT[row.origin]}
-        </Tag>
       ),
     },
     {
@@ -180,32 +157,22 @@ export default function MyModelListPage() {
         </span>
       ),
     },
-    {
-      key: 'content',
-      title: '数据项 / 阶段',
-      width: 104,
-      render: (row) => (
-        <span>
-          {row.items.length} / {row.lifecycleStages.filter((stage) => stage.included).length}
-        </span>
-      ),
-    },
     { key: 'updatedAt', title: '更新时间', width: 140 },
     {
       key: 'actions',
       title: '操作',
       width: 124,
       render: (row) => (
-        <div className="row-actions">
-          <button className="link" onClick={() => navigate(`/pcf/my-model/${row.id}`)}>
+        <div className="row-actions" data-ann-target="mym.row.actions">
+          <button className="link" data-ann-target="mym.row.view" onClick={() => navigate(`/pcf/my-model/${row.id}`)}>
             查看
           </button>
           {row.origin === 'manual' ? (
             <>
-              <button className="link" onClick={() => navigate(`/pcf/my-model/${row.id}/edit`)}>
+              <button className="link" data-ann-target="mym.row.edit" onClick={() => navigate(`/pcf/my-model/${row.id}/edit`)}>
                 编辑
               </button>
-              <button className="link link-danger" onClick={() => void handleDelete(row)}>
+              <button className="link link-danger" data-ann-target="mym.row.delete" onClick={() => void handleDelete(row)}>
                 删除
               </button>
             </>
@@ -221,17 +188,16 @@ export default function MyModelListPage() {
     <>
       <PageHeader
         breadcrumb={['产品碳足迹', '模型管理', '我的模型']}
-        title="我的模型"
-        description="本组织的核算模型模板：可自定义新建与编辑；从平台模型库收藏得到的副本只读预览（复制式快照，不随源模型联动）。"
+        title={<span data-ann-target="mym.page.global">我的模型</span>}
         actions={
-          <Button variant="primary" onClick={() => navigate('/pcf/my-model/new')}>
+          <Button variant="primary" data-ann-target="mym.new" onClick={() => navigate('/pcf/my-model/new')}>
             新建模型
           </Button>
         }
       />
 
       <div className="card">
-        <div className="query-bar">
+        <div className="query-bar" data-ann-target="mym.query.bar">
           <div className="query-item">
             <span className="query-label">产品分类</span>
             <CascaderSelect
@@ -261,20 +227,11 @@ export default function MyModelListPage() {
             />
           </div>
           <div className="query-item">
-            <span className="query-label">来源</span>
-            <Select
-              value={origin}
-              placeholder="全部来源"
-              options={originOptions}
-              onChange={(e) => setOrigin(e.target.value as '' | MyModelOrigin)}
-            />
-          </div>
-          <div className="query-item">
             <span className="query-label">模型名称 / 编码</span>
             <Input value={keyword} placeholder="请输入" onChange={(e) => setKeyword(e.target.value)} />
           </div>
           <div className="query-actions">
-            <Button disabled={isModelFilterEmpty(filter) && !keyword && !origin} onClick={resetAll}>
+            <Button disabled={isModelFilterEmpty(filter) && !keyword} onClick={resetAll}>
               重置
             </Button>
             <Button variant="primary" onClick={() => setPage(1)}>
@@ -285,7 +242,7 @@ export default function MyModelListPage() {
       </div>
 
       <div className="card">
-        <div className="pcf-table-wrap">
+        <div className="pcf-table-wrap" data-ann-target="mym.list">
           <Table
             columns={columns}
             data={pagedRows}

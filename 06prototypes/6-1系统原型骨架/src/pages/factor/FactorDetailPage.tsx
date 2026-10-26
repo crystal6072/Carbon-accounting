@@ -134,7 +134,7 @@ export default function FactorDetailPage() {
     ? ['产品碳足迹', '因子管理', '我的因子库']
     : isPublished
       ? ['产品碳足迹', '因子管理', '背景数据库']
-      : ['系统管理', '核算配置', '因子库管理']
+      : ['系统管理', '模型管理', '因子库管理']
 
   if (!factor) {
     return (

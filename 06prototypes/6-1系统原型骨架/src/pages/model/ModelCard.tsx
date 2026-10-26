@@ -102,7 +102,7 @@ export default function ModelCard({
   onPreview,
 }: ModelCardProps) {
   return (
-    <article className="model-card">
+    <article className="model-card" data-ann-target="lib.card">
       <button type="button" className="model-card-thumb" onClick={onPreview} aria-label={`预览 ${name}`}>
         <span className="model-card-cover">
           <ModelCover />

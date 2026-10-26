@@ -139,7 +139,7 @@ export default function ReportListPage() {
             theme="danger"
             onConfirm={() => doDelete(row.id)}
           >
-            <a className="rp-link" style={{ color: 'var(--td-error-color, #d54941)' }}>
+            <a className="rp-link" style={{ color: 'var(--td-error-color, #d54941)' }} data-ann-target="rp.delete">
               删除
             </a>
           </Popconfirm>
@@ -161,16 +161,15 @@ export default function ReportListPage() {
       </div>
       <div className="rp-title-row">
         <div>
-          <h2>报告编制</h2>
-          <p className="rp-page-desc">基于已核算项目，一键生成符合标准披露要求的产品碳足迹报告</p>
+          <h2 data-ann-target="rp.page.title">报告编制</h2>
         </div>
-        <Button theme="primary" onClick={openGen}>
+        <Button theme="primary" onClick={openGen} data-ann-target="rp.add">
           新增报告
         </Button>
       </div>
 
       <Card>
-        <Form layout="inline" labelWidth={76}>
+        <Form layout="inline" labelWidth={76} data-ann-target="rp.filter">
           <Form.FormItem label="产品名称">
             <Input value={productName} onChange={setProductName} clearable placeholder="请输入" />
           </Form.FormItem>
@@ -218,27 +217,29 @@ export default function ReportListPage() {
           </Form.FormItem>
         </Form>
 
-        <div style={{ margin: '12px 0 4px', color: 'var(--td-text-color-secondary, #8a8f99)', fontSize: 13 }}>
+        <div style={{ margin: '12px 0 4px', color: 'var(--td-text-color-secondary, #8a8f99)', fontSize: 13 }} data-ann-target="rp.toolbar">
           共 {data.length} 条
         </div>
 
-        <Table
-          rowKey="id"
-          loading={loading}
-          data={pagedData}
-          columns={columns}
-          empty={<Empty description="暂无报告，请先在「产品碳足迹核算」中完成核算后生成" />}
-        />
-        {data.length > PAGE_SIZE && (
-          <Pagination
-            style={{ marginTop: 16 }}
-            current={page}
-            pageSize={PAGE_SIZE}
-            total={data.length}
-            showJumper
-            onChange={(p: any) => setPage(typeof p === 'number' ? p : p.current)}
+        <div data-ann-target="rp.table">
+          <Table
+            rowKey="id"
+            loading={loading}
+            data={pagedData}
+            columns={columns}
+            empty={<Empty description="暂无报告，请先在「产品碳足迹核算」中完成核算后生成" />}
           />
-        )}
+          {data.length > PAGE_SIZE && (
+            <Pagination
+              style={{ marginTop: 16 }}
+              current={page}
+              pageSize={PAGE_SIZE}
+              total={data.length}
+              showJumper
+              onChange={(p: any) => setPage(typeof p === 'number' ? p : p.current)}
+            />
+          )}
+        </div>
       </Card>
 
       <Dialog

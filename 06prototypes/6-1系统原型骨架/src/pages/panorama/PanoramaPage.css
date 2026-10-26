@@ -1,0 +1,160 @@
+/* ===================== 功能全景（原型评审入口） ===================== */
+
+/* 端说明图例 */
+.pano-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.pano-legend-card {
+  padding: var(--space-md);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+}
+.pano-legend-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pano-legend-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-base);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+.pano-legend-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+.pano-legend-count {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pano-legend-desc {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--color-text-secondary);
+}
+
+/* 工具栏：端筛选 + 关键词搜索 */
+.pano-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.pano-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pano-chip {
+  padding: 5px 14px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+.pano-chip:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.pano-chip.is-active {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+}
+.pano-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-left: var(--space-xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+}
+.pano-search .input {
+  width: 220px;
+  border: none;
+  background: transparent;
+}
+.pano-search .input:focus {
+  outline: none;
+}
+
+/* 端分组卡片 */
+.pano-card {
+  margin-bottom: var(--space-md);
+}
+.pano-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.pano-card-count {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+}
+
+/* 表格单元格 */
+.pano-module {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  color: var(--color-text);
+}
+.pano-module-sub {
+  font-style: normal;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pano-module-sub::before {
+  content: '/ ';
+}
+.pano-route {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.pano-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+}
+.pano-enter:hover {
+  color: var(--color-primary-active);
+}
+
+/* 空态 */
+.pano-empty {
+  padding: var(--space-lg) 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* 窄屏：图例降为单列 */
+@media (max-width: 1080px) {
+  .pano-legend {
+    grid-template-columns: 1fr;
+  }
+}

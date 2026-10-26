@@ -65,7 +65,7 @@ export function formatUncertainty(value: number | null | undefined): string {
   return `±${value.toFixed(1)}%`
 }
 
-/** 单数据项 DQR = 十维算术平均（业务 PRD §6.2 Q01） */
+/** 单数据项 DQR = 四项算术平均（业务 PRD §6.2 Q01） */
 export function dqrOf(score: PedigreeScore): number {
   const sum = PEDIGREE_KEYS.reduce((acc, key) => acc + score[key], 0)
   return Math.round((sum / PEDIGREE_KEYS.length) * 10) / 10
@@ -90,55 +90,62 @@ export function uncertaintyOf(score: PedigreeScore): number {
 }
 
 /**
- * 谱系矩阵十维定义（数据质量定量评价指标维度 a~j）。
+ * 谱系矩阵四项定义（口径与竞品一致：时间代表性 TiR / 技术代表性 TeR / 地理代表性 GeR / 完整性 C）。
  * 顺序即界面展示顺序，key 与 `PedigreeScore` 字段一一对应。
+ * `rubric` 为每个维度 1–5 分的逐级判定标准（竞品原文口径），评分矩阵常驻展示。
  */
 export const PEDIGREE_DIMS: Array<{
   key: PedigreeScoreKey
   label: string
-  tips: string
+  rubric: [string, string, string, string, string]
 }> = [
   {
     key: 'temporal',
-    label: '时间覆盖范围',
-    tips: 'a) 数据的年份和所收集数据的最小时间长度（1 与核算期一致/最新 → 5 相差 > 15 年）',
-  },
-  {
-    key: 'geographical',
-    label: '地理覆盖范围',
-    tips: 'b) 为产品碳足迹研究目的所收集的单元过程数据的地理位置（1 一致 → 5 完全不同）',
+    label: '时间代表性 TiR',
+    rubric: [
+      '产品碳足迹的基准年在数据集有效期内；产品碳足迹的基准年与数据集最新发布年/基准年相差≤3年',
+      '产品碳足迹的基准年与数据集有效期相差<2年；产品碳足迹的基准年与数据集最新发布年/基准年相差≤4年',
+      '产品碳足迹的基准年与数据集有效期相差≤3年；产品碳足迹的基准年与数据集最新发布年/基准年相差≤5年',
+      '产品碳足迹的基准年与数据集有效期相差≤4年；产品碳足迹的基准年与数据集最新发布年/基准年相差≤6年',
+      '产品碳足迹的基准年与数据集有效期相差>4年；产品碳足迹的基准年与数据集最新发布年/基准年相差>6年',
+    ],
   },
   {
     key: 'technological',
-    label: '技术覆盖范围',
-    tips: 'c) 具体的技术或技术组合（1 完全一致 → 5 完全不同）',
-  },
-  { key: 'precision', label: '精度', tips: 'd) 对每个数据值可变性的度量（例如方差）（1 实测低方差 → 5 估计高方差）' },
-  { key: 'completeness', label: '完整性', tips: 'e) 测量或测算的流所占的比例（1 充分覆盖 → 5 严重不足）' },
-  {
-    key: 'representativeness',
-    label: '代表性',
-    tips: 'f) 反映实际关注人群对数据集（时间/地理/技术覆盖等）关注程度的真实情况（1 高度代表 → 5 不代表）',
-  },
-  {
-    key: 'consistency',
-    label: '一致性',
-    tips: 'g) 研究方法学能否在敏感性分析的不同组成部分中统一应用（1 完全统一 → 5 不统一）',
+    label: '技术代表性 TeR',
+    rubric: [
+      '核算过程技术与数据集代表的技术一致',
+      '核算过程技术包含在数据集组合技术中，但在生产工艺上存在一定差异',
+      '核算过程技术包含在数据集组合技术中，但在生产工艺上差异显著',
+      '核算过程技术与数据集代表的技术相似',
+      '核算过程技术与数据集代表的技术不同',
+    ],
   },
   {
-    key: 'reproducibility',
-    label: '再现性',
-    tips: 'h) 其他独立从业人员采用同一方法学和数值信息重现相同研究结果的程度（1 可重现 → 5 不可重现）',
+    key: 'geographical',
+    label: '地理代表性 GeR',
+    rubric: [
+      '核算过程在数据集代表的国家省市或区域内，如中国华东、中国华南等',
+      '核算过程在数据集代表的国家',
+      '核算过程在数据集代表的地理区域之一，如代表全球平均的数据集',
+      '核算过程与数据集所代表的地理区域在能源结构上相似',
+      '核算过程不满足上述情况',
+    ],
   },
-  { key: 'dataSource', label: '数据来源', tips: 'i) 数据来源的可靠性与获取方式（1 实测/一次数据 → 5 无来源估计）' },
   {
-    key: 'informationUncertainty',
-    label: '信息不确定性',
-    tips: 'j) 信息本身的不确定性程度（1 低 → 5 高）',
+    key: 'completeness',
+    label: '完整性 C',
+    rubric: [
+      '核算过程所需数据全部获取，覆盖相关单元过程（≥95%）',
+      '数据覆盖较完整（≥90%）',
+      '存在少量数据缺失（≥75%）',
+      '数据缺失较明显（≥50%）',
+      '数据严重缺失（<50%）',
+    ],
   },
 ]
 
-/** 谱系十维键集合（顺序与 PEDIGREE_DIMS 一致） */
+/** 四项键集合（顺序与 PEDIGREE_DIMS 一致） */
 export const PEDIGREE_KEYS: PedigreeScoreKey[] = PEDIGREE_DIMS.map((dim) => dim.key)
 
 /** 从完整评分中提取纯维度分值（剔除 scoreSource），用于单项重新评分 */
@@ -150,7 +157,7 @@ export function pickDims(score: Omit<PedigreeScore, 'scoreSource'>): Omit<Pedigr
   return dims
 }
 
-/** 十维默认分值（用于单项首次评分时的基线） */
+/** 四项默认分值（用于单项首次评分时的基线） */
 export function defaultDims(value = 3): Omit<PedigreeScore, 'scoreSource'> {
   const dims = {} as Omit<PedigreeScore, 'scoreSource'>
   PEDIGREE_KEYS.forEach((key) => {

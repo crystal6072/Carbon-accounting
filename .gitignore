@@ -20,3 +20,7 @@ node_modules
 # Office temp files
 .~*
 ~$*
+
+# AI / CLI 工具数据
+.codebuddy/
+.playwright-cli/

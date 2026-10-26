@@ -601,7 +601,7 @@ export const pcfAnnotations: Annotation[] = [
     code: 'F02-06',
     blocks: [
       { type: 'heading', text: '取值来源' },
-      { type: 'paragraph', text: '「平台支撑 · 数据字典 · 系统边界」启用项（卡片展示名称 + 备注；预置 摇篮到大门 / 摇篮到坟墓 / 大门到大门）。' },
+      { type: 'paragraph', text: '「组织与权限 · 数据字典 · 系统边界」启用项（卡片展示名称 + 备注；预置 摇篮到大门 / 摇篮到坟墓 / 大门到大门）。' },
       { type: 'heading', text: '操作与联动' },
       {
         type: 'list',

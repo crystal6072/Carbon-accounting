@@ -1,4 +1,4 @@
-/* ===================== 批注展示层（计算公式功能） ===================== */
+/* ===================== 批注展示层 ===================== */
 /* 仅覆盖展示：角标、Popover、全局抽屉、统一开关；不影响任何业务样式与逻辑 */
 
 .ann-layer {
@@ -475,4 +475,331 @@
 .ann-drawer-item .ann-card {
   border: none;
   border-radius: 0;
+}
+
+/* ===================== 系统批注（独立入口 + 独立抽屉） ===================== */
+/* 与模块「全局批注」在视觉上区分：系统批注用紫色强调，模块批注沿用蓝色主题 */
+
+.ann-dock-system {
+  border-color: #c4b5fd;
+  color: #6d28d9;
+}
+
+.ann-dock-system:hover {
+  border-color: #7c3aed;
+  color: #6d28d9;
+  background: #f5f3ff;
+}
+
+/* 抽屉头部：标题 + 副标题（来源与独立性说明） */
+.ann-sys-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ann-sys-head-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 系统批注抽屉更宽：左章节导航 + 右条目内容 */
+.ann-drawer-wide {
+  width: 780px;
+}
+
+.ann-sys-drawer {
+  border-left-color: #ddd6fe;
+}
+
+.ann-sys-drawer .ann-drawer-head {
+  border-bottom-color: #ede9fe;
+  background: #faf5ff;
+}
+
+.ann-sys-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.ann-sys-nav {
+  flex-shrink: 0;
+  width: 176px;
+  padding: 10px 8px;
+  border-right: 1px solid var(--color-border-secondary, #e2e8f0);
+  background: #fcfcfd;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ann-sys-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-base, 6px);
+  background: transparent;
+  font-size: 13px;
+  color: var(--color-text-secondary, #334155);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ann-sys-nav-item:hover {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.ann-sys-nav-item.is-active {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+  font-weight: 600;
+}
+
+.ann-sys-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ann-sys-nav-count {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.ann-sys-content {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ann-sys-summary {
+  padding: 10px 12px;
+  border-radius: var(--radius-base, 6px);
+  background: #faf5ff;
+  border: 1px solid #ede9fe;
+}
+
+.ann-sys-summary-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6d28d9;
+}
+
+.ann-sys-summary-text {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #64748b);
+}
+
+.ann-sys-foot {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-top: 1px solid var(--color-border-secondary, #e2e8f0);
+  background: #fcfcfd;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+/* 窄屏：章节导航压缩为一行可横向滚动，避免挤压内容 */
+@media (max-width: 720px) {
+  .ann-sys-body {
+    flex-direction: column;
+  }
+
+  .ann-sys-nav {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+    overflow-x: auto;
+  }
+
+  .ann-sys-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+/* ===================== 流程图块（Mermaid） ===================== */
+/* 原尺寸渲染 + 容器滚动，保证节点文字可读；可点「放大」全屏查看 */
+
+.ann-flow {
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: #fff;
+  overflow: hidden;
+}
+
+.ann-flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+  background: #f8fafc;
+}
+
+.ann-flow-caption {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #475569);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ann-flow-zoom {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1px solid #ddd6fe;
+  border-radius: 4px;
+  background: #f5f3ff;
+  font-size: 11px;
+  color: #6d28d9;
+  cursor: pointer;
+}
+
+.ann-flow-zoom:hover {
+  border-color: #7c3aed;
+}
+
+.ann-flow-scroll {
+  max-height: 460px;
+  padding: 10px;
+  overflow: auto;
+  background: #fff;
+  cursor: zoom-in;
+}
+
+.ann-flow-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ann-flow-svg svg {
+  display: block;
+  max-width: none;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* 适应宽度：整张流程一屏可见（默认） */
+.ann-flow-scroll.is-fit .ann-flow-svg svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.ann-flow-loading {
+  padding: 18px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+.ann-flow-error {
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b91c1c;
+}
+
+.ann-flow-error pre {
+  margin: 8px 0 0;
+  max-height: 220px;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* 全屏放大查看（挂在 body 上，避免被抽屉裁剪） */
+.ann-flow-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.ann-flow-modal-inner {
+  display: flex;
+  flex-direction: column;
+  width: min(1240px, 96vw);
+  max-height: 92vh;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.ann-flow-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-secondary, #e2e8f0);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ann-flow-modal-head button {
+  border: 1px solid var(--color-border-secondary, #e2e8f0);
+  border-radius: var(--radius-base, 6px);
+  background: #fff;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #334155);
+  cursor: pointer;
+}
+
+.ann-flow-modal-head button:hover {
+  border-color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+}
+
+.ann-flow-modal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+  background: #fff;
 }

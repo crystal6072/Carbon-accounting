@@ -67,6 +67,31 @@
   font-weight: var(--font-weight-medium);
   border-bottom-color: var(--color-primary);
 }
+/* 一级导航旁的端标签（企业用户端 / 平台运营端） */
+.app-header-nav-platform {
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  color: var(--color-text-tertiary);
+}
+.app-header-nav a.active .app-header-nav-platform {
+  color: var(--color-primary);
+}
+/* 顶栏右侧 · 功能全景入口 */
+.app-header-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.app-header-entry:hover {
+  color: var(--color-primary);
+}
+.app-header-entry.active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
 .app-header-right {
   display: flex;
   align-items: center;

@@ -111,7 +111,7 @@ import {
   STAGE_ROWS_VAR,
   defaultFormulas,
   evaluateExpression,
-} from '@/pages/formula/formulaMeta'
+} from '@/shared/formulaMeta'
 import { unitTypeOrder, unitTypeText } from '@/pages/unit/unitMeta'
 import {
   calcFormulaSeed,
@@ -204,7 +204,7 @@ let factorStore: FactorItem[] = clone([
   ...factorSeed.map((item) => ({ ...item, libraryId: 'FLIB01', libraryVersionId: 'FLV01' })),
   ...externalFactorSeed,
 ])
-/** 计算引擎配置 · 计算公式：轻量配置对象（不做审核与版本化，启用 / 禁用走行操作） */
+/** 计算公式（标准公式库）：轻量配置对象（不做审核与版本化，启用 / 禁用走行操作） */
 let calcFormulaStore: CalcFormula[] = clone(calcFormulaSeed)
 /** 标准文件库：轻量基础数据，一个标准号 = 一条记录（无版本化 / 无审核流） */
 let standardStore: StandardItem[] = clone(standardSeed)
@@ -2212,9 +2212,39 @@ export interface DictItemPayload {
   remark: string
 }
 
+export interface DictTypePayload {
+  code: string
+  name: string
+  remark: string
+}
+
 /** 字典类型列表（平台支撑 → 数据字典） */
 export function fetchDictTypes(): Promise<DictType[]> {
   return request(dictTypeStore.slice().sort((a, b) => a.code.localeCompare(b.code)))
+}
+
+/** 新增字典类型：编码全局唯一（大写字母开头，仅含大写字母 / 数字 / 下划线），默认启用、非内置 */
+export async function createDictType(payload: DictTypePayload): Promise<DictType> {
+  const code = payload.code.trim()
+  const name = payload.name.trim()
+  if (!code) throw new Error('保存失败：字典类型编码必填')
+  if (!/^[A-Z][A-Z0-9_]*$/.test(code)) throw new Error('保存失败：编码须为大写字母开头，仅含大写字母 / 数字 / 下划线')
+  if (!name) throw new Error('保存失败：字典类型名称必填')
+  if (dictTypeStore.some((item) => item.code === code)) throw new Error('保存失败：字典类型编码已存在')
+  const item: DictType = {
+    id: `DT${Date.now().toString().slice(-6)}`,
+    code,
+    name,
+    remark: payload.remark.trim(),
+    status: 'enabled',
+    builtin: false,
+    createdBy: '当前用户',
+    createdAt: NOW,
+    updatedBy: '当前用户',
+    updatedAt: NOW,
+  }
+  dictTypeStore = [...dictTypeStore, item]
+  return request(item)
 }
 
 /** 某字典类型下的全部字典项（按排序号升序） */
@@ -3876,12 +3906,17 @@ export async function refreshAllMyFactors(libraryId: string): Promise<FactorBatc
   return request({ success, failed })
 }
 
-/* ===================== 计算引擎配置（核算模型 A2-3） ===================== */
+/* ===================== 计算公式（标准公式库：建模侧工序流绑定） ===================== */
+
+/**
+ * 说明：原后台「核算配置 · 计算公式」管理页与「公式管理」已于 2026-10-23 下线，
+ * 核算引擎改由内置代码层级按默认口径求值（见 `shared/formulaMeta.ts`）。
+ * 标准公式仍随产品建模下沉绑定到工序投入产出项（`resolveFlowFormula`），
+ * 此处仅保留创建能力，供演示数据脚本（`__sim_pcf__.ts`）造数使用。
+ */
 
 /** 公式描述长度上限（≤1000 字符） */
 export const CALC_FORMULA_DESCRIPTION_MAX = 1000
-
-const SNAKE_CASE_RE = /^[a-z][a-z0-9_]*$/
 
 /** 表达式允许的运算字符：数字、`+ - * /`、`( )`、`[ ]`、百分号、小数点 */
 const EXPRESSION_ALLOWED_RE = /[0-9+\-*/().[\]%\s]/g
@@ -3914,32 +3949,6 @@ export function validateFormulaExpression(expression: string, factorNames: strin
   }
   if (depth !== 0) return '计算公式的括号不匹配'
   return ''
-}
-
-/**
- * 将「数据因素名称 + 运算符」的计算公式转换为可求值的数值表达式（供试算）：
- * 因素名称替换为样例数值，`[ ]` 视为分组括号，`数字%` 视为百分比。
- */
-export function buildNumericExpression(
-  expression: string,
-  factorNames: string[],
-  values: Record<string, number | number[]>,
-): string {
-  let text = expression
-  sortByNameLength(factorNames).forEach((name) => {
-    const value = values[name]
-    let literal: string
-    if (Array.isArray(value)) literal = value.length > 0 ? `(${value.join('+')})` : '(0)'
-    else {
-      const num = Number(value)
-      literal = `(${Number.isFinite(num) ? num : 0})`
-    }
-    text = text.split(name).join(literal)
-  })
-  return text
-    .replace(/\[/g, '(')
-    .replace(/\]/g, ')')
-    .replace(/(\d+(?:\.\d+)?)\s*%/g, '($1/100)')
 }
 
 /** 生成公式编码：`FM-{序号}`（三位补零） */
@@ -3998,17 +4007,10 @@ function assertCalcFormula(payload: CalcFormulaPayload): void {
   }
 }
 
-/** 公式列表：公式配置（不做审核流程、不做版本化） */
-export function fetchCalcFormulas(): Promise<CalcFormula[]> {
-  return request(calcFormulaStore)
-}
-
-export function fetchCalcFormula(id: string): Promise<CalcFormula> {
-  const target = calcFormulaStore.find((item) => item.id === id)
-  if (!target) throw new Error('公式不存在或已被删除')
-  return request(target)
-}
-
+/**
+ * 新建公式（仅演示数据脚本使用）：标准公式库新增一条，
+ * 供产品建模时按流名称关键词带出绑定（`resolveFlowFormula`）。
+ */
 export async function createCalcFormula(payload: CalcFormulaPayload): Promise<CalcFormula> {
   assertCalcFormula(payload)
   const item: CalcFormula = {
@@ -4035,51 +4037,6 @@ export async function createCalcFormula(payload: CalcFormulaPayload): Promise<Ca
   calcFormulaStore = [item, ...calcFormulaStore]
   return request(item)
 }
-
-/**
- * 编辑：**轻量配置对象，不做版本化与审核**，直接覆盖（口径对齐物料库 / 能源库）；
- * 变更不追溯已参与计算的历史结果，需按新口径重算时走 E13。
- */
-export async function updateCalcFormula(id: string, payload: CalcFormulaPayload): Promise<CalcFormula> {
-  const target = calcFormulaStore.find((item) => item.id === id)
-  if (!target) throw new Error('公式不存在或已被删除')
-  assertCalcFormula(payload)
-
-  target.name = payload.name.trim()
-  target.formulaType = payload.formulaType
-  target.expression = payload.expression.trim()
-  target.resultName = payload.resultName.trim()
-  target.resultUnit = payload.resultUnit
-  target.supportsSumLoop = payload.supportsSumLoop
-  target.supportsNegativeResult = payload.supportsNegativeResult
-  target.dataOwnerType = payload.dataOwnerType
-  target.description = payload.description.trim()
-  target.factors = clone(payload.factors)
-  target.updatedBy = '当前用户'
-  target.updatedAt = NOW
-  return request(target)
-}
-
-/** 启用 / 禁用：双向可达；禁用后不进明细行候选（历史绑定保留） */
-export async function updateCalcFormulaStatus(id: string, status: EnableStatus): Promise<CalcFormula> {
-  const target = calcFormulaStore.find((item) => item.id === id)
-  if (!target) throw new Error('公式不存在或已被删除')
-  target.status = status
-  target.updatedBy = '当前用户'
-  target.updatedAt = NOW
-  return request(target)
-}
-
-/** 删除：**仅「已禁用」的公式可删除**（与基础库口径一致；建模侧的绑定由建模模块校验） */
-export async function deleteCalcFormula(id: string): Promise<void> {
-  const target = calcFormulaStore.find((item) => item.id === id)
-  if (!target) throw new Error('公式不存在或已被删除')
-  if (target.status === 'enabled') throw new Error('请先禁用该公式，再执行删除（启用中的公式不可删除）')
-  calcFormulaStore = calcFormulaStore.filter((item) => item.id !== id)
-  await new Promise((resolve) => setTimeout(resolve, 260))
-}
-
-/* ---------- 计算公式：表单下拉选项 ---------- */
 
 /* ===================== 产品碳足迹 · 核算项目（P17 / P18） ===================== */
 
@@ -4119,7 +4076,17 @@ const PCF_REVERT_STATUSES: PcfProjectStatus[] = [
  * 项目种子数据直接采用新口径（1~6），不再需要运行时迁移映射。
  */
 
-let pcfProjectStore: PcfProject[] = clone(pcfProjectSeed)
+/**
+ * 种子项目补齐数据权限三列（历史数据迁移）：
+ * 缺 tenantId 视为种子租户 T001，缺 deptId 视为未挂部门（按「仅本人」判定），缺 ownerId 视为默认责任人。
+ * 新落库项目一律由 createPcfProject 从会话注入，不经过此兜底。
+ */
+let pcfProjectStore: PcfProject[] = clone(pcfProjectSeed).map((item: PcfProject) => ({
+  ...item,
+  tenantId: item.tenantId ?? 'T001',
+  deptId: item.deptId ?? '',
+  ownerId: item.ownerId ?? 'A003',
+}))
 
 /** 组织选项（引用组织架构 P01） */
 export function fetchPcfOrgOptions(): Promise<PcfOrgOption[]> {
@@ -4281,6 +4248,28 @@ export async function fetchPcfProject(id: string): Promise<PcfProject> {
   return request(target)
 }
 
+/**
+ * 运行时会话（登录 / 切换租户时由 Auth 注入；原型阶段给默认值以兼容种子数据）。
+ * 业务数据落库**必须**写入 tenantId / deptId / ownerId，数据权限只认这三列，
+ * 不得再用 `ownerOrg` 名称字符串做归属判定。
+ */
+export interface MockSession {
+  tenantId: string
+  deptId: string
+  ownerId: string
+}
+
+let mockSession: MockSession = { tenantId: 'T001', deptId: '', ownerId: 'A003' }
+
+/** 登录成功 / 切换租户后注入会话（服务端注入口径的本地模拟） */
+export function setMockSession(next: Partial<MockSession>): void {
+  mockSession = { ...mockSession, ...next }
+}
+
+export function getMockSession(): MockSession {
+  return mockSession
+}
+
 export interface PcfProjectPayload {
   name: string
   ownerOrg: string
@@ -4289,6 +4278,10 @@ export interface PcfProjectPayload {
   endDate: string
   boundary: PcfBoundary
   remark: string
+  /** 数据归属三列（服务端注入；不传时取当前会话，调用方不得自行指定他租户） */
+  tenantId?: string
+  deptId?: string
+  ownerId?: string
   productSource?: PcfProductSource
   refProductId?: string | null
   productCode?: string
@@ -4370,6 +4363,10 @@ export async function createPcfProject(payload: PcfProjectPayload): Promise<PcfP
     code: nextPcfProjectCode(),
     name: payload.name.trim(),
     ownerOrg: payload.ownerOrg,
+    // 数据权限三列：租户隔离 + 部门行级范围 + 责任人；一律由服务端会话注入
+    tenantId: payload.tenantId ?? mockSession.tenantId,
+    deptId: payload.deptId ?? mockSession.deptId,
+    ownerId: payload.ownerId ?? mockSession.ownerId,
     startDate: payload.startDate,
     endDate: payload.endDate,
     productSource:
@@ -4430,6 +4427,9 @@ export async function copyPcfProject(id: string): Promise<PcfProject> {
     id: newId,
     code: nextPcfProjectCode(),
     name: `${source.name}（副本）`,
+    // 副本归当前会话租户，责任人改为复制者；部门沿用源项目
+    tenantId: mockSession.tenantId,
+    ownerId: mockSession.ownerId,
     status: 'ongoing',
     // 原项目已完成步骤①（且可能带出步骤②建模数据）→ 新记录从步骤②起，
     // 否则从步骤①起；避免复制后步骤②之后的步骤被锁死无法继续。
@@ -5793,7 +5793,7 @@ async function runPcfCalc(project: PcfProject): Promise<PcfCalcResult> {
 
   /**
    * 结果口径：
-   * - `unitEmission` = 全局公式结果（公式管理的「全局公式」决定，默认 = 各阶段合计）；
+   * - `unitEmission` = 全局公式结果（引擎内置全局公式，默认 = 各阶段合计）；
    * - `totalEmission` = 各阶段合计（模型总碳排，用于占比与「总量」展示）；
    * - 若项目填了「单位转换系数」（`N 声明单位 = 1 换算单位`），再派生一个换算口径：
    *   `换算口径值 = 核算结果 × N`（例：`0.3341 Item = 1 kg` → 每 kg = 每 Item × 0.3341）。

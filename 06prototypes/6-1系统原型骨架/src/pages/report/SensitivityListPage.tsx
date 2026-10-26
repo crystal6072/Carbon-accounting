@@ -136,7 +136,7 @@ export default function SensitivityListPage() {
       title: '核算项目',
       width: 220,
       cell: ({ row }: { row: SensitivityAnalysis }) => (
-        <a className="sa-link" onClick={() => navigate(`/report/sensitivity/${row.id}`)}>
+        <a className="sa-link" onClick={() => navigate(`/report/sensitivity/${row.id}?mode=view`)}>
           {row.sourceProjectName}
         </a>
       ),
@@ -177,7 +177,10 @@ export default function SensitivityListPage() {
       width: 130,
       cell: ({ row }: { row: SensitivityAnalysis }) => (
         <Space size="small">
-          <a className="sa-link" onClick={() => navigate(`/report/sensitivity/${row.id}`)}>
+          <a className="sa-link" onClick={() => navigate(`/report/sensitivity/${row.id}?mode=edit`)}>
+            编辑
+          </a>
+          <a className="sa-link" onClick={() => navigate(`/report/sensitivity/${row.id}?mode=view`)}>
             查看
           </a>
           <Popconfirm
@@ -185,7 +188,7 @@ export default function SensitivityListPage() {
             content="删除分析单将同时移除全部情景，不影响来源核算项目，删除后不可恢复。确认删除？"
             onConfirm={() => setDeleteTarget(row)}
           >
-            <a className="sa-link sa-link-danger">删除</a>
+            <a className="sa-link sa-link-danger" data-ann-target="sa.delete">删除</a>
           </Popconfirm>
         </Space>
       ),
@@ -198,17 +201,16 @@ export default function SensitivityListPage() {
         <div className="sa-page-head-row">
           <div>
             <div className="sa-breadcrumb">产品碳足迹 / 报告管理 / 敏感性分析</div>
-            <h2 className="sa-page-title">敏感性分析</h2>
-            <p className="sa-page-desc">基于已核算项目，评估关键假设、方法和数据选择对碳足迹结果的影响</p>
+            <h2 className="sa-page-title" data-ann-target="sa.page.title">敏感性分析</h2>
           </div>
-          <Button theme="primary" onClick={() => void openCreate()}>
+          <Button theme="primary" onClick={() => void openCreate()} data-ann-target="sa.add">
             新增敏感性分析
           </Button>
         </div>
       </div>
 
       <Card bordered title={null}>
-        <Form layout="inline" labelWidth="auto">
+        <Form layout="inline" labelWidth="auto" data-ann-target="sa.filter">
           <Form.FormItem label="核算项目">
             <Input
               value={keywordProject}
@@ -254,9 +256,8 @@ export default function SensitivityListPage() {
           </Form.FormItem>
         </Form>
 
-        <div className="sa-toolbar">
+        <div className="sa-toolbar" data-ann-target="sa.toolbar">
           <span className="sa-toolbar-title">共 {list.length} 条</span>
-          <span className="sa-toolbar-tip">默认按分析结果更新时间倒序</span>
         </div>
 
         {list.length === 0 && !loading ? (
@@ -270,22 +271,24 @@ export default function SensitivityListPage() {
           />
         ) : (
           <>
-            <Table
-              rowKey="id"
-              data={pagedRows}
-              columns={columns}
-              loading={loading}
-              size="small"
-              maxHeight="100%"
-              empty="暂无数据"
-            />
-            <div className="sa-pagination">
-              <Pagination
-                current={page}
-                total={list.length}
-                pageSize={PAGE_SIZE}
-                onChange={(info) => setPage(info.current)}
+            <div data-ann-target="sa.table">
+              <Table
+                rowKey="id"
+                data={pagedRows}
+                columns={columns}
+                loading={loading}
+                size="small"
+                maxHeight="100%"
+                empty="暂无数据"
               />
+              <div className="sa-pagination">
+                <Pagination
+                  current={page}
+                  total={list.length}
+                  pageSize={PAGE_SIZE}
+                  onChange={(info) => setPage(info.current)}
+                />
+              </div>
             </div>
           </>
         )}
@@ -354,7 +357,7 @@ export default function SensitivityListPage() {
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               取消
             </Button>
-            <Button theme="danger" onClick={handleDelete}>
+            <Button theme="danger" onClick={handleDelete} data-ann-target="sa.confirm.ok">
               确认删除
             </Button>
           </>
