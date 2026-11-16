@@ -7,7 +7,7 @@ alwaysApply: false
 # Design Tokens
 
 参考系统：国家碳计量中心碳足迹公共服务平台（Ant Design 风格 B 端后台）。
-Token 文件：`06prototypes/6-1系统原型骨架/src/shared/styles/design-tokens.css`。
+Token 文件：`06prototypes/系统原型/src/shared/styles/design-tokens.css`。
 所有新页面/组件必须引用其中的 CSS 变量，禁止硬编码近似色、近似间距。
 
 > 新增颜色 / 间距前先确认 token 是否已存在；确需新增时**先补 token 文件再用**，不得在页面里写一次性数值。
@@ -36,6 +36,20 @@ Token 文件：`06prototypes/6-1系统原型骨架/src/shared/styles/design-toke
 | `--color-border` | `#D9D9D9` | 输入框、按钮描边、卡片边框 |
 | `--color-border-secondary` | `#F0F0F0` | 表格行分隔线 |
 | `--color-step-active-bg` | `#E6FFFB` | 步骤条当前步背景（浅薄荷绿） |
+
+### 工作台专用（深色总览块 + 墨绿强调，仅 `/dashboard` 使用）
+
+| Token | 值 | 用途 |
+|-------|-----|------|
+| `--color-dash-hero-from` | `#0B332B` | 工作台总览块渐变起点 |
+| `--color-dash-hero-mid` | `#123F34` | 工作台总览块渐变中段 |
+| `--color-dash-hero-to` | `#17543D` | 工作台总览块渐变终点 |
+| `--color-dash-accent` | `#0F3D35` | 工作台深色强调（「去完成」按钮） |
+| `--color-dash-accent-hover` | `#155449` | 深色强调 hover |
+| `--color-dash-mint` | `#7FD8A8` | 总览内阶段进度条填充 |
+| `--color-dash-icon-bg` | `#EAF6EF` | 工作台统计图标圆底 |
+| `--color-dash-icon-fg` | `#3A9D78` | 工作台统计图标描边 |
+| `--color-dash-todo-bg` | `#F4F9F9` | 工作台待办条底色 |
 
 ## 字体
 

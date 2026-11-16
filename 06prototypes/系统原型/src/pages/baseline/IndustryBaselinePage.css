@@ -1,0 +1,250 @@
+/* ============ 复用标准页局部类（标准页样式未全局，此处补齐） ============ */
+
+.standard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.standard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.standard-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.standard-section-body {
+  padding: var(--space-lg);
+}
+
+.standard-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-container);
+}
+
+.standard-attach-tip {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-lg);
+}
+
+/* ============ 列表表头横向滚动兜底 ============ */
+
+.baseline-table-wrap {
+  overflow-x: auto;
+}
+.baseline-table-wrap .data-table thead th,
+.baseline-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* ============ 表单：双栏布局（左录入 / 右汇总） ============ */
+
+.baseline-form-cols {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-md);
+  align-items: start;
+}
+.baseline-form-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+.baseline-form-aside {
+  position: sticky;
+  top: var(--space-md);
+}
+
+/* ============ 编辑已发布提示条 ============ */
+
+.baseline-edit-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-base);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-lg);
+}
+
+/* ============ 阶段表（可编辑） ============ */
+
+.baseline-stage-table {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  overflow: hidden;
+}
+.baseline-stage-head,
+.baseline-stage-row {
+  display: grid;
+  grid-template-columns: 44px 1.4fr 1fr 1fr 0.9fr 1.3fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.baseline-stage-head {
+  background: var(--color-bg-spotlight);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+.baseline-stage-row {
+  border-top: 1px solid var(--color-border-secondary);
+}
+.baseline-stage-row.is-level2 {
+  background: var(--color-bg-container);
+  color: var(--color-text-secondary);
+}
+.bs-col {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-include {
+  text-align: center;
+}
+.bs-leaf {
+  color: var(--color-text-tertiary);
+}
+.bs-num {
+  display: flex;
+  align-items: center;
+}
+.bs-input {
+  max-width: 100%;
+}
+.bs-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bs-share-bar {
+  flex: 1;
+  min-width: 48px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border-secondary);
+  overflow: hidden;
+}
+.bs-share-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary, #2563eb);
+}
+.bs-share-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ============ 汇总面板 ============ */
+
+.baseline-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--color-border-secondary);
+}
+.baseline-summary-item:last-child {
+  border-bottom: none;
+}
+.baseline-summary-block {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+}
+.baseline-override {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+.baseline-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.baseline-total-row .bs-input {
+  flex: 1;
+}
+.baseline-summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-sm);
+}
+.baseline-warn-box {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-base);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-lg);
+}
+.baseline-warn-biogenic {
+  border-color: var(--color-info-border, #93c5fd);
+  background: var(--color-info-bg, #eff6ff);
+  color: var(--color-info, #1d4ed8);
+}
+.baseline-warn-title {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 4px;
+}
+.baseline-warn-line {
+  position: relative;
+  padding-left: 12px;
+}
+.baseline-warn-line::before {
+  content: '•';
+  position: absolute;
+  left: 2px;
+}
+
+/* ============ 详情：引用标签 / 总值 ============ */
+
+.baseline-ref-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.baseline-detail-total {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary, #2563eb);
+}
+
+/* ============ 响应式：窄屏单栏 ============ */
+
+@media (max-width: 960px) {
+  .baseline-form-cols {
+    grid-template-columns: 1fr;
+  }
+  .baseline-form-aside {
+    position: static;
+  }
+}

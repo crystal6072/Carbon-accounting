@@ -1,0 +1,47 @@
+/* ===================== 列表行操作：「更多」下拉 ===================== */
+/* 面板由 RowActions 组件 Portal 到 body，故用 fixed 定位（避免被表格容器 overflow 裁剪） */
+.row-actions-more {
+  position: relative;
+  display: inline-flex;
+}
+.row-actions-more-trigger.is-open {
+  color: var(--color-primary);
+}
+.row-actions-menu {
+  position: fixed;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--color-bg-container, #fff);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+}
+.row-actions-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.row-actions-menu-item:hover:not(:disabled) {
+  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.04));
+  color: var(--color-text-primary);
+}
+.row-actions-menu-item.is-danger:not(:disabled) {
+  color: var(--color-error);
+}
+.row-actions-menu-item.is-danger:hover:not(:disabled) {
+  background: var(--color-error-bg, rgba(214, 73, 51, 0.08));
+}
+.row-actions-menu-item:disabled {
+  color: var(--color-text-disabled, #ccc);
+  cursor: not-allowed;
+}

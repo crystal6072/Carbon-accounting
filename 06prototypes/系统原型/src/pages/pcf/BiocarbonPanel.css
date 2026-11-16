@@ -1,0 +1,155 @@
+/* ===================== 生物碳核算（步骤① 目标与范围） ===================== */
+.bio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.bio-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.bio-field-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bio-field-label {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.bio-field-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.bio-field-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.bio-field-link:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.bio-field-value {
+  display: flex;
+  align-items: center;
+  width: 280px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================== 碳固存计算弹窗 ===================== */
+.bio-calc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.bio-calc-tip {
+  padding: 8px 12px;
+  border-radius: var(--radius-base);
+  background: var(--color-primary-bg);
+  border: 1px solid var(--color-primary-border, var(--color-primary));
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.bio-calc-block {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-container);
+}
+
+.bio-calc-block.is-emphasis {
+  border-color: var(--color-primary-border, var(--color-primary));
+  background: var(--color-primary-bg);
+}
+
+.bio-calc-block-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding-left: 8px;
+  border-left: 3px solid var(--color-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.bio-calc-stage {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-bg-spotlight);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-normal, 400);
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.bio-calc-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: 10px 14px;
+  border: 1px solid var(--color-primary-border, var(--color-primary));
+  border-radius: var(--radius-base);
+  background: var(--color-primary-bg);
+}
+
+.bio-calc-result-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.bio-calc-result-value {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+  text-align: right;
+}
+
+.bio-calc-result-value em {
+  margin-left: 4px;
+  font-size: var(--font-size-sm);
+  font-style: normal;
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--color-text-tertiary);
+}
+
+.bio-calc-formula {
+  margin-top: var(--space-sm);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.7;
+}

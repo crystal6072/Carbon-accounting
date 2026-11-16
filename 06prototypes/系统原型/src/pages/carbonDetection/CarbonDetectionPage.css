@@ -1,0 +1,117 @@
+/* 含碳量检测库页面样式（复用全局 card / query-bar / form-grid / detail-list 等类，此处仅补充模块专属样式） */
+
+.tag-deleted {
+  color: #d54941;
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.muted {
+  color: #999;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+}
+
+.confirm-body {
+  line-height: 1.6;
+  color: #333;
+  margin: 4px 0;
+}
+
+/* 检测周期：开始 ~ 结束 日期段 */
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-inputs input {
+  flex: 1;
+  min-width: 0;
+}
+
+.range-sep {
+  flex: none;
+  color: #999;
+  font-size: 13px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* 文件库选择弹窗 */
+.lib-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lib-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border, #eee);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.lib-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lib-row:hover {
+  background: #f6f8ff;
+}
+
+.lib-row-head {
+  color: #666;
+  border-bottom: 1px dashed var(--border, #eee);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.lib-row input[type='checkbox'] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.lib-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-meta {
+  flex: none;
+  color: #999;
+  font-size: 12px;
+}
+
+.empty-sm {
+  padding: 8px 0;
+  color: #999;
+  font-size: 13px;
+}

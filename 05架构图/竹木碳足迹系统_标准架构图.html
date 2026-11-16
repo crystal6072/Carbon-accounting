@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>竹木产品碳足迹核算系统 · 标准架构图</title>
+<style>
+  :root{
+    --ink:#1d2129; --ink2:#4e5969; --ink3:#86909c; --ink4:#a9b0bb;
+    --line:#e5e8ee; --bg:#eef1f6;
+    --c-access:#5b5fc7; --c-app:#1b5fd0; --c-svc:#0d8f8f;
+    --c-data:#b8760f; --c-infra:#5a6572;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:1920px;height:1080px;overflow:hidden;}
+  body{
+    font-family:'PingFang SC','Microsoft YaHei',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .board{width:1920px;height:1080px;padding:22px 40px 20px;display:flex;flex-direction:column;}
+
+  /* ---------------- header ---------------- */
+  header{height:74px;display:flex;align-items:flex-end;justify-content:space-between;flex:0 0 auto;}
+  .h-left .h-title{font-size:29px;font-weight:700;letter-spacing:.6px;line-height:1.1;}
+  .h-left .h-sub{margin-top:7px;font-size:13px;color:var(--ink2);letter-spacing:.2px;}
+  .h-left .h-sub b{color:var(--c-app);font-weight:600;}
+  .pill{
+    display:flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;
+    background:#fff;border:1px solid var(--line);font-size:12.5px;color:var(--ink2);
+    box-shadow:0 1px 2px rgba(16,38,72,.05);margin-bottom:4px;
+  }
+  .pill i{width:7px;height:7px;border-radius:50%;background:var(--c-svc);display:block;}
+
+  /* ---------------- layers ---------------- */
+  .layers{flex:1;display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .layer{
+    display:flex;border-radius:12px;background:#fff;border:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(16,38,72,.06);overflow:hidden;flex:0 0 auto;
+  }
+  .layer-tab{
+    flex:0 0 186px;padding:14px 18px;color:#fff;display:flex;flex-direction:column;
+    justify-content:center;position:relative;
+  }
+  .t-no{font-size:10px;letter-spacing:1.6px;opacity:.6;font-weight:600;}
+  .t-name{font-size:19px;font-weight:700;letter-spacing:.8px;margin-top:5px;line-height:1.2;}
+  .t-en{font-size:9.5px;letter-spacing:1.4px;opacity:.62;margin-top:3px;text-transform:uppercase;}
+  .t-desc{font-size:10.5px;line-height:1.5;margin-top:9px;opacity:.88;}
+  .t-count{
+    margin-top:auto;font-size:10px;opacity:.72;padding-top:8px;letter-spacing:.4px;
+  }
+  .layer-body{flex:1;padding:10px 12px;display:flex;justify-content:center;flex-direction:column;min-width:0;}
+
+  /* ---------------- L1 接入层 ---------------- */
+  .ends{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;height:100%;}
+  .end{
+    border:1px solid var(--line);border-radius:9px;padding:10px 14px;background:#fbfcfe;
+    display:flex;flex-direction:column;justify-content:center;position:relative;
+    border-left:3px solid var(--c-access);
+  }
+  .end-h{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;}
+  .end-h em{
+    font-style:normal;font-size:9.5px;font-weight:500;color:#fff;background:var(--c-access);
+    padding:1px 6px;border-radius:4px;letter-spacing:.4px;
+  }
+  .end-b{font-size:11px;color:var(--ink2);margin-top:7px;line-height:1.55;}
+  .end-b span{color:var(--ink3);}
+
+  /* ---------------- L2 应用层 ---------------- */
+  .domains{display:flex;gap:12px;height:100%;padding:10px;justify-content:flex-start;}
+  .domain{flex:1;display:flex;flex-direction:column;min-width:0;border-radius:9px;padding:8px 9px 9px;background:#fafbfd;border:1px dashed #dfe4ec;}
+  .domain-head{
+    font-size:12px;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:7px;
+    padding:0 2px 7px;flex:0 0 auto;
+  }
+  .domain-head i{width:8px;height:8px;border-radius:2px;display:block;}
+  .domain-head b{color:var(--ink);font-weight:600;}
+  .domain-head u{text-decoration:none;font-size:10px;color:var(--ink3);font-weight:400;margin-left:auto;letter-spacing:.3px;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;min-height:0;}
+  .mcard{
+    background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px 9px 7px;
+    display:flex;flex-direction:column;min-width:0;overflow:hidden;border-top:2.5px solid var(--c-app);
+  }
+  .domain.back .mcard{border-top-color:var(--c-access);}
+  .mcard-h{
+    font-size:12.5px;font-weight:600;line-height:1.25;letter-spacing:.2px;
+    display:flex;align-items:baseline;gap:5px;
+  }
+  .mcard-h em{font-style:normal;font-size:9px;font-weight:500;color:var(--ink4);letter-spacing:.2px;}
+  .mcard-b{
+    font-size:10.5px;line-height:1.62;color:var(--ink2);margin-top:6px;
+    word-break:break-all;
+  }
+  .mcard-b s{text-decoration:none;color:var(--ink4);padding:0 1px;}
+
+  /* ---------------- L3 服务层 ---------------- */
+  .svcs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:100%;}
+  .svc{
+    border:1px solid #d9ecec;background:#f7fcfc;border-radius:8px;padding:8px 11px;
+    display:flex;flex-direction:column;justify-content:center;min-width:0;
+  }
+  .svc-h{font-size:12px;font-weight:600;color:#0a6d6d;line-height:1.3;}
+  .svc-b{font-size:10px;color:#3d7f7f;margin-top:5px;line-height:1.5;}
+
+  /* ---------------- L4 数据层 ---------------- */
+  .datas{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;height:100%;}
+  .data{
+    border:1px solid #f0e3cd;background:#fdfaf4;border-radius:8px;padding:9px 11px;
+    display:flex;flex-direction:column;justify-content:center;min-width:0;
+  }
+  .data-h{font-size:12px;font-weight:600;color:#96610c;line-height:1.3;}
+  .data-b{font-size:10px;color:#8a7346;margin-top:5px;line-height:1.6;}
+
+  /* ---------------- L5 基础设施 ---------------- */
+  .infra{display:flex;gap:10px;height:100%;}
+  .infra-grp{
+    border:1px solid #e2e6ec;background:#f8f9fb;border-radius:8px;padding:8px 11px;
+    display:flex;flex-direction:column;justify-content:center;min-width:0;
+  }
+  .infra-grp.w1{flex:0 0 62%;}
+  .infra-grp.w2{flex:1;}
+  .infra-h{font-size:11px;font-weight:600;color:#4a5462;letter-spacing:.5px;margin-bottom:7px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    font-size:10.5px;line-height:1;padding:5px 9px;border-radius:5px;background:#fff;
+    border:1px solid #dde2ea;color:#4a5462;white-space:nowrap;
+  }
+  .chip b{font-weight:600;color:#2f3743;}
+  .chip.tech{border-color:#cfd8e6;background:#f4f7fc;color:#3b5878;}
+  .chip.tech b{color:#1b5fd0;}
+
+  /* ---------------- footer ---------------- */
+  .basis{
+    flex:0 0 auto;margin-top:10px;height:40px;border-radius:9px;background:#fff;
+    border:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 16px;
+    box-shadow:0 1px 2px rgba(16,38,72,.04);
+  }
+  .basis-t{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.5px;white-space:nowrap;}
+  .basis-l{display:flex;gap:7px;flex-wrap:nowrap;overflow:hidden;}
+  .basis-l span{
+    font-size:10.5px;color:#54606e;background:#f4f6f9;border:1px solid #e6eaf0;
+    border-radius:4px;padding:3px 8px;white-space:nowrap;
+  }
+  .basis-r{margin-left:auto;font-size:10px;color:var(--ink4);white-space:nowrap;letter-spacing:.3px;}
+</style>
+</head>
+<body>
+<div class="board">
+
+  <header>
+    <div class="h-left">
+      <div class="h-title">竹木产品碳足迹核算系统 · 标准架构图</div>
+      <div class="h-sub">三端一体 · 五层架构 &nbsp;|&nbsp; 应用功能取自已交付原型 <b>51 项末级功能</b>，技术栈按原型实测</div>
+    </div>
+    <div class="pill"><i></i>PCF Platform Architecture · v1.0</div>
+  </header>
+
+  <div class="layers">
+
+    <!-- ================= L1 用户与接入 ================= -->
+    <section class="layer" style="height:100px">
+      <div class="layer-tab" style="background:linear-gradient(150deg,#6a6ed6,#4a4ea8)">
+        <div class="t-no">LAYER 01</div>
+        <div class="t-name">用户与接入层</div>
+        <div class="t-en">Access</div>
+      </div>
+      <div class="layer-body">
+        <div class="ends">
+          <div class="end">
+            <div class="end-h">企业用户端 <em>ENTERPRISE</em></div>
+            <div class="end-b">业务人员 / 核算员 · <span>产品碳足迹全流程核算与报告自建管理</span></div>
+          </div>
+          <div class="end">
+            <div class="end-h">租户管理端 <em>TENANT</em></div>
+            <div class="end-b">租户管理员 · <span>本租户信息、组织架构、成员与角色自助管理</span></div>
+          </div>
+          <div class="end">
+            <div class="end-h">平台运营端 <em>PLATFORM</em></div>
+            <div class="end-b">平台运营人员 · <span>基础库、模型发布、租户与账号权限运维</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= L2 应用层 ================= -->
+    <section class="layer" style="height:372px">
+      <div class="layer-tab" style="background:linear-gradient(150deg,#2a6fdc,#1a4dae)">
+        <div class="t-no">LAYER 02</div>
+        <div class="t-name">应用层</div>
+        <div class="t-en">Application</div>
+        <div class="t-desc">三端共用一棵菜单树<br>菜单可见性 = 端标注 × 角色授权</div>
+        <div class="t-count">51 项末级功能</div>
+      </div>
+      <div class="layer-body domains">
+
+        <div class="domain">
+          <div class="domain-head">
+            <i style="background:#1b5fd0"></i><b>产品碳足迹</b> 业务应用
+            <u>企业用户端 · 21 项</u>
+          </div>
+          <div class="cards">
+            <div class="mcard">
+              <div class="mcard-h">核算工作台 <em>2</em></div>
+              <div class="mcard-b">工作台<s>·</s>碳足迹核算<s>·</s>目标与范围 → 产品建模 → 数据检测 → 核算与结果</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">报告与质量 <em>4</em></div>
+              <div class="mcard-b">企业信息维护<s>·</s>报告编制<s>·</s>敏感性分析<s>·</s>数据质量评价（DQR）</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">产品与工艺 <em>3</em></div>
+              <div class="mcard-b">我的产品库<s>·</s>我的工艺库<s>·</s>典型案例库<s>·</s>平台资产引用为可编辑副本</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">因子与模型 <em>4</em></div>
+              <div class="mcard-b">背景数据库<s>·</s>我的因子库<s>·</s>模型库<s>·</s>我的模型</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">数据采集 <em>3</em></div>
+              <div class="mcard-b">加工能耗台账<s>·</s>运输台账管理<s>·</s>含碳量检测库<s>·</s>支持录入与 Excel 导入</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">文件管理 <em>1</em></div>
+              <div class="mcard-b">文件库<s>·</s>统一上传、版本管理、在线预览<s>·</s>引用锁版本、删除有护栏</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">行业数据集 <em>1</em></div>
+              <div class="mcard-b">行业数据集管理<s>·</s>核算结果归集<s>·</s>均值 / 中位数 / 离散度统计</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">知识中心 <em>3</em></div>
+              <div class="mcard-b">木竹碳专题知识<s>·</s>标准规范<s>·</s>典型案例<s>·</s>平台公共 + 本企业私有</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="domain back">
+          <div class="domain-head">
+            <i style="background:#5b5fc7"></i><b>系统管理</b> 平台与租户管理
+            <u>平台运营端 + 租户管理端 · 30 项</u>
+          </div>
+          <div class="cards">
+            <div class="mcard">
+              <div class="mcard-h">产品库 <em>2</em></div>
+              <div class="mcard-b">产品品类管理<s>·</s>产品信息库<s>·</s>平台标准档案供前台引用复制</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">工艺流程 <em>2</em></div>
+              <div class="mcard-b">工艺流程<s>·</s>工序<s>·</s>「阶段 - 工序 - 消耗」层级结构</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">基础库 <em>5</em></div>
+              <div class="mcard-b">物料库<s>·</s>能源库<s>·</s>计量单位库<s>·</s>生命周期阶段<s>·</s>行业库</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">碳核算知识库 <em>3</em></div>
+              <div class="mcard-b">标准规范库<s>·</s>木竹碳专题库<s>·</s>典型案例库<s>·</s>按租户隔离发布</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">基线与模型 <em>4</em></div>
+              <div class="mcard-b">行业基线录入<s>·</s>产品碳标签模板<s>·</s>核算模型<s>·</s>因子库管理</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">系统参数配置 <em>5</em></div>
+              <div class="mcard-b">核算规则<s>·</s>默认因子<s>·</s>报告模板<s>·</s>存储配置<s>·</s>消息配置</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">平台运营 <em>5</em></div>
+              <div class="mcard-b">租户管理<s>·</s>账号管理<s>·</s>平台角色管理<s>·</s>菜单管理<s>·</s>数据字典</div>
+            </div>
+            <div class="mcard">
+              <div class="mcard-h">租户自助 <em>4</em></div>
+              <div class="mcard-b">租户信息<s>·</s>组织架构<s>·</s>成员管理<s>·</s>角色管理<s>·</s>与平台角色完全隔离</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= L3 服务层 ================= -->
+    <section class="layer" style="height:148px">
+      <div class="layer-tab" style="background:linear-gradient(150deg,#12a0a0,#0a6f6f)">
+        <div class="t-no">LAYER 03</div>
+        <div class="t-name">服务层</div>
+        <div class="t-en">Platform Services</div>
+        <div class="t-desc">跨业务复用的<br>平台通用能力</div>
+        <div class="t-count">10 类核心服务</div>
+      </div>
+      <div class="layer-body">
+        <div class="svcs">
+          <div class="svc">
+            <div class="svc-h">核算引擎</div>
+            <div class="svc-b">四步流程编排 · 公式按内置口径求值</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">生物碳核算</div>
+            <div class="svc-b">CS 碳固存 · 年均固存 · 焚烧释放 · 净储量</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">因子匹配</div>
+            <div class="svc-b">按对象 / 行业 / 年度取平台级默认因子</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">模型发布引用</div>
+            <div class="svc-b">发布即只读 · 引用锁版本</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">权限与数据范围</div>
+            <div class="svc-b">菜单勾选授权 · 读写各一档</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">多租户隔离</div>
+            <div class="svc-b">tenant_id 行级隔离 · 平台公共全员可见</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">文件与版本</div>
+            <div class="svc-b">上传 · 版本 · 在线预览 · 删除护栏</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">导入导出</div>
+            <div class="svc-b">Excel 导入 · 报告与数据导出</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">图表与流程渲染</div>
+            <div class="svc-b">流程与结果构成图渲染</div>
+          </div>
+          <div class="svc">
+            <div class="svc-h">字典与参数</div>
+            <div class="svc-b">数据字典 · 系统参数 · 消息模板</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= L4 数据层 ================= -->
+    <section class="layer" style="height:134px">
+      <div class="layer-tab" style="background:linear-gradient(150deg,#c98816,#9a6508)">
+        <div class="t-no">LAYER 04</div>
+        <div class="t-name">数据层</div>
+        <div class="t-en">Data</div>
+        <div class="t-desc">六大主数据与业务数据域<br>平台公共 + 租户私有双轨</div>
+      </div>
+      <div class="layer-body">
+        <div class="datas">
+          <div class="data">
+            <div class="data-h">主数据域</div>
+            <div class="data-b">产品 · 工艺 · 工序<br>物料 · 能源 · 单位<br>生命周期阶段 · 行业</div>
+          </div>
+          <div class="data">
+            <div class="data-h">因子与模型域</div>
+            <div class="data-b">因子库 · 默认因子<br>核算模型 · 核算规则</div>
+          </div>
+          <div class="data">
+            <div class="data-h">核算业务域</div>
+            <div class="data-b">核算项目 · 台账 · 检测记录<br>核算结果 · 行业数据集</div>
+          </div>
+          <div class="data">
+            <div class="data-h">报告与文件域</div>
+            <div class="data-b">报告 · 报告模板<br>文件库 · 碳标签模板</div>
+          </div>
+          <div class="data">
+            <div class="data-h">知识与基线域</div>
+            <div class="data-b">标准规范 · 专题知识<br>典型案例 · 行业基线</div>
+          </div>
+          <div class="data">
+            <div class="data-h">组织与权限域</div>
+            <div class="data-b">租户 · 组织 · 成员<br>账号 · 角色 · 菜单 · 字典</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= L5 基础设施与技术栈 ================= -->
+    <section class="layer" style="height:120px">
+      <div class="layer-tab" style="background:linear-gradient(150deg,#6b7684,#485260)">
+        <div class="t-no">LAYER 05</div>
+        <div class="t-name">基础设施与技术栈</div>
+        <div class="t-en">Infrastructure</div>
+        <div class="t-desc">前端单页应用形态<br>技术栈按原型实测</div>
+      </div>
+      <div class="layer-body">
+        <div class="infra">
+          <div class="infra-grp w1">
+            <div class="infra-h">技术栈 · 实测版本</div>
+            <div class="chips">
+              <span class="chip tech"><b>React</b> 18.3.1</span>
+              <span class="chip tech"><b>TypeScript</b> 5.6.3</span>
+              <span class="chip tech"><b>Vite</b> 5.4.9</span>
+              <span class="chip tech"><b>TDesign React</b> 1.18.4</span>
+              <span class="chip tech"><b>React Router</b> 6.26.2</span>
+              <span class="chip tech"><b>mermaid</b> 11.17</span>
+              <span class="chip tech"><b>xlsx</b> 0.18.5</span>
+            </div>
+          </div>
+          <div class="infra-grp w2">
+            <div class="infra-h">工程与运行</div>
+            <div class="chips">
+              <span class="chip">Vite 构建 · 静态资源部署</span>
+              <span class="chip">单页应用 · 三端同源一套代码</span>
+              <span class="chip">浏览器端数据持久化（mock 驱动）</span>
+              <span class="chip">Design Tokens · 主色 #1890ff</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="basis">
+    <div class="basis-t">核算依据标准</div>
+    <div class="basis-l">
+      <span>GB/T 24067-2024</span>
+      <span>ISO 14067</span>
+      <span>PAS 2050</span>
+      <span>GB/T 44290-2024</span>
+      <span>LY/T 3436-2025</span>
+      <span>T/CBIAS 2108-2025</span>
+      <span>GB/T 24064</span>
+      <span>ISO 14025 · EN 15804+A2</span>
+    </div>
+    <div class="basis-r">原型已交付范围：核算主流程 · 主数据 · 报告与知识 · 组织权限</div>
+  </div>
+
+</div>
+</body>
+</html>

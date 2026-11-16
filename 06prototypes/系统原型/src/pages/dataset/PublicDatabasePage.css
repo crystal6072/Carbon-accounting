@@ -1,0 +1,255 @@
+/* ============================================================
+   公共数据库 · 页面样式（引用全局设计令牌，不新增主题）
+   ============================================================ */
+
+/* ---------- 顶部状态栏 ---------- */
+
+.pdb-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--space-md, 12px);
+  margin-bottom: var(--space-sm, 8px);
+}
+
+.pdb-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  border: 1px solid var(--color-border-secondary, #f0f0f0);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-bg-container, #fff);
+}
+
+.pdb-status-card-current {
+  border-color: var(--color-primary-border, #91caff);
+  background: linear-gradient(135deg, var(--color-primary-bg, #e6f4ff), #fff);
+}
+
+.pdb-status-card-pending {
+  border-color: #ffe7ba;
+  background: linear-gradient(135deg, var(--color-warning-bg, #fff7e6), #fff);
+}
+
+.pdb-status-label {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-secondary, #595959);
+}
+
+.pdb-status-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pdb-status-version {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--color-primary, #1890ff);
+  font-variant-numeric: tabular-nums;
+}
+
+.pdb-status-version-pending {
+  color: var(--color-warning, #fa8c16);
+}
+
+.pdb-status-text {
+  font-size: 13px;
+  color: var(--color-text, #262626);
+}
+
+.pdb-status-text b {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdb-status-sub {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+.pdb-footnote {
+  margin: 0 0 var(--space-md, 12px) 2px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+/* ---------- 列表 ---------- */
+
+.pdb-count {
+  align-self: center;
+  margin-right: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+.pdb-emission {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pdb-emission-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #262626);
+}
+
+.pdb-emission-unit {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+/* ---------- 发布弹窗 ---------- */
+
+.pdb-publish-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ffe7ba;
+  border-radius: var(--radius-base, 4px);
+  background: var(--color-warning-bg, #fff7e6);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--color-text-secondary, #595959);
+}
+
+.pdb-publish-tag {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 2px;
+  background: var(--color-warning, #fa8c16);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+/* ---------- 版本记录 / 版本切换 ---------- */
+
+.pdb-versions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 12px);
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  margin-bottom: var(--space-md, 12px);
+  background: var(--color-bg-container, #fff);
+  border: 1px solid var(--color-border-secondary, #f0f0f0);
+  border-radius: var(--radius-lg, 8px);
+}
+
+.pdb-versions-label {
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  color: var(--color-text, #262626);
+}
+
+.pdb-version-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pdb-version-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border, #d9d9d9);
+  border-radius: 999px;
+  background: var(--color-bg-container, #fff);
+  cursor: pointer;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-secondary, #595959);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.pdb-version-chip:hover {
+  border-color: var(--color-primary, #1890ff);
+  color: var(--color-primary, #1890ff);
+}
+
+.pdb-version-chip-active {
+  border-color: var(--color-primary, #1890ff);
+  background: var(--color-primary-bg, #e6f4ff);
+  color: var(--color-primary, #1890ff);
+}
+
+.pdb-version-chip-no {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdb-version-chip-meta {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.pdb-version-chip-badge {
+  padding: 0 5px;
+  border-radius: 2px;
+  background: var(--color-primary, #1890ff);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.pdb-versions-tip {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+/* ---------- 历史版本只读提示 ---------- */
+
+.pdb-readonly-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  margin-bottom: var(--space-md, 12px);
+  border: 1px solid var(--color-primary-border, #91caff);
+  border-radius: var(--radius-base, 4px);
+  background: var(--color-primary-bg, #e6f4ff);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-secondary, #595959);
+}
+
+.pdb-readonly-bar b {
+  color: var(--color-primary, #1890ff);
+}
+
+.pdb-readonly-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 12px);
+  flex-wrap: wrap;
+}
+
+/* ---------- 回滚发布 ---------- */
+
+.pdb-rollback-summary {
+  border-color: var(--color-primary-border, #91caff);
+  background: var(--color-primary-bg, #e6f4ff);
+}
+
+.pdb-rollback-tag {
+  background: var(--color-primary, #1890ff);
+}
+
+@media (max-width: 900px) {
+  .pdb-status {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pdb-versions-tip {
+    margin-left: 0;
+  }
+}

@@ -24,3 +24,9 @@ node_modules
 # AI / CLI 工具数据
 .codebuddy/
 .playwright-cli/
+.workbuddy/
+
+# 本地大文件与缓存
+06prototypes.zip
+__pycache__/
+*.pyc

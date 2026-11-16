@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>竹木产品碳足迹核算系统 · 三层架构</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --foundation: #1b5fd0;
+    --foundation-soft: #eff5ff;
+    --config: #0d8f8f;
+    --config-soft: #ecfaf8;
+    --industry: #4a9a24;
+    --industry-soft: #f2fbe9;
+
+    --ink: #12203a;
+    --ink-2: #3e5069;
+    --ink-3: #67788f;
+    --line: #e2e8f1;
+    --card: #f8fafd;
+  }
+
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #f4f7fb;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .board {
+    width: 1920px;
+    height: 1080px;
+    padding: 0 40px;
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(1200px 500px at 8% -10%, #e8f0ff 0%, rgba(232,240,255,0) 60%),
+      radial-gradient(1000px 460px at 96% 108%, #eaf7e4 0%, rgba(234,247,228,0) 62%),
+      #f4f7fb;
+  }
+
+  /* ======================= 页头 ======================= */
+  header {
+    height: 96px;
+    flex: 0 0 96px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .title-wrap { display: flex; align-items: center; gap: 18px; }
+
+  .title-mark {
+    width: 6px; height: 46px; border-radius: 3px;
+    background: linear-gradient(180deg, var(--foundation) 0%, var(--config) 52%, var(--industry) 100%);
+  }
+
+  h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--ink-3);
+    letter-spacing: .3px;
+  }
+  .subtitle b { color: var(--ink-2); font-weight: 600; }
+
+  .head-right { display: flex; align-items: center; gap: 10px; }
+
+  .pill {
+    height: 30px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 15px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--foundation);
+    background: #fff;
+    border: 1px solid #d6e2f6;
+    box-shadow: 0 1px 3px rgba(20,45,90,.05);
+  }
+  .pill.ghost { color: var(--ink-3); border-color: var(--line); font-weight: 500; }
+
+  .dot-live {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--foundation);
+  }
+
+  /* ======================= 层 ======================= */
+  .band {
+    flex: 0 0 auto;
+    display: flex;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 3px 14px rgba(24,48,92,.06);
+    overflow: hidden;
+  }
+
+  .tab {
+    flex: 0 0 196px;
+    padding: 20px 18px 18px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .tab.idx-f { background: linear-gradient(160deg, #2a6ee0 0%, #14459e 100%); }
+  .tab.idx-c { background: linear-gradient(160deg, #12a3a3 0%, #096e6e 100%); }
+  .tab.idx-i { background: linear-gradient(160deg, #58b02b 0%, #357a14 100%); }
+
+  .tab-idx {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    opacity: .62;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+
+  .tab-name {
+    margin-top: 4px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .tab-en {
+    margin-top: 2px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 2.2px;
+    opacity: .6;
+  }
+
+  .tab-rule {
+    margin: 12px 0 11px;
+    height: 1px;
+    background: rgba(255,255,255,.32);
+  }
+
+  .tab-desc {
+    font-size: 12.5px;
+    line-height: 1.7;
+    opacity: .96;
+    letter-spacing: .2px;
+  }
+  .tab-desc em {
+    display: block;
+    font-style: normal;
+    margin-top: 8px;
+    font-size: 11.5px;
+    opacity: .8;
+    line-height: 1.65;
+  }
+
+  .tab-foot {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,.24);
+    font-size: 10.5px;
+    line-height: 1.55;
+    letter-spacing: .3px;
+    opacity: .78;
+  }
+  .tab-foot b {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    opacity: .62;
+    margin-bottom: 2px;
+  }
+
+  .cards {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid #e9eef6;
+    border-top: 3px solid var(--accent, var(--foundation));
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .card h3 {
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    color: #16233c;
+    line-height: 1.3;
+    padding-bottom: 9px;
+    margin-bottom: 9px;
+    border-bottom: 1px dashed #dde5f0;
+  }
+
+  .chips {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .chip {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    min-height: 26px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: #40526c;
+    background: #fff;
+    border: 1px solid #e6ecf5;
+    border-radius: 4px;
+    padding: 3px 8px;
+    letter-spacing: .15px;
+  }
+
+  .chip.key {
+    color: #16233c;
+    font-weight: 600;
+    background: var(--soft);
+    border-color: var(--accent-border);
+  }
+
+  /* ======================= 底部依据条 ======================= */
+  .basis {
+    flex: 0 0 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    background: #101e35;
+    padding: 0 20px;
+    color: #fff;
+    gap: 16px;
+    overflow: hidden;
+  }
+
+  .basis-group { display: flex; align-items: center; gap: 9px; }
+
+  .basis-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .basis-label i {
+    width: 5px; height: 5px; border-radius: 50%;
+    display: inline-block;
+  }
+  .basis-label.lf i { background: #6f9bf0; }
+  .basis-label.li i { background: #7cc94a; }
+
+  .basis-items {
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    letter-spacing: .2px;
+    white-space: nowrap;
+  }
+  .basis-items span { color: rgba(255,255,255,.3); padding: 0 5px; }
+
+  .basis-sep {
+    width: 1px; height: 16px;
+    background: rgba(255,255,255,.18);
+    flex: 0 0 1px;
+  }
+
+  .basis-tail {
+    margin-left: auto;
+    font-size: 11px;
+    color: rgba(255,255,255,.5);
+    letter-spacing: .3px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <!-- ================= 页头 ================= -->
+  <header>
+    <div class="title-wrap">
+      <div class="title-mark"></div>
+      <div>
+        <h1>竹木产品碳足迹核算系统 · 三层架构</h1>
+        <div class="subtitle">
+          下层提供能力，上层承载行业 &nbsp;·&nbsp; <b>换标准只改配置</b>，<b>换行业只换定制层</b>
+        </div>
+      </div>
+    </div>
+    <div class="head-right">
+      <div class="pill"><span class="dot-live"></span>依据原型 51 项末级功能梳理</div>
+      <div class="pill ghost">v1.0 · 2026.10</div>
+    </div>
+  </header>
+
+  <!-- ================= 底座层 ================= -->
+  <section class="band" style="height:340px; margin-top:12px;">
+    <div class="tab idx-f">
+      <div class="tab-idx">01</div>
+      <div class="tab-name">底座层</div>
+      <div class="tab-en">FOUNDATION</div>
+      <div class="tab-rule"></div>
+      <div class="tab-desc">
+        通用核算能力
+        <em>PCF 引擎 · 主数据 · 权限<br>一次建成、多品类复用</em>
+      </div>
+      <div class="tab-foot"><b>复用范围</b>全部产品品类 · 全部租户</div>
+    </div>
+    <div class="cards" style="--accent:#1b5fd0; --soft:#eff5ff; --accent-border:#d3e2fb;">
+
+      <article class="card">
+        <h3>主数据 · 产品与工艺</h3>
+        <div class="chips">
+          <div class="chip">产品品类</div>
+          <div class="chip">产品信息库</div>
+          <div class="chip">我的产品库</div>
+          <div class="chip">工艺流程</div>
+          <div class="chip">工序</div>
+          <div class="chip">我的工艺库</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>主数据 · 基础库</h3>
+        <div class="chips">
+          <div class="chip">物料库</div>
+          <div class="chip">能源库</div>
+          <div class="chip">计量单位库</div>
+          <div class="chip">单位换算关系</div>
+          <div class="chip">生命周期阶段</div>
+          <div class="chip">行业库</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>因子与模型库</h3>
+        <div class="chips">
+          <div class="chip">因子库管理</div>
+          <div class="chip">背景数据库</div>
+          <div class="chip">我的因子库</div>
+          <div class="chip">核算模型</div>
+          <div class="chip">模型库</div>
+          <div class="chip">我的模型</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>核算引擎（四步主流程）</h3>
+        <div class="chips">
+          <div class="chip key">目标与范围</div>
+          <div class="chip key">产品建模</div>
+          <div class="chip key">数据检测</div>
+          <div class="chip key">核算与结果</div>
+          <div class="chip">分配计算</div>
+          <div class="chip">结果快照与追溯</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>工作台 · 台账 · 报告</h3>
+        <div class="chips">
+          <div class="chip">核算工作台</div>
+          <div class="chip">加工能耗台账</div>
+          <div class="chip">运输台账</div>
+          <div class="chip">报告编制</div>
+          <div class="chip">企业信息维护</div>
+          <div class="chip">敏感性分析</div>
+          <div class="chip">数据质量评价 DQR</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>数据资产 · 平台支撑</h3>
+        <div class="chips">
+          <div class="chip">标准规范库</div>
+          <div class="chip">典型案例库</div>
+          <div class="chip">产品碳基线库</div>
+          <div class="chip">行业数据集</div>
+          <div class="chip">文件库</div>
+          <div class="chip">租户 · 组织 · 账号 · 角色</div>
+          <div class="chip">菜单 · 字典 · 消息</div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================= 配置层 ================= -->
+  <section class="band" style="height:262px; margin-top:14px;">
+    <div class="tab idx-c">
+      <div class="tab-idx">02</div>
+      <div class="tab-name">配置层</div>
+      <div class="tab-en">CONFIGURATION</div>
+      <div class="tab-rule"></div>
+      <div class="tab-desc">
+        参数与规则可配
+        <em>换标准、换口径、企业差异<br>改配置不动底层代码</em>
+      </div>
+      <div class="tab-foot"><b>生效层级</b>平台级 / 租户级两级</div>
+    </div>
+    <div class="cards" style="--accent:#0d8f8f; --soft:#ecfaf8; --accent-border:#c9eae6;">
+
+      <article class="card">
+        <h3>核算规则</h3>
+        <div class="chips">
+          <div class="chip key">取舍准则</div>
+          <div class="chip">可忽略排放项</div>
+          <div class="chip">GWP 口径与版本</div>
+          <div class="chip">分配方法</div>
+          <div class="chip">公式口径</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>默认因子</h3>
+        <div class="chips">
+          <div class="chip key">默认因子来源</div>
+          <div class="chip">平台级优先于租户级</div>
+          <div class="chip">适用对象 · 行业</div>
+          <div class="chip">年度与区域口径</div>
+          <div class="chip">因子适用条件</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>模型配置</h3>
+        <div class="chips">
+          <div class="chip key">系统边界</div>
+          <div class="chip">阶段纳入与排除</div>
+          <div class="chip">检测规则与阈值</div>
+          <div class="chip">版本发布即冻结</div>
+          <div class="chip">报告规定与披露项</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>报告与标签</h3>
+        <div class="chips">
+          <div class="chip key">报告章节结构</div>
+          <div class="chip">固定文案</div>
+          <div class="chip">产品碳标签模板</div>
+          <div class="chip">标签主色调与二维码</div>
+          <div class="chip">报告导出格式</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>基础字典</h3>
+        <div class="chips">
+          <div class="chip">计量单位换算</div>
+          <div class="chip">数据字典</div>
+          <div class="chip">产品品类树</div>
+          <div class="chip">系统边界枚举</div>
+          <div class="chip">行业分类</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>系统参数与消息</h3>
+        <div class="chips">
+          <div class="chip">附件存储策略</div>
+          <div class="chip">站内信配置</div>
+          <div class="chip">消息模板</div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================= 定制层 ================= -->
+  <section class="band" style="height:268px; margin-top:14px;">
+    <div class="tab idx-i">
+      <div class="tab-idx">03</div>
+      <div class="tab-name">定制层</div>
+      <div class="tab-en">INDUSTRY</div>
+      <div class="tab-rule"></div>
+      <div class="tab-desc">
+        竹木专属口径与资产
+        <em>生物碳 · 竹木工艺 · 行业基线<br>不可跨行业复用</em>
+      </div>
+      <div class="tab-foot"><b>替换粒度</b>换行业仅替换本层</div>
+    </div>
+    <div class="cards" style="--accent:#4a9a24; --soft:#f2fbe9; --accent-border:#d8eec4;">
+
+      <article class="card">
+        <h3>生物碳 · 碳固存核算</h3>
+        <div class="chips">
+          <div class="chip key">初始碳固存 CS</div>
+          <div class="chip">年均持续固存</div>
+          <div class="chip">废弃焚烧释放</div>
+          <div class="chip">生物碳净储量</div>
+          <div class="chip">含碳率 · 绝干质量 · 含水率</div>
+          <div class="chip">默认不抵扣总排放</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>含碳量检测库</h3>
+        <div class="chips">
+          <div class="chip key">实测含碳率录入</div>
+          <div class="chip">实验室报告佐证</div>
+          <div class="chip">检测数据上 · 下架</div>
+          <div class="chip">产品建模直接引用</div>
+          <div class="chip">实测值覆盖默认值</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>竹木工艺模板</h3>
+        <div class="chips">
+          <div class="chip">竹原竹获取</div>
+          <div class="chip">竹段 · 开片</div>
+          <div class="chip">碳化 · 干燥</div>
+          <div class="chip">热压 · 冷压</div>
+          <div class="chip">竹筷成型</div>
+          <div class="chip">砂光 · 涂装</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>竹木物料 · 专用因子</h3>
+        <div class="chips">
+          <div class="chip">原竹 · 竹片 · 竹篾</div>
+          <div class="chip">竹屑 · 竹粉 · 刨花</div>
+          <div class="chip">胶黏剂</div>
+          <div class="chip">竹固碳因子</div>
+          <div class="chip">区域电网因子</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>联产品 · 边角料分配</h3>
+        <div class="chips">
+          <div class="chip key">竹材多产出分摊</div>
+          <div class="chip">重量 · 产值 · 数量</div>
+          <div class="chip">边角料碳流失</div>
+          <div class="chip">余热利用抵扣</div>
+          <div class="chip">分摊比例与依据留痕</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>竹木基线 · 标签 · 知识</h3>
+        <div class="chips">
+          <div class="chip">重竹地板 · 整竹砧板基线</div>
+          <div class="chip">竹碳化筷 · 竹餐具基线</div>
+          <div class="chip">竹木碳标签模板</div>
+          <div class="chip">木竹碳专题知识库</div>
+          <div class="chip">行业碳足迹参考线</div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================= 依据条 ================= -->
+  <div class="basis" style="margin-top:14px;">
+    <div class="basis-group">
+      <div class="basis-label lf"><i></i>通用核算标准</div>
+      <div class="basis-items">GB/T 24067-2024<span>·</span>ISO 14067<span>·</span>PAS 2050<span>·</span>GB/T 24044</div>
+    </div>
+    <div class="basis-sep"></div>
+    <div class="basis-group">
+      <div class="basis-label li"><i></i>竹木专项规则</div>
+      <div class="basis-items">GB/T 44290-2024<span>·</span>LY/T 3436-2025<span>·</span>T/CBIAS 2108-2025</div>
+    </div>
+    <div class="basis-tail">三层自上而下复用：行业换版只替换定制层</div>
+  </div>
+
+</div>
+</body>
+</html>

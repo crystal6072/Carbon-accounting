@@ -1,0 +1,92 @@
+/* 文件上传区（新增 / 编辑共用）：虚线容器 + 已选文件行 + 底部选择文件 */
+
+.upload-field {
+  padding: var(--space-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+}
+
+.upload-field-disabled {
+  opacity: 0.7;
+}
+
+.upload-field-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upload-field-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 6px var(--space-xs);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.upload-field-item + .upload-field-item {
+  margin-top: var(--space-xxs);
+}
+
+.upload-field-ext {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-spotlight);
+  border: 1px solid var(--color-border-secondary);
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
+.upload-field-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-field-size {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.upload-field-tag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-border);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+}
+
+.upload-field-empty {
+  padding: var(--space-sm) 0;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.upload-field-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.upload-field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}

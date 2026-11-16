@@ -1,0 +1,547 @@
+.report-wrap {
+  padding: 16px 24px 80px;
+}
+
+.rp-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a8f99);
+  margin-bottom: 8px;
+}
+.rp-breadcrumb .rp-sep {
+  color: var(--td-text-color-placeholder, #bbbfc6);
+}
+
+.rp-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rp-title-row h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.rp-page-desc {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a8f99);
+  margin: 4px 0 0;
+}
+
+.rp-link {
+  color: var(--td-brand-color, #0052d9);
+  cursor: pointer;
+  text-decoration: none;
+}
+.rp-link:hover {
+  text-decoration: underline;
+}
+.rp-link--disabled,
+.rp-link--disabled:hover {
+  color: var(--td-text-color-placeholder, #bbbfc6);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* 列表表格内操作 */
+.rp-table-op {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 详情页 */
+.rp-detail-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+.rp-detail-sub {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a8f99);
+  margin-top: 4px;
+}
+.rp-section-gap {
+  margin-top: 16px;
+}
+
+/* 封面与概况信息卡 */
+.rp-cover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 32px;
+}
+.rp-cover-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.rp-cover-item .rp-label {
+  color: var(--td-text-color-secondary, #8a8f99);
+}
+.rp-cover-item .rp-value {
+  color: var(--td-text-color-primary, #1d2129);
+  word-break: break-all;
+}
+.rp-cover-edit {
+  border-left: 3px solid var(--td-warning-color, #e37318);
+  padding-left: 12px;
+}
+.rp-cover-edit-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-warning-color, #e37318);
+  margin-bottom: 8px;
+}
+
+/* 企业信息 · 从企业信息库引用 */
+.rp-enterprise-ref {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.rp-enterprise-ref .rp-label {
+  color: var(--td-text-color-secondary, #8a8f99);
+}
+.rp-enterprise-ref-tip {
+  color: var(--td-text-color-placeholder, #bbbfc6);
+  font-size: 12px;
+}
+
+/* 现场补录说明 */
+.rp-enterprise-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--td-warning-color, #e37318);
+  background: var(--td-warning-color-1, #fef3e6);
+  border-radius: 4px;
+}
+
+/* 列表报告编号（等宽，便于比对） */
+.rp-report-no {
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.rp-date-input {
+  height: 32px;
+  border: 1px solid var(--td-component-border, #dcdcdc);
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--td-text-color-primary, #1d2129);
+}
+.rp-date-input:focus {
+  border-color: var(--td-brand-color, #0052d9);
+  outline: none;
+}
+
+/* 状态点 */
+.t-report-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.t-report-dot--primary {
+  background: var(--td-brand-color, #0052d9);
+}
+.t-report-dot--success {
+  background: var(--td-success-color, #2ba471);
+}
+.t-report-dot--warning {
+  background: var(--td-warning-color, #e37318);
+}
+
+/* 预览控件 */
+.rp-preview-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--td-component-stroke, #e7e7e7);
+}
+.rp-preview-toolbar .rp-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.rp-preview-toolbar .rp-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.rp-download-wrap {
+  display: inline-flex;
+}
+.rp-preview-scroll {
+  background: #525659;
+  padding: 24px;
+  /* 交由外层 flex 容器分配高度：Drawer / 内联预览都不再依赖 100vh */
+  flex: 1 1 auto;
+  min-height: 480px;
+  height: auto;
+  overflow: auto;
+}
+.rp-a4 {
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  margin: 0 auto 24px;
+  padding: 64px 72px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  color: #1d2129;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.rp-a4 h3 {
+  font-size: 17px;
+  border-bottom: 1px solid #dcdcdc;
+  padding-bottom: 6px;
+  margin: 22px 0 10px;
+}
+.rp-a4 h4 {
+  font-size: 14px;
+  margin: 14px 0 6px;
+}
+.rp-a4 p {
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+.rp-a4 table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 14px;
+  font-size: 12px;
+}
+.rp-a4 th,
+.rp-a4 td {
+  border: 1px solid #c9cdd4;
+  padding: 5px 8px;
+  text-align: left;
+}
+.rp-a4 th {
+  background: #f3f3f3;
+  font-weight: 600;
+}
+.rp-a4 .rp-cover-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 60px 0 8px;
+}
+.rp-a4 .rp-cover-sub {
+  text-align: center;
+  color: #555;
+  margin-bottom: 32px;
+}
+.rp-a4 .rp-foot {
+  text-align: center;
+  color: #8a8f99;
+  font-size: 11px;
+  margin-top: 24px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+.rp-a4 .rp-img {
+  max-width: 320px;
+  border: 1px solid #eee;
+  display: block;
+  margin: 8px 0;
+}
+.rp-a4 .rp-img-placeholder {
+  width: 320px;
+  height: 180px;
+  border: 1px dashed #c9cdd4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a8f99;
+  margin: 8px 0;
+}
+.rp-a4 .rp-blank {
+  color: var(--td-warning-color, #e37318);
+  font-style: italic;
+}
+
+/* 标准封面（GB/T 24067—2024 附录 G 模板） */
+.rp-standard-cover {
+  min-height: 980px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px 0;
+}
+.rp-standard-header {
+  text-align: right;
+  font-size: 13px;
+  font-family: 'Times New Roman', serif;
+  letter-spacing: 1px;
+  color: #000;
+  margin-bottom: 36px;
+}
+.rp-standard-appendix {
+  text-align: center;
+  font-family: 'SimSun', '宋体', serif;
+  margin-bottom: 28px;
+}
+.rp-standard-appendix > div {
+  font-size: 16px;
+  line-height: 1.9;
+  letter-spacing: 2px;
+}
+.rp-standard-appendix-title {
+  font-weight: 700;
+  font-size: 17px !important;
+}
+.rp-standard-title {
+  text-align: center;
+  font-family: 'SimHei', '黑体', 'Microsoft YaHei', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  margin: 18px 0 56px;
+}
+.rp-standard-fields {
+  margin: 0 auto;
+  width: 520px;
+  max-width: 100%;
+}
+.rp-standard-field {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 26px;
+  font-family: 'SimSun', '宋体', serif;
+  font-size: 15px;
+}
+.rp-standard-label {
+  white-space: nowrap;
+  letter-spacing: 2px;
+  margin-right: 8px;
+}
+.rp-standard-line {
+  flex: 1;
+  border-bottom: 1px solid #000;
+  min-height: 26px;
+  padding: 0 4px;
+  line-height: 26px;
+  word-break: break-all;
+}
+.rp-standard-footer {
+  margin-top: auto;
+  padding-top: 60px;
+  font-family: 'SimSun', '宋体', serif;
+  font-size: 15px;
+}
+.rp-standard-footer .rp-standard-field {
+  margin-bottom: 14px;
+}
+.rp-standard-stamp {
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.rp-standard-date {
+  display: flex;
+  align-items: flex-end;
+  padding-left: 0;
+  margin-top: 18px;
+}
+.rp-standard-date-line {
+  border-bottom: 1px solid #000;
+  min-width: 48px;
+  text-align: center;
+  margin: 0 4px;
+  min-height: 26px;
+  line-height: 26px;
+}
+
+/* ============ 分步向导（编制中） ============ */
+.rp-steps-wrap {
+  margin: 4px 0 8px;
+}
+.rp-step-card {
+  margin-top: 16px;
+}
+
+/* 底部冻结操作栏（与数据质量评价页一致：固定右下） */
+.rp-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--td-bg-color-container, #fff);
+  border-top: 1px solid var(--td-component-stroke, #e7e7e7);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 20;
+}
+
+/* 内联预览（步骤② 预览与生成报告）：把报告预览塞进固定高度容器内 */
+.rp-inline-preview {
+  height: 72vh;
+  display: flex;
+  border: 1px solid var(--td-component-stroke, #e7e7e7);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.rp-inline-preview > .rp-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* 内联场景下让预览滚动区自适应容器高度，而非整屏 */
+.rp-inline-preview .rp-preview-scroll {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+}
+.rp-inline-preview .rp-preview-toolbar {
+  flex: 0 0 auto;
+}
+
+/* ============ 产品信息卡 ============ */
+.rp-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 12px;
+  padding-left: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1d2129);
+  border-left: 3px solid var(--td-brand-color, #0052d9);
+  line-height: 1.2;
+}
+.rp-field-hint {
+  font-size: 12px;
+  color: var(--td-text-color-placeholder, #bbbfc6);
+}
+.rp-cover-item.is-readonly .rp-value {
+  color: var(--td-text-color-secondary, #8a8f99);
+}
+
+/* 碳足迹结果：重点凸显 */
+.rp-emission-highlight {
+  margin: 18px 0 4px;
+  padding: 18px 22px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8f3ff 0%, #f4f9ff 100%);
+  border: 1px solid #d4e6ff;
+}
+.rp-emission-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-brand-color, #0052d9);
+  letter-spacing: 1px;
+}
+.rp-emission-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 4px;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--td-brand-color, #0052d9);
+}
+.rp-emission-unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--td-text-color-secondary, #8a8f99);
+}
+.rp-pre {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+/* 图片上传 / 只读展示 */
+.rp-image-upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rp-image-tile {
+  position: relative;
+  width: 112px;
+  height: 84px;
+  border: 1px solid var(--td-component-stroke, #e7e7e7);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fafafa;
+}
+.rp-image-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.rp-image-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0;
+  cursor: pointer;
+}
+.rp-image-remove:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+.rp-image-add {
+  width: 112px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--td-component-border, #dcdcdc);
+  border-radius: 4px;
+  color: var(--td-text-color-secondary, #8a8f99);
+  font-size: 12px;
+  cursor: pointer;
+  background: #fff;
+}
+.rp-image-add:hover {
+  border-color: var(--td-brand-color, #0052d9);
+  color: var(--td-brand-color, #0052d9);
+}
+.rp-image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rp-image-item {
+  width: 112px;
+  height: 84px;
+  object-fit: cover;
+  border: 1px solid var(--td-component-stroke, #e7e7e7);
+  border-radius: 4px;
+  display: block;
+}

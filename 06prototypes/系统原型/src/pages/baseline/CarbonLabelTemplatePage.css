@@ -1,0 +1,402 @@
+/* ===================== 文本工具类（页内使用） ===================== */
+.text-sm {
+  font-size: var(--font-size-sm);
+}
+.text-xs {
+  font-size: var(--font-size-xs);
+}
+.font-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+/* ===================== 两栏布局：左 40% 配置 / 右 60% 预览 ===================== */
+.label-template-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .label-template-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===================== 左侧配置区 ===================== */
+.label-template-config {
+  padding: 0;
+}
+.label-section {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+.label-section:last-child {
+  border-bottom: none;
+}
+.label-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+.label-section-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+.label-section-tip {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.label-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--space-sm);
+}
+.label-field > label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* 模块块 */
+.label-module {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.label-module-body {
+  margin-top: var(--space-sm);
+}
+
+/* 开关 */
+.ui-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ui-switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.ui-switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background-color 0.25s ease;
+}
+.ui-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+
+/* 皮肤缩略图 */
+.skin-thumbs {
+  display: flex;
+  gap: var(--space-sm);
+}
+.skin-thumb {
+  flex: 1;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-base);
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.skin-thumb.active {
+  border-color: var(--color-text);
+}
+.skin-thumb-preview {
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.skin-thumb-preview > span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* 颜色输入 */
+.color-input {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+}
+
+/* 多选组 */
+.opt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.opt-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.opt-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-primary);
+}
+
+/* 色块（列表主色调） */
+.color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ===================== 右侧预览区（手机壳） ===================== */
+.label-template-preview {
+  position: sticky;
+  top: var(--space-md);
+  display: flex;
+  justify-content: center;
+  padding: var(--space-md) 0;
+}
+.phone-frame {
+  width: 340px;
+  background: #0f172a;
+  border-radius: 2.5rem;
+  padding: 10px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
+  position: relative;
+  flex-shrink: 0;
+}
+.phone-notch {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 22px;
+  background: #0f172a;
+  border-radius: 0 0 14px 14px;
+  z-index: 6;
+}
+.phone-screen {
+  background: #fff;
+  border-radius: 1.8rem;
+  height: 680px;
+  overflow-y: auto;
+  position: relative;
+}
+.phone-screen::-webkit-scrollbar {
+  width: 5px;
+}
+.phone-screen::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* 皮肤切换平滑过渡 */
+.skin-transition {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+}
+
+/* 手机屏内区块 */
+.phone-header {
+  padding: 42px 20px 18px;
+  color: #fff;
+}
+.phone-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.phone-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.phone-logo-badge {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.phone-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.phone-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.phone-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.phone-card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.phone-card-title {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 8px;
+}
+.phone-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+.phone-metric-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+.phone-metric-value {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.phone-kv {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+}
+.phone-kv-label {
+  color: var(--color-text-tertiary);
+}
+.phone-kv-value {
+  font-weight: 500;
+}
+.phone-report-btn {
+  margin-top: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.phone-image {
+  width: 100%;
+  height: 96px;
+  border-radius: 8px;
+  background: var(--color-bg-spotlight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-placeholder);
+  font-size: 12px;
+}
+.phone-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.phone-info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.phone-info-text {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  line-height: 1.6;
+}
+.phone-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.phone-scene-cell {
+  height: 72px;
+  border-radius: 8px;
+  background: var(--color-bg-spotlight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-placeholder);
+  font-size: 12px;
+}
+.phone-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.phone-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+.phone-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+.phone-table th,
+.phone-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+.phone-table th {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+/* 二维码规则预览 */
+.qr-preview {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--color-bg-spotlight);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-xs);
+  word-break: break-all;
+  color: var(--color-text-secondary);
+}

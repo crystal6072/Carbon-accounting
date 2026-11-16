@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>竹木产品碳足迹核算系统 · 标准架构</title>
+<style>
+  :root{
+    --ink:#1d2129; --ink2:#4e5969; --ink3:#86909c;
+    --line:#e3e7ee;
+    --c-access:#1a56b0; --c-app:#2a70e0; --c-svc:#2e8b57;
+    --c-data:#d4881f; --c-std:#5a6572;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{
+    width:1920px; height:1080px; overflow:hidden;
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    background:#fff; color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  .board{
+    width:1920px; height:1080px; padding:44px 48px;
+    display:flex; flex-direction:column;
+  }
+  header{ flex:0 0 auto; padding-bottom:26px; }
+  h1{ font-size:40px; font-weight:800; letter-spacing:.6px; line-height:1.1; }
+  h1 em{ font-style:normal; color:var(--c-app); }
+  .sub{ font-size:16px; color:var(--ink3); margin-top:11px; letter-spacing:.4px; }
+
+  .layers{ flex:1 1 auto; display:flex; flex-direction:column; gap:18px; min-height:0; }
+  .layer{ display:flex; gap:28px; min-height:0; }
+
+  .tab{
+    flex:0 0 240px; border-radius:12px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#fff;
+  }
+  .t-name{ font-size:30px; font-weight:700; letter-spacing:1px; }
+  .t-en{ font-size:12px; letter-spacing:2.6px; opacity:.66; text-transform:uppercase; margin-top:7px; }
+
+  .panel{
+    flex:1; border:1px solid var(--line); border-radius:12px;
+    padding:0 40px; display:flex; flex-direction:column; justify-content:center;
+    overflow:hidden;
+  }
+
+  .line{
+    font-size:23px; font-weight:500; color:var(--ink); letter-spacing:.2px;
+    line-height:1.42; white-space:nowrap;
+  }
+  .line + .line{ margin-top:13px; }
+  .line .d{ color:#b3bbc9; padding:0 5px; font-weight:400; }
+  .lead{
+    font-size:15px; font-weight:600; color:var(--ink3);
+    letter-spacing:.5px; margin-right:13px;
+  }
+  .lead.spacer{ visibility:hidden; }
+  .note{ font-size:17px; color:var(--ink3); margin-top:12px; letter-spacing:.3px; }
+  .line.sm{ font-size:21px; }
+  .line.xs{ font-size:20px; }
+  .line.std b{ font-weight:700; color:var(--ink); }
+
+  .g-access{ background:var(--c-access); }
+  .g-app   { background:var(--c-app); }
+  .g-svc   { background:var(--c-svc); }
+  .g-data  { background:var(--c-data); }
+  .g-std   { background:var(--c-std); }
+</style>
+</head>
+<body>
+<div class="board">
+  <header>
+    <h1>竹木产品碳足迹核算系统 · <em>标准架构</em></h1>
+    <div class="sub">五层架构 · 2 个一级分组 22 个二级分组 54 项功能 · 依据 GB/T 24067-2024 与 ISO 14067</div>
+  </header>
+
+  <div class="layers">
+
+    <!-- L1 用户与接入层 -->
+    <section class="layer" style="flex:148 1 0">
+      <div class="tab g-access">
+        <div class="t-name">用户与接入层</div>
+        <div class="t-en">Access</div>
+      </div>
+      <div class="panel">
+        <div class="line">企业用户端<span class="d">·</span>平台运营端<span class="d">·</span>租户管理端</div>
+        <div class="note">一套代码、一棵菜单树，端差异只由角色功能勾选表达</div>
+      </div>
+    </section>
+
+    <!-- L2 应用层 -->
+    <section class="layer" style="flex:248 1 0">
+      <div class="tab g-app">
+        <div class="t-name">应用层</div>
+        <div class="t-en">Application</div>
+      </div>
+      <div class="panel">
+        <div class="line sm"><span class="lead">产品碳足迹</span>工作台<span class="d">·</span>碳足迹核算<span class="d">·</span>报告管理<span class="d">·</span>产品库<span class="d">·</span>工艺库<span class="d">·</span>因子管理<span class="d">·</span>模型管理</div>
+        <div class="line sm"><span class="lead spacer">产品碳足迹</span>典型案例库<span class="d">·</span>含碳量检测库<span class="d">·</span>文件管理<span class="d">·</span>台账管理<span class="d">·</span>数据管理<span class="d">·</span>知识中心</div>
+        <div class="line sm"><span class="lead">系统管理</span>产品库<span class="d">·</span>工艺流程管理<span class="d">·</span>基础库<span class="d">·</span>碳核算知识库<span class="d">·</span>产品碳基线库<span class="d">·</span>数据集管理<span class="d">·</span>模型管理<span class="d">·</span>系统参数配置<span class="d">·</span>组织与权限</div>
+      </div>
+    </section>
+
+    <!-- L3 服务层 -->
+    <section class="layer" style="flex:144 1 0">
+      <div class="tab g-svc">
+        <div class="t-name">服务层</div>
+        <div class="t-en">Services</div>
+      </div>
+      <div class="panel">
+        <div class="line sm">碳足迹核算引擎<span class="d">·</span>生物碳固存核算<span class="d">·</span>因子匹配与引用<span class="d">·</span>核算模型发布与引用<span class="d">·</span>数据审核与脱敏入库<span class="d">·</span>数据集版本快照<span class="d">·</span>多租户数据隔离</div>
+      </div>
+    </section>
+
+    <!-- L4 数据层 -->
+    <section class="layer" style="flex:144 1 0">
+      <div class="tab g-data">
+        <div class="t-name">数据层</div>
+        <div class="t-en">Data</div>
+      </div>
+      <div class="panel">
+        <div class="line">产品与工艺<span class="d">·</span>因子与模型<span class="d">·</span>台账与检测<span class="d">·</span>核算结果与报告<span class="d">·</span>知识与基线<span class="d">·</span>行业数据集<span class="d">·</span>租户与权限</div>
+      </div>
+    </section>
+
+    <!-- L5 标准对接层 -->
+    <section class="layer" style="flex:131 1 0">
+      <div class="tab g-std">
+        <div class="t-name">标准对接层</div>
+        <div class="t-en">Standard</div>
+      </div>
+      <div class="panel">
+        <div class="line sm std"><b>GB/T 24067-2024</b><span class="d">·</span><b>ISO 14067</b></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>

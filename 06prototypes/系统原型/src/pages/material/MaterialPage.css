@@ -1,0 +1,14 @@
+/* 物料库（基础库 A1-1）：轻量基础数据（列表 + 查看 / 新增 / 编辑弹窗，支持批量启用 / 停用） */
+/* 通用内容块（.view-block / .char-count）已上移至 shared/styles/global.css，供各模块复用 */
+/* 列表容器 / 批量选择列等通用样式（.material-table-wrap / .material-check）已上移至 global.css */
+
+/* 描述字数统计（右下角 12px） */
+.char-count {
+  margin-top: var(--space-xxs);
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.char-count-over {
+  color: var(--color-error);
+}

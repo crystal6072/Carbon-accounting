@@ -28,7 +28,7 @@
 | 模块类型 | **项目内执行步骤 + 报告载体**（子对象：报告 / 报告版本 / 报告模板引用 / 封面信息） |
 | 维护形态 | 工作台步骤⑤ 单页：**生成区（模板选择 + 生成/重新生成）** + **报告编辑区（文档式编辑器 + 封面信息补充）** + **动作区（预览 / 下载 / 确认完成）** |
 | 路由 | `/pcf/project/:id/5`（步骤序号制，报告由原 `:id/6` 前移为 `:id/5`） |
-| 原型组件 | 新建 `06prototypes/6-1系统原型骨架/src/pages/pcf/ProjectStepFive.tsx`（**原同名组件已随 ④⑤ 合并移除，需新建**）；同步 `pcfMeta.ts` 的 `PCF_STEPS`（第⑤步「报告」） |
+| 原型组件 | 新建 `06prototypes/系统原型/src/pages/pcf/ProjectStepFive.tsx`（**原同名组件已随 ④⑤ 合并移除，需新建**）；同步 `pcfMeta.ts` 的 `PCF_STEPS`（第⑤步「报告」） |
 | 报告确认角色 | **由核算人员执行**（骨架 D10），确认后项目进入终态 |
 | 术语铁律 | 前台只出现「人话」：报告、模板、封面信息、说明性内容、确认完成、下载；**禁止**出现公式 DSL、绑定、快照、计算引擎、异常编号（骨架 D06 / S-007） |
 
@@ -50,7 +50,7 @@
 2. **业务 PRD（规则）**：`核算项目业务PRD.md`（项目状态机 / R-006 删除边界）、`碳足迹核算业务PRD.md`（R-042~R-051，结果版本）
 3. **交互基线**：`00碳核算项目_模块拆分与交互骨架.md` §4.3 步骤条、§5.2 状态→步骤映射、§6 S-001 起、§9 D10/D24
 4. **方案真相源**：`产品碳足迹核算系统_整体设计方案_v1.2.md` §4.8（报告生成 / 章节要素 / 编辑边界 / 版本 / 确认 / 输出）、§5.5（报告准入校验）、§4.9（版本全量留存）、§7（角色权限）
-5. **模板与规范**：`07template/`（业务 PRD 模板、Demo PRD 模板、页面骨架模板、字段清单模板）；`06prototypes/6-1系统原型骨架/` 现有步骤组件（`ProjectStepFour.tsx` 等）与 `.cursor/rules/`（design-system-*、page-patterns、prototype-architecture）
+5. **模板与规范**：`07template/`（业务 PRD 模板、Demo PRD 模板、页面骨架模板、字段清单模板）；`06prototypes/系统原型/` 现有步骤组件（`ProjectStepFour.tsx` 等）与 `.cursor/rules/`（design-system-*、page-patterns、prototype-architecture）
 6. **参照同批产物**：`05 检测核算与结果/` 三件产物的章节结构与写法（本批对齐其风格）
 
 ## 权威边界
@@ -72,7 +72,7 @@
 | ① 字段清单 | `04产品设计管理/02prd/02-2前台业务功能/01 碳核算项目/06生成报告/报告生成字段清单.md` |
 | ② 业务 PRD | `04产品设计管理/02prd/02-2前台业务功能/01 碳核算项目/06生成报告/报告生成业务PRD.md` |
 | ③ Demo PRD | `04产品设计管理/02prd/02-2前台业务功能/01 碳核算项目/06生成报告/报告生成_Demo.md` |
-| ④ 前端原型 | `06prototypes/6-1系统原型骨架/src/pages/pcf/ProjectStepFive.tsx`（+ `pcfMeta.ts` / mock / 样式按需） |
+| ④ 前端原型 | `06prototypes/系统原型/src/pages/pcf/ProjectStepFive.tsx`（+ `pcfMeta.ts` / mock / 样式按需） |
 
 ---
 

@@ -1,0 +1,938 @@
+import type { Annotation } from './types'
+
+/**
+ * 行业数据集功能批注数据（前台 · 数据管理 · 行业数据集，路由 /dataset/records）。
+ * - matched：锚定到页面元素（selector = data-ann-target 值），元素旁显示批注标记；
+ * - global：跨页面 / 文档级说明，进入本模块「全局批注」抽屉。
+ * 口径来源：《行业数据集字段清单》§6.2（S01–S10）、《行业数据集业务 PRD》§6，
+ * 以及原型实现 src/pages/dataset/{datasetMeta,statAnalytics,StatPanel}.ts(x)。
+ */
+export const datasetAnnotations: Annotation[] = [
+  /* ==================== 列表页：定位 / 入口 / 检索 / 列表 ==================== */
+  {
+    id: 'ann-dataset-scope',
+    title: '模块定位与数据来源',
+    code: 'DS-01',
+    blocks: [
+      { type: 'heading', text: '本页是什么' },
+      {
+        type: 'paragraph',
+        text: '企业侧**只读浏览平台已发布的行业数据集**，用于行业对标与统计分析；本页不产生任何数据。',
+      },
+      { type: 'heading', text: '数据来源' },
+      {
+        type: 'list',
+        items: [
+          '取后台「数据集管理 · 公共数据库」的**当前发布版本**（发版快照），审核入库但未发版的数据**不进入**本页。',
+          '企业侧**不感知版本**：页面不展示版本号、不提供历史版本切换；平台回滚发布后本页随之切换。',
+          '一条记录 = 一条核算结果快照（数值与标签在入库时冻结，上游重算不回溯）。',
+        ],
+      },
+      { type: 'heading', text: '不承载的能力' },
+      {
+        type: 'list',
+        items: [
+          '**无补录、无编辑、无作废 / 恢复、无发版、无行内上报**。',
+          '「企业数据上报」的唯一入口是「数据管理 · 企业数据上报」（`/dataset/report`）。',
+          '不带出活动数据、因子明细与计算过程，只呈现结果与标签。',
+        ],
+      },
+    ],
+    source: '《行业数据集业务 PRD》定位调整声明 / 原型 DatasetListPage 页面注释',
+    operation: '模块定位 / 数据来源',
+    buttonText: '页面说明条',
+    selector: 'dataset.records.note',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.note', label: '页面说明条', reason: '模块定位说明位置' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-export',
+    title: '导出',
+    code: 'DS-02',
+    blocks: [
+      { type: 'heading', text: '导出范围' },
+      {
+        type: 'paragraph',
+        text: '导出**当前查询条件下命中的全部记录**（`sorted`），不是当前页；分页只影响页面展示，不影响导出。',
+      },
+      { type: 'heading', text: '导出内容' },
+      {
+        type: 'list',
+        items: [
+          '15 列：记录编号、产品名称、产品编码、产品类别、所属行业、区域、工艺、系统边界、声明单位、总碳足迹、排放单位、统计期间、来源、状态、入库时间。',
+          '区域导出完整路径（未填时写「未填」）；工艺多值以「；」拼接；总碳足迹固定 4 位小数。',
+          '文件为 UTF-8（带 BOM）CSV，文件名 `行业数据集_YYYY-MM-DD.csv`。',
+        ],
+      },
+      { type: 'heading', text: '规则' },
+      {
+        type: 'list',
+        items: [
+          '**命中 0 条时按钮禁用**，不导出空文件。',
+          '导出**不改变**列表筛选、分页与统计条件。',
+          '企业标识按脱敏后的口径导出（不导出企业真实名称）。',
+        ],
+      },
+    ],
+    source: '原型 datasetMeta.exportRecordsCsv / DatasetListPage',
+    operation: '导出',
+    buttonText: '导出',
+    selector: 'dataset.records.export',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.export', label: '导出', reason: '页头导出按钮' }],
+    global: false,
+    priority: 'medium',
+  },
+  {
+    id: 'ann-dataset-tabs',
+    title: '「数据 / 统计分析」双视图',
+    code: 'DS-03',
+    blocks: [
+      { type: 'heading', text: '两个 Tab 的关系' },
+      {
+        type: 'paragraph',
+        text: '同一份发布数据的**两个视图**：数据 Tab 逐条看记录，统计分析 Tab 看整体分布与维度差异。',
+      },
+      { type: 'heading', text: '关键差异' },
+      {
+        type: 'table',
+        columns: ['维度', '数据 Tab', '统计分析 Tab'],
+        rows: [
+          ['数据范围', '取当前**列表筛选**结果', '取**最新发布版本全量**数据，不继承列表筛选，在统计条件条内单独设条件'],
+          ['计数含义', 'Tab 上的数字 = 当前筛选命中条数', '样本数 n = 同口径样本量（可能小于命中数，见 DS-10）'],
+          ['主要动作', '查询 / 导出 / 详情', '切条件 / 切边界 / 切拆分维度，无写操作'],
+        ],
+      },
+      { type: 'heading', text: '切换规则' },
+      {
+        type: 'list',
+        items: [
+          '切 Tab **不重置**另一侧的条件（数据 Tab 的筛选与统计分析的条件各自独立保存）。',
+          '统计只读当前发布版本；平台尚未发布版本时统计区给出发布前空态。',
+        ],
+      },
+    ],
+    source: '原型 DatasetListPage Tab 实现 / StatPanel 顶部注释',
+    operation: 'Tab 切换',
+    buttonText: '数据 / 统计分析',
+    selector: 'dataset.records.tabs',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.tabs', label: '数据 / 统计分析 Tab', reason: '视图切换入口' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-query',
+    title: '检索条件',
+    code: 'DS-04',
+    blocks: [
+      { type: 'heading', text: '四个条件' },
+      {
+        type: 'table',
+        columns: ['条件', '控件', '匹配规则'],
+        rows: [
+          ['产品类别', '级联选择', '**父级含子级**：选父类命中其全部子类（按类别树展开取值）'],
+          ['所属行业', '下拉单选', '按行业编码**精确匹配**（选项取行业库末级行业）'],
+          ['区域', '多选', '**统一按省级比对**：记录登记为「省 / 市 / 区」时取第一段，避免同省被拆散'],
+          ['关键词', '输入框', '对产品名称 / 产品编码 / 数据编号 / 数据来源企业**模糊包含**（不区分大小写）'],
+        ],
+      },
+      { type: 'heading', text: '组合与触发' },
+      {
+        type: 'list',
+        items: [
+          '条件之间为 **AND**；区域内部多选为 **OR**。',
+          '输入条件后需点「查询」才生效（草稿条件与已生效条件分离），点「重置」清空草稿并立即生效。',
+          '条件变化后**页码回到第 1 页**。',
+        ],
+      },
+      { type: 'heading', text: '不提供的条件' },
+      {
+        type: 'paragraph',
+        text: '列表**不提供**系统边界、统计期间、来源、状态的筛选；这些维度在详情中查看，统计侧由「系统边界」分段控件单独切换。',
+      },
+    ],
+    source: '原型 DatasetListPage filtered / 页面注释',
+    operation: '组合检索',
+    buttonText: '查询 / 重置',
+    selector: 'dataset.records.query',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.query', label: '检索条件区', reason: '查询条件容器' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-list',
+    title: '数据列表与字段口径',
+    code: 'DS-05',
+    blocks: [
+      { type: 'heading', text: '列表规则' },
+      {
+        type: 'list',
+        items: [
+          '默认按**入库时间（createdAt）倒序**，每页 20 条，分页在前端切片。',
+          '列：数据编号、产品名称（含产品编码）、产品类别、所属行业、区域、工艺、系统边界、声明单位、碳足迹数值、统计期间、数据来源、操作。',
+        ],
+      },
+      { type: 'heading', text: '字段口径' },
+      {
+        type: 'table',
+        columns: ['字段', '取值规则'],
+        rows: [
+          ['区域', '显示**省级**（取路径第一段），完整「省 / 市 / 区」放在悬停提示；未填显示「未填」'],
+          ['工艺', '最多显示 2 个标签，超出显示「+N」；无工艺显示「—」'],
+          ['声明单位', '`unitValue + unitCode`，如 `1 双`、`1 m²`'],
+          ['碳足迹数值', '`总碳足迹` 最多 4 位小数去尾零，单位写作 `排放单位/声明单位`（如 `kgCO₂e/m²`）'],
+          ['数据来源', '有企业标识时显示「某华东地区企业（脱敏）」，无标识显示「平台核算」'],
+          ['统计期间', '`periodStart ~ periodEnd`，为核算结果快照期间'],
+        ],
+      },
+      { type: 'heading', text: '空态' },
+      {
+        type: 'paragraph',
+        text: '有发布版本但条件无命中 → 「当前筛选条件下暂无数据，可调整筛选条件」；无发布版本 → 「平台尚未发布行业数据集，发布后可在此查看」。',
+      },
+    ],
+    source: '原型 DatasetListPage 列定义 / datasetMeta 格式化口径',
+    operation: '列表展示',
+    buttonText: '已发布数据列表',
+    selector: 'dataset.records.table',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.table', label: '已发布数据列表', reason: '列表区' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-detail',
+    title: '记录详情（只读）',
+    code: 'DS-06',
+    blocks: [
+      { type: 'heading', text: '打开方式' },
+      {
+        type: 'paragraph',
+        text: '点产品名称或行内「详情」打开右侧抽屉；**只读**，底部固定提示「行业数据集为平台已发布数据快照，只读可追溯」。',
+      },
+      { type: 'heading', text: '内容分区' },
+      {
+        type: 'list',
+        items: [
+          '**总碳足迹**：数值 + 排放单位 / 声明单位，取自入库快照。',
+          '**基本信息**：类别、行业、区域、工艺、系统边界、统计期间、声明单位、核算标准、排放口径、GWP 版本、数据来源企业（脱敏）、入库时间与入库人。',
+          '**阶段构成**：阶段名称 / 排放值 / 占比；无阶段数据时提示「该记录未提供阶段数据（仅参与总值统计）」。',
+          '**来源追溯**：来源类型、来源项目编号与核算次数、来源说明、数据质量说明、依据文件。',
+        ],
+      },
+      { type: 'heading', text: '规则' },
+      {
+        type: 'list',
+        items: [
+          '数值为**入库快照**，上游项目重算或删除都不改变本记录。',
+          '阶段合计与总值相差超过 0.5% 时列表标记「阶段不闭合」，详情不改原值、不做修正。',
+          '不展示活动数据、因子、计算过程，也不提供作废 / 恢复入口。',
+        ],
+      },
+    ],
+    source: '原型 RecordDetailDrawer / datasetMeta.badgesOf',
+    operation: '查看详情',
+    buttonText: '详情',
+    selector: 'dataset.records.detail',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.detail', label: '详情', reason: '行内详情入口' }],
+    global: false,
+    priority: 'medium',
+  },
+
+  /* ==================== 统计分析：整体口径链 ==================== */
+  {
+    id: 'ann-dataset-stat-overview',
+    title: '统计分析整体口径链',
+    code: 'DS-07',
+    blocks: [
+      { type: 'paragraph', text: '统计分析不是对「列表当前页」算，而是按固定链路先筛范围、再锁同口径、最后计算。四步如下。' },
+      {
+        type: 'steps',
+        items: [
+          '取数：最新发布版本的**全量记录**（不继承数据 Tab 的筛选）',
+          '条件过滤：时间范围 + 行业 + 地域 + 产品类别（四者 AND）→ 命中记录集',
+          '边界分组：按「系统边界」把命中集拆开，当前只统计所选边界的记录',
+          '单位分组：在所选边界内再按「声明单位 + GWP 版本 + 排放单位」分桶；**不做单位换算**，不同声明单位各自统计',
+          '口径选择：默认取条数最多的桶（并列时「摇篮到大门」优先），用户可在同行的「单位」控件里显式切换',
+        ],
+      },
+      { type: 'heading', text: '统计对象' },
+      {
+        type: 'paragraph',
+        text: '统计对象 = 上述链路得到的**同口径有效样本集**；不是全部已发布数据，也不是筛选命中数本身。差额（边界 / 单位 / GWP / 排放单位 / 状态排除）在口径条中明示条数与原因。',
+      },
+      { type: 'heading', text: '空态与样本量门槛' },
+      {
+        type: 'list',
+        items: [
+          '样本 n = 0 → 显示空态，不渲染任何指标与图表。',
+          'n = 1：可算均值 / 中位数，**标准差与 CV 为空**（页面显示「—」）。',
+          'n ≥ 2：补充计算样本标准差与 CV；不设样本量阈值，**不做降级展示**。',
+        ],
+      },
+    ],
+    source: '原型 statAnalytics.buildStatModel / pickComparable；《行业数据集字段清单》S01、S09',
+    operation: '统计口径链',
+    buttonText: '统计分析（视图容器）',
+    selector: 'dataset.records.stat',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat', label: '统计分析视图', reason: '统计视图容器' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-stat-conditions',
+    title: '统计条件（时间范围 / 行业 / 地域 / 产品类别）',
+    code: 'DS-08',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      {
+        type: 'paragraph',
+        text: '取**最新发布版本全量记录**；下拉选项由当前数据动态去重生成（行业名 / 省级地域 / 类别名或类别路径），不是固定字典。',
+      },
+      { type: 'heading', text: '时间范围规则（按统计期间**结束年**取值）' },
+      {
+        type: 'table',
+        columns: ['选项', '取值区间'],
+        rows: [
+          ['全部年度', '不限制年份'],
+          ['最近 12 个月', '仅取**最新年度那一年**（数据为年度粒度，不是滚动 12 个月）'],
+          ['最近 24 个月', '`最新年度 − 1` ~ `最新年度`，共两年'],
+          ['自定义年度区间', '起始年 / 截止年可在数据年度中选择，缺省为最早年 / 最新年；起止填反时自动交换'],
+        ],
+      },
+      { type: 'heading', text: '其他条件' },
+      {
+        type: 'list',
+        items: [
+          '所属行业：按行业**名称**精确匹配（与列表按编码匹配不同）。',
+          '地域：按**省级**匹配（三级路径取第一段）。',
+          '产品类别：按 `categoryName`，缺省用 `categoryPath` 精确匹配。',
+          '三者与时间范围同为 **AND**；条件条右侧实时显示「命中 X / 全部 N 条」。',
+        ],
+      },
+      { type: 'heading', text: '与拆分维度的关系' },
+      {
+        type: 'paragraph',
+        text: '条件**只收窄统计范围**，不改变下方「维度对比」所选维度；若某维度已被条件锁定，图表下方提示「该维度已被筛选」，控件不置灰、不隐藏。',
+      },
+    ],
+    source: '原型 StatPanel 条件条 / conditionedRecords / timeWindow',
+    operation: '设置统计条件',
+    buttonText: '统计条件',
+    selector: 'dataset.records.stat.conditions',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.conditions', label: '统计条件条', reason: '条件设置区' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-stat-caliber',
+    title: '统计口径提示与同口径聚合',
+    code: 'DS-09',
+    blocks: [
+      { type: 'heading', text: '提示条含义' },
+      {
+        type: 'paragraph',
+        text: '「当前统计范围：{系统边界} · {排放单位/声明单位} · 参与统计 N 条（另示意补足 M 条）」+ 右侧「时间区间 · 命中 X 条」+ 可展开的「已排除 K 条」。',
+      },
+      { type: 'heading', text: '同口径锁定规则' },
+      {
+        type: 'list',
+        items: [
+          '分组键 = `声明单位 + GWP 版本 + 排放单位`（边界已在上一步分组），三者任一不同**不得混算**。',
+          '按上述键分桶，取**真实记录数最多的桶**作为默认样本集；并列时优先「摇篮到大门」，仍并列则按桶键字典序，保证结果可复现。',
+          '**本期不做单位换算**：`m²` / `m³` / `个` / `双` 等单位各自成桶，不合并、不加总。',
+          '排放分子单位同样不换算：`gCO₂e` 与 `kgCO₂e` 不会进同一桶。',
+        ],
+      },
+      { type: 'heading', text: '排除条数与原因（可见）' },
+      {
+        type: 'list',
+        items: [
+          '口径条显示「已排除 K 条」，展开后按原因拆分：声明单位不一致 / GWP 版本不一致 / 排放分子单位不一致 / 非「有效」状态。',
+          '归因优先级：声明单位 → GWP 版本 → 排放单位 → 状态，一条记录只计入首个不一致的原因。',
+          '「声明单位不一致」是**不可换算**导致的分开统计，不是数据错误；提示文案引导用户去同行的「单位」控件切换查看。',
+        ],
+      },
+      { type: 'heading', text: '边界状态过滤' },
+      {
+        type: 'paragraph',
+        text: '只有 `status = active`（有效）的记录参与；「已替代」「作废」一律排除，并计入排除条数。',
+      },
+    ],
+    source: '原型 statAnalytics.collectBuckets / exclusionOf / buildStatModel；《行业数据集字段清单》S09 / D12',
+    operation: '口径校验',
+    buttonText: '口径提示条',
+    selector: 'dataset.records.stat.caliber',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.caliber', label: '口径提示条', reason: '口径说明位置' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-stat-boundary',
+    title: '系统边界切换',
+    code: 'DS-10',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      {
+        type: 'paragraph',
+        text: '分段控件上的数量 = **当前统计条件下**该边界的记录条数（不是全库条数）。',
+      },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          '不同边界**分开统计**，一次只算一个边界，绝不跨边界求均值。',
+          '边界选项按「摇篮到大门」优先排序；数量为 0 的边界不出现。',
+          '所选边界在新条件下无数据时，**自动回落到首个可用边界**，避免整页空白。',
+          '切换边界后，四个指标、点图、直方图、分布摘要、维度对比**全部重算**。',
+        ],
+      },
+      { type: 'heading', text: '为什么必须分开' },
+      {
+        type: 'paragraph',
+        text: '摇篮到大门与摇篮到坟墓的核算范围不同，混在一起会同时抬高均值、放大离散度，失去对标意义。',
+      },
+    ],
+    source: '原型 StatPanel boundaryOptions / activeBoundary；《行业数据集字段清单》S09',
+    operation: '切换系统边界',
+    buttonText: '系统边界',
+    selector: 'dataset.records.stat.boundary',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.boundary', label: '系统边界分段控件', reason: '边界切换区' }],
+    global: false,
+    priority: 'high',
+  },
+  {
+    id: 'ann-dataset-stat-unit',
+    title: '单位口径切换（不换算，分开统计）',
+    code: 'DS-10B',
+    blocks: [
+      { type: 'heading', text: '控件位置' },
+      {
+        type: 'paragraph',
+        text: '标签为「**单位**」，与「系统边界」放在**同一行**，两组分段控件之间用竖线分隔；行尾提示当前口径是否可合并。',
+      },
+      { type: 'heading', text: '为什么需要切换' },
+      {
+        type: 'paragraph',
+        text: '同一产品类别、同一系统边界下，不同产品的声明单位常不相同（板材按 m²、集成材按 m³、砧板按双、餐盒按个）。**量纲不同，没有换算关系，不能求同一个均值**，否则等于把面积和体积相加。',
+      },
+      { type: 'heading', text: '控件规则' },
+      {
+        type: 'list',
+        items: [
+          '分段控件上的数字 = **该单位在当前条件下的真实记录条数**（不含示意补足），按条数降序排列。',
+          '默认选中条数最多的单位；切换后四个指标、点图、直方图、分布摘要、维度对比**全部按新单位重算**。',
+          '所选单位在条件变化后不存在时，自动回落到首个可用单位，避免整页空白。',
+          '单位为空时标「未填单位」，同样可单独统计，提示补填。',
+        ],
+      },
+      { type: 'heading', text: '本期边界（不做的事）' },
+      {
+        type: 'list',
+        items: [
+          '**不做单位换算**：同类型的 `kg / t`、`双 / 打` 也不折算，一律分开统计。',
+          '不做跨单位合并的加权均值，不做「等效功能单位」推断。',
+          '存在多种单位时，行尾提示「N 种单位不换算、不合并，与系统边界一样分开统计」，明确告知这不是数据缺失。',
+        ],
+      },
+    ],
+    source: '原型 StatPanel 声明单位分段控件 / statAnalytics.UnitBucket；《行业数据集字段清单》S09 / D12',
+    operation: '切换声明单位口径',
+    buttonText: '声明单位',
+    selector: 'dataset.records.stat.unit',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.unit', label: '声明单位分段控件', reason: '单位口径切换区' }],
+    global: false,
+    priority: 'high',
+  },
+
+  /* ==================== 统计分析：四个关键指标 ==================== */
+  {
+    id: 'ann-dataset-stat-n',
+    title: '指标：样本数 n',
+    code: 'DS-11',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      {
+        type: 'paragraph',
+        text: 'n = 当前边界下**同口径样本集的记录条数**，不是列表命中数。',
+      },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          '一条记录计 1，不做产品去重、不按企业去重、不按版本累计。',
+          '辅助行「覆盖 X 个行业 · Y 个省份 · Z 个年度」= 样本集内相应字段的去重计数。',
+          '样本量不足时按真实样本如实展示，**不做降级展示**。',
+        ],
+      },
+      { type: 'heading', text: '计算公式' },
+      {
+        type: 'paragraph',
+        text: '`n = Σ 1`（对样本集内每条记录计数）。',
+      },
+    ],
+    source: '原型 statAnalytics.buildStatModel / StatPanel MetricCard；《行业数据集字段清单》S01',
+    operation: '读取样本数',
+    buttonText: '样本数 n',
+    selector: 'dataset.records.stat.n',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.n', label: '样本数 n 指标卡', reason: '指标卡位置' }],
+    global: false,
+    priority: 'high',
+    formula: 'n = Σ 1（对样本集内每条记录计数）',
+  },
+  {
+    id: 'ann-dataset-stat-mean',
+    title: '指标：均值',
+    code: 'DS-12',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      {
+        type: 'paragraph',
+        text: '对样本集逐条取 `totalEmission`（总碳足迹），单位沿用核算结果，**不换算、不加权**。',
+      },
+      { type: 'heading', text: '计算公式' },
+      { type: 'paragraph', text: '`x̄ = (x₁ + x₂ + … + xₙ) / n`（算术平均）' },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          '加权平均（按产量 / 产值加权）本期不做，一条记录权重相同。',
+          '显示 2 位小数；辅助行给出「最新批次 X 年 均值」，该值为**横截面批次均值**，不是趋势。',
+          '均值对极端值敏感；判断「典型水平」时以中位数为准（见 DS-13）。',
+        ],
+      },
+      { type: 'heading', text: '单位' },
+      {
+        type: 'paragraph',
+        text: '写作 `排放单位/声明单位`（如 `kgCO₂e/m²`）；口径条与图表纵轴同源。',
+      },
+    ],
+    source: '原型 computeStats / StatPanel MetricCard；《行业数据集字段清单》S02',
+    operation: '读取均值',
+    buttonText: '均值',
+    selector: 'dataset.records.stat.mean',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.mean', label: '均值指标卡', reason: '指标卡位置' }],
+    global: false,
+    priority: 'high',
+    formula: 'x̄ = Σxᵢ / n',
+  },
+  {
+    id: 'ann-dataset-stat-median',
+    title: '指标：中位数（代表性水平）',
+    code: 'DS-13',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '同一样本集的 `totalEmission`，先升序排序再取中位。' },
+      { type: 'heading', text: '计算公式' },
+      {
+        type: 'list',
+        items: [
+          'n 为奇数：`M = x₍ₙ₊₁₎/₂`（正中间那一个）',
+          'n 为偶数：`M = (xₙ/₂ + xₙ/₂₊₁) / 2`（中间两个的平均）',
+          '实现口径为百分位线性插值 `rank = (n − 1) × 0.5`，结果与上述两式等价。',
+        ],
+      },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          '中位数作为**代表性水平**首选指标，抗离群；卡片带「代表性水平」标签并高亮。',
+          '辅助行「与均值偏差」= `中位数 − 均值`（带正负号，2 位小数）；偏差越大说明分布越偏斜。',
+          '显示 2 位小数，单位同均值。',
+        ],
+      },
+    ],
+    source: '原型 computeStats.percentile / StatPanel MetricCard；《行业数据集字段清单》S03',
+    operation: '读取中位数',
+    buttonText: '中位数',
+    selector: 'dataset.records.stat.median',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.median', label: '中位数指标卡', reason: '指标卡位置' }],
+    global: false,
+    priority: 'high',
+    formula: 'n 奇：M = x₍ₙ₊₁₎/₂；n 偶：M = (xₙ/₂ + xₙ/₂₊₁)/2',
+  },
+  {
+    id: 'ann-dataset-stat-dispersion',
+    title: '指标：离散度（CV / 标准差）',
+    code: 'DS-14',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '同一样本集的 `totalEmission`，基于均值 `x̄` 计算。' },
+      { type: 'heading', text: '计算公式' },
+      {
+        type: 'list',
+        ordered: true,
+        items: [
+          '样本方差：`s² = Σ(xᵢ − x̄)² / (n − 1)`（分母为 n−1，样本口径）',
+          '样本标准差：`s = √s²`',
+          '变异系数：`CV = s / x̄ × 100%`（`x̄ ≤ 0` 时不计算）',
+          '典型区间：`[x̄ − s, x̄ + s]`',
+        ],
+      },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          'CV 展示 1 位小数并带 `%`；标准差展示 2 位小数。',
+          'CV 分级：`< 10%` 集中；`10% ~ 20%` 较集中；`20% ~ 35%` 较分散；`≥ 35%` 分散。',
+          'n < 2 时标准差与 CV 均为空，卡片显示「—」。',
+          'n ≥ 2 即计算离散度，不设样本量门槛。',
+        ],
+      },
+    ],
+    source: '原型 computeStats / withDispersion / cvLevel；《行业数据集字段清单》S05',
+    operation: '读取离散度',
+    buttonText: '离散度',
+    selector: 'dataset.records.stat.dispersion',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.dispersion', label: '离散度指标卡', reason: '指标卡位置' }],
+    global: false,
+    priority: 'high',
+    formula: 's = √(Σ(xᵢ − x̄)² / (n − 1))；CV = s / x̄ × 100%',
+  },
+
+  /* ==================== 统计分析：图表与分布 ==================== */
+  {
+    id: 'ann-dataset-stat-swarm',
+    title: '点图（一圆一条记录）',
+    code: 'DS-15',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '样本集中每条记录一个圆点，纵坐标为 `totalEmission`（同一口径、同一单位）。' },
+      { type: 'heading', text: '统计规则' },
+      {
+        type: 'list',
+        items: [
+          '纵向位置 = 真实数值；横向偏移只用于**避免重叠**（同槽位交替左右铺开，最大偏移约 40 px），不代表任何数值。',
+          '橙色虚线 = 均值，蓝色虚线 = 中位数；两者距离直观反映偏斜方向。',
+          '右侧标注最高值与最低值（实际为极值点，非离群判定）。',
+          '圆点数 = 样本数 n。',
+        ],
+      },
+      { type: 'heading', text: '用途' },
+      {
+        type: 'paragraph',
+        text: '看「有没有明显断层、孤立高值、双峰」；不做剔除，异常值处理交给业务判断。',
+      },
+    ],
+    source: '原型 buildSwarmOption / swarmLayout',
+    operation: '读点图',
+    buttonText: '点图',
+    selector: 'dataset.records.stat.swarm',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.swarm', label: '点图', reason: '图表卡片' }],
+    global: false,
+    priority: 'medium',
+  },
+  {
+    id: 'ann-dataset-stat-histogram',
+    title: '直方图与核密度曲线',
+    code: 'DS-16',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '同一样本集的 `totalEmission`，按等宽区间统计频数。' },
+      { type: 'heading', text: '统计规则（分箱）' },
+      {
+        type: 'list',
+        items: [
+          '分箱数：`bins = max(5, ceil(√n))`（页脚按 `ceil√n` 提示，n < 25 时实际固定 5 箱）。',
+          '箱宽：`w = (max − min) / bins`；区间左闭右开，最大值归入最后一箱。',
+          '所有样本相等（max = min）时只出一个箱，频数 = n。',
+          '柱高 = 该箱样本条数；悬停显示「样本数 · 占比」与核密度估计值。',
+        ],
+      },
+      { type: 'heading', text: '核密度曲线（KDE）' },
+      {
+        type: 'list',
+        items: [
+          '核函数：高斯核 `K(u) = e^(−u²/2) / √(2π)`',
+          '密度：`f(x) = 1/(n·h) · Σ K((x − xᵢ)/h)`',
+          '带宽：`h = 1.06 · s · n^(−0.2)`（Silverman 经验法则；s 缺失时用 `max(x̄ × 0.1, 1e-6)` 兜底）',
+          '曲线换算到频数刻度：`ŷ = f(x) · n · w`，因此曲线与柱高同量纲、可直接对读。',
+          '曲线在**每个箱的中点**采样后平滑连线，仅作分布形态参考，不参与任何指标计算。',
+        ],
+      },
+      { type: 'heading', text: '用途' },
+      {
+        type: 'paragraph',
+        text: '判断单峰 / 双峰、偏斜方向与尾部厚度；不用于显著性检验。',
+      },
+    ],
+    source: '原型 buildHistogramOption / kernelDensity；《行业数据集字段清单》S06',
+    operation: '读直方图',
+    buttonText: '直方图',
+    selector: 'dataset.records.stat.histogram',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.histogram', label: '直方图', reason: '图表卡片' }],
+    global: false,
+    priority: 'medium',
+    formula: 'bins = max(5, ceil(√n))；f(x) = 1/(n·h)·ΣK((x−xᵢ)/h)；h = 1.06·s·n^(−0.2)',
+  },
+  {
+    id: 'ann-dataset-stat-distribution',
+    title: '分布摘要（极值 / 均值 / 中位数 / 标准差）',
+    code: 'DS-17',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '与上方指标卡**同一份样本集**，直接取 `computeStats` 结果，不二次计算。' },
+      { type: 'heading', text: '五项口径' },
+      {
+        type: 'table',
+        columns: ['项', '口径 / 公式'],
+        rows: [
+          ['最大值', '`max = x₍ₙ₎`（排序后最后一个）'],
+          ['均值', '`x̄ = Σxᵢ / n`'],
+          ['中位数', '同 DS-13（线性插值 50% 分位）'],
+          ['最小值', '`min = x₍₁₎`（排序后第一个）'],
+          ['标准差', '`s = √(Σ(xᵢ − x̄)² / (n − 1))`；n < 2 显示「—」'],
+        ],
+      },
+      { type: 'heading', text: '规则' },
+      {
+        type: 'list',
+        items: [
+          '全部保留 2 位小数；最右一行汇总「数值范围 min ~ max · 均值 · 标准差」。',
+          '摘要条**不展示** P25 / P75 / P90 / 极差 / 离群值，字段清单中的这些指标本期未在页面呈现。',
+          '摘要条与指标卡同源同值；若两者不一致，以同一份样本集为准排查渲染。',
+        ],
+      },
+    ],
+    source: '原型 computeStats / StatPanel distribution；《行业数据集字段清单》S04、S05',
+    operation: '读分布摘要',
+    buttonText: '分布摘要条',
+    selector: 'dataset.records.stat.distribution',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.distribution', label: '分布摘要条', reason: '摘要条位置' }],
+    global: false,
+    priority: 'medium',
+  },
+  {
+    id: 'ann-dataset-stat-groups',
+    title: '维度对比（按行业 / 地域 / 产品类别 / 工艺 / 年度）',
+    code: 'DS-18',
+    blocks: [
+      { type: 'heading', text: '数据来源' },
+      { type: 'paragraph', text: '同一份样本集，按所选维度打标后分组聚合；切换维度即重算，无弹窗、无二次请求。' },
+      { type: 'heading', text: '分组规则' },
+      {
+        type: 'table',
+        columns: ['维度', '分组键', '特殊规则'],
+        rows: [
+          ['按行业', '`industryName`', '空值归「未标注行业」'],
+          ['按地域', '`provinceOf(regionName)`', '三级路径上卷到省级；空值归「未填写区域」'],
+          ['按产品类别', '`categoryName`，缺省 `categoryPath` 末段', '空值归「未分类」'],
+          ['按工艺', '记录上的每个工艺名', '**多标签展开**：一条记录可进多组，各组 n 之和可大于样本数；无工艺归「未标注工艺」'],
+          ['按年度', '统计期间结束年', '空值归「未填写」；组按年份**升序**排列'],
+        ],
+      },
+      { type: 'heading', text: '组内指标与公式' },
+      {
+        type: 'list',
+        items: [
+          '组内 `n` = 该组记录条数；`x̄g` = 组内算术平均；`Mg` = 组内中位数；`sg` = 组内样本标准差（组内 n ≥ 2 才有效）。',
+          '柱顶均值保留 2 位小数；偏差 `±% = (x̄g − x̄) / x̄ × 100%`，其中 `x̄` 为**当前统计范围的总体均值**（保留 1 位小数，带正负号）。',
+          '按地域图额外画**误差棒** `[x̄g − sg, x̄g + sg]`；其他维度不画误差棒。',
+          '灰色虚线 = 当前范围总体均值基准线；高于基准的柱用浅色底标注。',
+          '组排序：年度升序；其余维度按组均值**降序**（均值相同按名称排序）。',
+        ],
+      },
+      { type: 'heading', text: '边界提示' },
+      {
+        type: 'list',
+        items: [
+          '年度对比是**不同批次的横截面**，不是同一批企业的趋势，不能连成折线读趋势。',
+          '某维度已被统计条件锁定时，图下方提示「该维度已被筛选，图表只反映筛选后的范围」，此时通常只剩一组。',
+        ],
+      },
+    ],
+    source: '原型 groupSamples / buildBarOption / buildRegionOption；《行业数据集字段清单》S07',
+    operation: '切换对比维度',
+    buttonText: '维度对比',
+    selector: 'dataset.records.stat.groups',
+    matchStatus: 'matched',
+    matchType: 'exact',
+    matchTargets: [{ selector: 'dataset.records.stat.groups', label: '维度对比图', reason: '分组对比区块' }],
+    global: false,
+    priority: 'high',
+    formula: '±% = (x̄g − x̄) / x̄ × 100%；误差棒 = x̄g ± sg',
+  },
+]
+
+/** 全局批注（文档级说明，进入本模块「全局批注」抽屉） */
+export const datasetGlobalAnnotations: Annotation[] = [
+  {
+    id: 'gann-dataset-readonly',
+    title: '只读定位与模块边界',
+    code: 'GDS-01',
+    blocks: [
+      { type: 'heading', text: '本模块只做三件事' },
+      { type: 'list', items: ['看：按条件检索已发布记录', '查：打开单条记录详情', '算：对同口径样本做描述统计与维度对比'] },
+      { type: 'heading', text: '明确不做' },
+      {
+        type: 'list',
+        items: [
+          '不补录、不编辑、不作废 / 恢复、不发版、不发布版本、不在行内发起上报。',
+          '不展示活动数据、排放因子、计算过程与异常编号。',
+          '不跨租户对比、不排名、不预测、不做显著性检验。',
+          '不提供历史版本切换（版本管理只在平台侧「公共数据库」）。',
+        ],
+      },
+      { type: 'heading', text: '与相邻模块的关系' },
+      {
+        type: 'table',
+        columns: ['模块', '关系'],
+        rows: [
+          ['企业数据上报', '**上游入口**：企业上报 → 平台审核入库 → 发布版本 → 本页可见'],
+          ['公共数据库（平台）', '**版本源**：决定本页看到哪一份快照'],
+          ['数据审核（平台）', '决定哪些记录能入库；驳回的记录不进本页'],
+          ['产品碳基线库', '可作参考线来源（本期页面未画基线参考线）'],
+        ],
+      },
+    ],
+    source: '《行业数据集业务 PRD》§1.3 / 原型页面注释',
+    operation: '文档级说明（模块边界）',
+    matchStatus: 'unmatched',
+    matchType: 'none',
+    global: true,
+    priority: 'high',
+    unmatchedReason: '模块级边界说明，无唯一页面元素可锚定。',
+  },
+  {
+    id: 'gann-dataset-units',
+    title: '单位、精度与展示口径',
+    code: 'GDS-02',
+    blocks: [
+      { type: 'heading', text: '单位' },
+      {
+        type: 'list',
+        items: [
+          '分子单位沿用核算结果（`gCO₂e` / `kgCO₂e`），**不做换算**；缺省按 `kgCO₂e` 兼容。',
+          '分母为声明单位（双 / m² / m³ …），写法统一为 `排放单位/声明单位`。',
+          '单位不一致的记录不混算（见 DS-09），这也是统计样本量可能小于命中数的原因。',
+        ],
+      },
+      { type: 'heading', text: '精度' },
+      {
+        type: 'table',
+        columns: ['对象', '精度'],
+        rows: [
+          ['记录数值（列表 / 详情 / 导出）', '最多 4 位小数，去尾零'],
+          ['统计指标（均值 / 中位数 / 标准差 / 极值）', '2 位小数'],
+          ['CV', '1 位小数并带 %'],
+          ['占比 / 偏差 ±%', '1 位小数'],
+        ],
+      },
+      { type: 'heading', text: '一致性' },
+      {
+        type: 'paragraph',
+        text: '列表数值、详情数值、导出数值三者同源（入库快照）；统计指标由样本集实时计算，不落库、不做快照。',
+      },
+    ],
+    source: '原型 datasetMeta.numText / StatPanel 格式化；《行业数据集字段清单》S08',
+    operation: '文档级说明（单位与精度）',
+    matchStatus: 'unmatched',
+    matchType: 'none',
+    global: true,
+    priority: 'medium',
+    unmatchedReason: '跨列表 / 详情 / 统计的通用精度口径，无唯一锚点。',
+  },
+  {
+    id: 'gann-dataset-supply-chain',
+    title: '数据供给链路：从企业上报到统计可见',
+    code: 'GDS-03',
+    blocks: [
+      {
+        type: 'flow',
+        caption: '行业数据集的数据来源链路（企业上报 → 审核 → 发布 → 本页）',
+        chart: `flowchart TD
+  A["企业：核算完成"] --> B["企业数据上报<br/>暂存草稿 / 提交审核"]
+  B --> C{"平台审核"}
+  C -->|驳回| D["已驳回 · 退回企业修改"]
+  D --> B
+  C -->|通过并入库| E["已入库 · 按上报原值脱敏"]
+  E --> F["公共数据库 · 待发版数据"]
+  F --> G{"发布新版本 / 回滚发布"}
+  G --> H["当前发布版本快照"]
+  H --> I["行业数据集 · 数据 Tab"]
+  H --> J["行业数据集 · 统计分析"]
+  I --> K["详情 · 导出"]
+  J --> L["指标 · 分布 · 维度对比"]
+  G -->|回滚| M["历史版本重新生效<br/>企业侧同步切换"]`,
+      },
+      { type: 'heading', text: '三个关键约束' },
+      {
+        type: 'list',
+        items: [
+          '**审核入库 ≠ 企业可见**：只有发布版本里的数据才进入本页。',
+          '**快照不回溯源**：入库后上游重算不改已发布记录；重算后需企业重新上报并再次入库发版。',
+          '**企业侧不感知版本**：页面不出现版本号，回滚对企业的表现只是数据内容变化。',
+        ],
+      },
+    ],
+    source: '公共数据库 / 数据审核 / 行业数据集原型注释',
+    operation: '文档级说明（数据链路）',
+    matchStatus: 'unmatched',
+    matchType: 'none',
+    global: true,
+    priority: 'medium',
+    unmatchedReason: '跨企业端与平台端的链路说明，无单一页面锚点。',
+  },
+  {
+    id: 'gann-dataset-pending',
+    title: '待确认事项（尚未裁决，不作为需求依据）',
+    code: 'GDS-04',
+    blocks: [
+      { type: 'heading', text: '待裁决问题' },
+      {
+        type: 'list',
+        ordered: true,
+        items: [
+          '「区域」字段来源：核算项目已无「核算地点」，当前由企业上报时填写并按省上卷；是否落地数据字典「区域」类型待定。',
+          '统计是否补 P25 / P75 / P90 / 极差 / 离群值：字段清单列为必备，页面当前未呈现。',
+          '是否展示行业基线参考线：PRD 已确认只读引用「产品碳基线库」，本期页面未实现。',
+          '最近 12 / 24 个月按「年度」而非「滚动月份」处理，是否符合业务预期。',
+          '导出是否保留企业脱敏规则（当前导出的是脱敏后标识）。',
+        ],
+      },
+    ],
+    source: '《行业数据集业务 PRD》§11 / 原型现状比对',
+    operation: '文档级说明（待确认）',
+    matchStatus: 'unmatched',
+    matchType: 'none',
+    global: true,
+    priority: 'high',
+    category: '待确认事项',
+    unmatchedReason: '尚未裁决的问题清单，不混入正式业务规则。',
+  },
+]

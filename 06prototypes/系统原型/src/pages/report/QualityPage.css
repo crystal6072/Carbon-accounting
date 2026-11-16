@@ -1,0 +1,608 @@
+/* 数据质量评价（报告管理）原型样式
+ * 仅承载本模块页面布局，不覆盖 tdesign `t-` 样式。
+ */
+
+.q-page {
+  padding: 24px 32px 80px;
+}
+
+.q-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.q-page-head-main {
+  min-width: 0;
+}
+
+.q-breadcrumb {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.q-page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-page-desc {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+  margin: 0;
+}
+
+.q-definition {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  background: var(--td-bg-color-page, #f3f5f8);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-link {
+  color: var(--td-brand-color, #0052d9);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.q-link:hover {
+  opacity: 0.8;
+}
+
+.q-link-danger {
+  color: var(--td-error-color, #d54941);
+}
+
+.q-link-muted {
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+.q-nowrap {
+  white-space: nowrap;
+}
+
+.q-empty-cell {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+}
+
+.q-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 步骤条 */
+.q-steps-wrap {
+  margin: 16px 0;
+}
+
+/* 口径条 */
+.q-caliber-bar {
+  margin-bottom: 16px;
+}
+
+.q-field-label {
+  color: var(--td-text-color-secondary, #8a94a6);
+  font-size: 13px;
+}
+
+.q-stale-alert {
+  margin-bottom: 16px;
+}
+
+.q-step-card {
+  margin-bottom: 16px;
+}
+
+/* 定量步骤：跳过勾选 */
+.q-skip-quantitative {
+  margin-bottom: 12px;
+}
+
+.q-skip-tip {
+  margin-bottom: 16px;
+}
+
+/* 结果页：未评分提示 */
+.q-result-empty {
+  margin-bottom: 16px;
+}
+
+/* 结果页·定性数据质量评价：指标名 + 描述（斑马纹） */
+.q-qual-result {
+  border: 1px solid var(--td-component-stroke, #e7eaf0);
+  border-radius: var(--td-radius-small, 3px);
+  overflow: hidden;
+}
+
+.q-qual-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 16px;
+}
+
+.q-qual-row:nth-child(even) {
+  background: #fafbfc;
+}
+
+.q-qual-row + .q-qual-row {
+  border-top: 1px solid var(--td-component-stroke, #eef0f3);
+}
+
+.q-qual-label {
+  width: 128px;
+  flex: none;
+  font-size: 13px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-qual-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--td-text-color-secondary, #5e6470);
+  word-break: break-all;
+}
+
+/* 结果页·定量数据质量评价：摘要条（对齐竞品：名称 + 结果/DQR） */
+.q-quant-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #e8f5ef 0%, #e6f4f7 60%, #e8f0fe 100%);
+  border-radius: var(--td-radius-small, 3px);
+}
+
+.q-quant-banner-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.q-quant-banner-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+.q-quant-banner-sub {
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-quant-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.q-quant-stat {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #5e6470);
+  white-space: nowrap;
+}
+
+.q-quant-stat b {
+  font-size: 15px;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 定量步骤：批量工具栏 */
+.q-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--td-bg-color-page, #f3f5f8);
+  border-radius: var(--td-radius-small, 3px);
+}
+
+.q-batch-count {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-batch-count b {
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* ============ 评分弹窗（数据质量评估） ============ */
+.q-sd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.q-sd-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 头部右侧：项目名 + 批量切换 + 完成进度 */
+.q-sd-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.q-sd-meta-item {
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a94a6);
+  white-space: nowrap;
+}
+
+.q-sd-meta-item b {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
+.q-sd-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.q-sd-name {
+  min-width: 120px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+/* 底部：依据信息（左） + 当前评分与确定（右） */
+.q-sd-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.q-sd-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+.q-sd-footer-info b {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
+.q-sd-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.q-sd-dqr {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+  white-space: nowrap;
+}
+
+.q-sd-dqr-num {
+  color: #17b26a;
+  font-size: 16px;
+}
+
+/* 弹窗主体分组条（对齐竞品「次级数据质量评估」浅绿标题条） */
+.q-sd-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  background: #edf8f3;
+  border-left: 3px solid #17b26a;
+  border-radius: 3px;
+}
+
+.q-sd-group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f7a55;
+}
+
+.q-sd-group-tip {
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+/* ============ 评分矩阵：行 = 指标，列 = 1–5 分，点击格内文字选择分值 ============ */
+.q-mx-wrap {
+  max-height: 56vh;
+  overflow: auto;
+  border: 1px solid var(--td-component-stroke, #e7eaf0);
+  border-radius: 6px;
+}
+
+.q-mx-table {
+  display: grid;
+  grid-template-columns: 150px repeat(5, minmax(0, 1fr));
+  min-width: 980px;
+}
+
+/* 行以 contents 参与网格：同行的单元格自动等高、背景铺满 */
+.q-mx-row {
+  display: contents;
+}
+
+.q-mx-row > * {
+  border-bottom: 1px solid var(--td-component-stroke, #e7eaf0);
+}
+
+.q-mx-row:last-child > * {
+  border-bottom: none;
+}
+
+/* 表头：指标得分 + 分档色数字（虚线下划线） */
+.q-mx-head-row > * {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.q-mx-corner {
+  padding-left: 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--td-text-color-secondary, #5e6470);
+}
+
+.q-mx-head {
+  color: var(--q-mx-color);
+}
+
+.q-mx-score {
+  display: inline-block;
+  min-width: 24px;
+  padding-bottom: 3px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 22px;
+  border-bottom: 2px dashed currentColor;
+}
+
+/* 指标列：浅蓝渐变 pill + 当前已选分值 */
+.q-mx-dim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: #fafbfc;
+  border-right: 1px solid var(--td-component-stroke, #e7eaf0);
+}
+
+.q-mx-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  padding: 10px 8px;
+  border-radius: 24px 6px 24px 6px;
+  background: linear-gradient(110deg, #b9c9e4 0%, #9db2d6 100%);
+  color: #21385e;
+  text-align: center;
+}
+
+.q-mx-dim-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.q-mx-dim-abbr {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.q-mx-chosen {
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #8a94a6);
+}
+
+/* 判定标准单元格：整格可点，选中为该分档色浅底 + 加粗文字 */
+.q-mx-td {
+  display: flex;
+  padding: 0;
+  background: #fff;
+  transition: background 0.12s ease;
+}
+
+.q-mx-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--td-text-color-secondary, #5e6470);
+  word-break: break-word;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.q-mx-td:not(.is-selected) .q-mx-cell:not(:disabled):hover {
+  background: var(--q-mx-soft);
+}
+
+.q-mx-cell:focus-visible {
+  outline: 2px solid var(--q-mx-color);
+  outline-offset: -2px;
+}
+
+.q-mx-cell:disabled {
+  cursor: not-allowed;
+}
+
+/* 选中：竞品口径 —— 分档色浅底 + 分档色描边，文字加深加粗 */
+.q-mx-td.is-selected {
+  background: var(--q-mx-selected);
+  box-shadow: inset 0 0 0 1.5px var(--q-mx-color);
+}
+
+.q-mx-td.is-selected .q-mx-cell {
+  color: var(--td-text-color-primary, #1c2333);
+  font-weight: 600;
+}
+
+/* 分档色：1 绿 / 2 青 / 3 蓝 / 4 橙 / 5 红 */
+.q-mx-c1 { --q-mx-color: #17a866; --q-mx-soft: #f1faf5; --q-mx-selected: #d6f0e2; }
+.q-mx-c2 { --q-mx-color: #0e9fa8; --q-mx-soft: #f0fafa; --q-mx-selected: #d2eef0; }
+.q-mx-c3 { --q-mx-color: #366ef4; --q-mx-soft: #f2f6fe; --q-mx-selected: #d2e5fb; }
+.q-mx-c4 { --q-mx-color: #dd7a23; --q-mx-soft: #fdf7ef; --q-mx-selected: #f9e4c9; }
+.q-mx-c5 { --q-mx-color: #d54941; --q-mx-soft: #fdf2f1; --q-mx-selected: #f9d9d6; }
+
+/* 定性步骤 表单行 */
+.q-form-like {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--td-component-stroke, #e7eaf0);
+}
+
+.q-form-like:last-child {
+  border-bottom: none;
+}
+
+.q-form-like-label {
+  width: 110px;
+  flex: none;
+  color: var(--td-text-color-secondary, #5e6470);
+  font-size: 14px;
+  padding-top: 6px;
+}
+
+.q-form-like-control {
+  flex: 1;
+}
+
+/* 评分弹窗：数据项依据信息 + 评分预览 */
+.q-score-basis {
+  margin-top: 16px;
+}
+
+.q-score-result {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--td-text-color-primary, #1c2333);
+}
+
+@media (max-width: 960px) {
+  .q-mx-table {
+    grid-template-columns: 120px repeat(5, minmax(0, 1fr));
+  }
+  .q-mx-pill {
+    width: 100px;
+  }
+  .q-quant-banner-stats {
+    gap: 12px;
+  }
+}
+
+/* 底部操作栏：左侧取消/返回，右侧步骤按钮组，仅一个实心主按钮 */
+.q-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 32px;
+  background: var(--td-bg-color-container, #fff);
+  border-top: 1px solid var(--td-component-stroke, #e7eaf0);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 20;
+}
+
+.q-action-primary {
+  min-width: 104px;
+}
+
+/* 小屏：收紧内边距并让唯一的主按钮更突出 */
+@media (max-width: 960px) {
+  .q-action-bar {
+    padding: 12px 16px;
+  }
+  .q-action-primary {
+    min-width: 120px;
+  }
+}
+
+/* 列表页 */
+.q-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+
+.q-toolbar-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.q-toolbar-tip {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+  font-size: 12px;
+}
+
+.q-toolbar-action {
+  margin-left: auto;
+}
+
+.q-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.q-create-preview {
+  margin-top: 16px;
+}
+
+.q-empty-tip {
+  color: var(--td-text-color-placeholder, #bbbfc8);
+  font-size: 13px;
+}
+
+.q-required::before {
+  content: '*';
+  color: var(--td-error-color, #d54941);
+  margin-right: 4px;
+}

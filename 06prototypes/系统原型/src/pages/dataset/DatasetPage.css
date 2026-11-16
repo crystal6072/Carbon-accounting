@@ -1,0 +1,961 @@
+/* ============================================================
+   行业数据集 · 页面样式（引用全局设计令牌，不新增主题）
+   ============================================================ */
+
+/* ---------- 行业数据集页：说明条 / 数据-统计 Tab ---------- */
+
+.ids-note {
+  margin: 0 0 12px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  background: var(--color-primary-bg, #eff6ff);
+  color: var(--color-text-secondary, #595959);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.ids-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-secondary, #f0f0f0);
+}
+
+.ids-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary, #595959);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ids-tab:hover {
+  color: var(--color-primary, #2563eb);
+}
+
+.ids-tab-active {
+  color: var(--color-primary, #2563eb);
+  border-bottom-color: var(--color-primary, #2563eb);
+  font-weight: 600;
+}
+
+.ids-tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-fill-secondary, #f3f4f6);
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.ids-tab-active .ids-tab-count {
+  background: var(--color-primary-bg, #eff6ff);
+  color: var(--color-primary, #2563eb);
+}
+
+.ids-stat-card {
+  padding: 16px;
+}
+
+.ids-stat-panel {
+  padding: 0;
+}
+
+.ds-emission {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ds-emission-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #262626);
+}
+
+.ds-emission-unit {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+.ds-stat-scope {
+  color: var(--color-text-tertiary, #8c8c8c);
+}
+
+/* ---------- 筛选区 ---------- */
+
+.ds-query-wide {
+  min-width: 220px;
+}
+
+.ds-query-more {
+  border-top: 1px dashed var(--color-border, #e5e7eb);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.ds-more-toggle {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.ds-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-range-sep {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+/* ---------- 表格单元格 ---------- */
+
+.ds-product-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.ds-product-code {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #9ca3af);
+  font-family: var(--font-mono, monospace);
+}
+
+.ds-badge-row {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ds-badge {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ds-badge-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ds-badge-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ds-badge-muted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.ds-cell-muted {
+  color: var(--color-text-tertiary, #9ca3af);
+  font-size: 12px;
+}
+
+.ds-process-tags {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ds-region-missing {
+  color: #b45309;
+}
+
+/* ---------- 抽屉壳 ---------- */
+
+.ds-drawer-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1000;
+  animation: ds-fade 0.15s ease-out;
+}
+
+.ds-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  background: var(--color-bg-container, #fff);
+  box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  animation: ds-slide 0.18s ease-out;
+}
+
+@keyframes ds-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ds-slide {
+  from { transform: translateX(40px); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.ds-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.ds-drawer-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ds-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+}
+
+.ds-drawer-subtitle {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+.ds-drawer-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.ds-drawer-close:hover {
+  background: #f3f4f6;
+}
+
+.ds-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.ds-drawer-footer {
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* ---------- 统计分析 ---------- */
+
+.ds-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 口径提示：轻量黄条 */
+.ds-caliber-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid #ffe58f;
+  border-radius: var(--radius-base, 4px);
+  background: #fffbe6;
+  color: #614700;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.ds-caliber-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning, #fa8c16);
+  flex: none;
+}
+
+.ds-caliber-meta {
+  margin-left: auto;
+  color: #ad6800;
+}
+
+/* 系统边界切换条 */
+.ds-boundary-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid #eef1f6;
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-bg-container, #fff);
+}
+
+.ds-boundary-label {
+  color: var(--color-text-secondary, #595959);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ds-boundary-count {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.ds-seg .ds-seg-active .ds-boundary-count {
+  background: var(--color-primary-bg, #e6f4ff);
+  color: var(--color-primary, #1890ff);
+}
+
+.ds-boundary-tip {
+  margin-left: auto;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+}
+
+/* 口径切换行：系统边界 + 单位同处一行，用竖线分隔两组控件 */
+.ds-scope-bar {
+  gap: 10px;
+}
+
+.ds-scope-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 1px solid #e8e8e8;
+}
+
+/* 口径条内的排除明细（默认收起，避免生硬的警告感） */
+.ds-exclude {
+  flex-basis: 100%;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.ds-exclude summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: rgba(250, 140, 22, 0.14);
+  color: #ad6800;
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+
+.ds-exclude summary::-webkit-details-marker {
+  display: none;
+}
+
+.ds-exclude summary:hover,
+.ds-exclude[open] summary {
+  background: rgba(250, 140, 22, 0.24);
+}
+
+.ds-exclude-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-base, 4px);
+  background: rgba(255, 255, 255, 0.72);
+  color: #614700;
+}
+
+/* 统计条件条（行业 / 地域 / 产品类别） */
+.ds-cond-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid #eef1f6;
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-bg-container, #fff);
+}
+
+.ds-cond-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary, #595959);
+  font-size: 12px;
+}
+
+.ds-cond-item .select {
+  width: 170px;
+  height: 28px;
+}
+
+.ds-cond-item-year .select {
+  width: 96px;
+}
+
+
+
+.ds-cond-reset {
+  padding: 3px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: var(--radius-base, 4px);
+  background: #fff;
+  color: var(--color-text-secondary, #595959);
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.ds-cond-reset:hover:not(:disabled) {
+  color: var(--color-primary, #1890ff);
+  border-color: var(--color-primary, #1890ff);
+}
+
+.ds-cond-reset:disabled {
+  color: var(--color-text-quaternary, #bfbfbf);
+  background: var(--color-bg-container-disabled, #fafafa);
+  cursor: not-allowed;
+}
+
+.ds-cond-meta {
+  margin-left: auto;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+}
+
+/* ---------- KPI 指标卡 ---------- */
+
+.ds-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ds-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px 10px;
+  border: 1px solid #eef1f6;
+  border-radius: var(--radius-lg, 8px);
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 62%);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.03);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ds-metric:hover {
+  box-shadow: 0 2px 4px rgba(16, 24, 40, 0.06), 0 8px 20px rgba(16, 24, 40, 0.06);
+  transform: translateY(-1px);
+}
+
+.ds-metric-primary {
+  border-color: var(--color-primary-border, #91caff);
+  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 72%);
+  box-shadow: 0 2px 10px rgba(24, 144, 255, 0.10);
+}
+
+.ds-metric-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ds-metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 1px solid #d6e9ff;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #e6f4ff 0%, #f5faff 100%);
+  color: var(--color-primary, #1890ff);
+}
+
+.ds-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary, #595959);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ds-metric-tag {
+  padding: 0 6px;
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-primary-bg, #e6f4ff);
+  color: var(--color-primary, #1890ff);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
+.ds-metric-value {
+  color: var(--color-text, #262626);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 44px;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-metric-value small {
+  margin-left: 2px;
+  color: var(--color-text-secondary, #595959);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.ds-metric-unit {
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ds-metric-aux {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #f0f0f0;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 图表卡 ---------- */
+
+.ds-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ds-chart-card {
+  padding: 12px 16px 6px;
+  border: 1px solid #eef1f6;
+  border-radius: var(--radius-lg, 8px);
+  background: var(--color-bg-container, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+}
+
+.ds-chart-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ds-chart-head h3 {
+  margin: 0;
+  color: var(--color-text, #262626);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ds-chart-head p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-chart-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 4px 8px;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.ds-chart-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-chart-foot-note {
+  margin-left: auto;
+}
+
+.ds-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.ds-dot-primary {
+  background: var(--color-primary, #1890ff);
+}
+
+.ds-dot-warn {
+  background: var(--color-warning, #fa8c16);
+}
+
+.ds-dot-danger {
+  background: var(--color-error, #ff4d4f);
+}
+
+.ds-chart-flag {
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid #ffe58f;
+  border-radius: var(--radius-sm, 2px);
+  background: #fffbe6;
+  color: #ad6800;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+/* ---------- 分布摘要条 ---------- */
+
+.ds-dist-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 1.8fr;
+  gap: 0;
+  padding: 10px 16px;
+  border: 1px solid #eef1f6;
+  border-radius: var(--radius-lg, 8px);
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+.ds-dist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
+  border-left: 1px solid #f0f4f9;
+}
+
+.ds-dist-item:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.ds-dist-label {
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ds-dist-value {
+  color: var(--color-text, #262626);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-dist-note {
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  border-left: 1px solid #f0f4f9;
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+/* ---------- 维度对比 ---------- */
+
+.ds-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ds-chart-head-inline {
+  flex: 1;
+  min-width: 240px;
+}
+
+.ds-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-base, 4px);
+  background: var(--color-bg-layout, #f0f2f5);
+}
+
+.ds-seg button {
+  padding: 4px 14px;
+  border: none;
+  border-radius: var(--radius-base, 4px);
+  background: transparent;
+  color: var(--color-text-secondary, #595959);
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.ds-seg button:hover {
+  color: var(--color-primary, #1890ff);
+}
+
+.ds-seg .ds-seg-active {
+  background: var(--color-bg-container, #fff);
+  color: var(--color-primary, #1890ff);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.ds-stat-empty {
+  padding: 48px 16px;
+  border: 1px dashed var(--color-border, #d9d9d9);
+  border-radius: var(--radius-lg, 8px);
+  color: var(--color-text-tertiary, #8c8c8c);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 1280px) {
+  .ds-dist-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+
+  .ds-dist-note {
+    grid-column: 1 / -1;
+    padding-left: 0;
+    border-left: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .ds-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ds-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 补录弹窗 ---------- */
+
+.ds-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ds-form-block {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 14px 4px;
+}
+
+.ds-form-block-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--color-text, #111827);
+}
+
+.ds-tag-input {
+  display: flex;
+  gap: 8px;
+}
+
+.ds-tag-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ds-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ds-tag-custom {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ds-tag button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ds-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ds-stage-sum {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.ds-stage-warn {
+  color: #b45309;
+  margin-left: 8px;
+}
+
+/* ---------- 详情抽屉 ---------- */
+
+.ds-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ds-detail-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-detail-total {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.ds-detail-total-label {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.ds-detail-total-value {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--color-text, #111827);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-detail-total-unit {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+.ds-detail-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.ds-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+}
+
+.ds-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds-detail-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+.ds-detail-value {
+  font-size: 13px;
+  color: var(--color-text, #111827);
+}
+
+.ds-detail-empty {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #9ca3af);
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.ds-detail-note {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #9ca3af);
+  margin-top: 8px;
+}
+
+.ds-stage-child {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.ds-stage-indent {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+.ds-void-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- 作废 / 补填弹窗 ---------- */
+
+.ds-void-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ds-void-modal p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary, #6b7280);
+}

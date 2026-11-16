@@ -1,0 +1,100 @@
+.voucher-upload-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.voucher-upload-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.voucher-upload-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #e5e8eb;
+  border-radius: 6px;
+}
+
+.voucher-upload-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.voucher-upload-list li + li {
+  border-top: 1px solid #f0f2f5;
+}
+
+.voucher-upload-list li > span:first-child {
+  min-width: 0;
+}
+
+.voucher-upload-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voucher-upload-list .link {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voucher-upload-meta {
+  color: #999;
+  font-size: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.voucher-upload-actions {
+  display: inline-flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.voucher-upload-empty {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #999;
+  background: #fafbfc;
+  border: 1px dashed #e5e8eb;
+  border-radius: 6px;
+}
+
+/* 凭证预览浮层（portal 到 body，盖在下层弹窗之上） */
+.voucher-preview-mask {
+  z-index: calc(var(--z-modal) + 10);
+}
+
+.voucher-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 66vh;
+  margin: 0 auto;
+  border-radius: 6px;
+}
+
+.voucher-preview-frame {
+  width: 100%;
+  height: 66vh;
+  border: 1px solid #e5e8eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.voucher-preview-tip {
+  padding: 40px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+}

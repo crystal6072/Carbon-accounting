@@ -1,0 +1,210 @@
+/* 典型案例库：管理后台（列表 / 表单 / 详情）样式 */
+
+/* 富文本正文渲染 */
+.rich-text {
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--text, #1f2937);
+  word-break: break-word;
+}
+.rich-text h3 { margin: 16px 0 8px; font-size: 16px; }
+.rich-text p { margin: 8px 0; }
+.rich-text ul { padding-left: 20px; margin: 8px 0; }
+.rich-text table { border-collapse: collapse; margin: 12px 0; width: 100%; }
+.rich-text th,
+.rich-text td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
+.rich-text img { max-width: 100%; }
+
+/* 表单布局 */
+.case-form-stack,
+.case-detail-stack { display: flex; flex-direction: column; gap: 16px; }
+.case-section-header { padding: 14px 16px 0; }
+.case-section-title { font-weight: 600; font-size: 14px; color: #111827; }
+.case-section-body { padding: 12px 16px 16px; }
+.case-section-tip { color: #6b7280; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.case-form-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 14px 16px; }
+
+/* 封面图上传：虚线拖拽区 */
+.case-cover-drop {
+  position: relative;
+  min-height: 130px;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s, background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.case-cover-drop:hover {
+  border-color: #1677ff;
+  background: #f0f7ff;
+}
+.case-cover-drop.has-img {
+  border-style: solid;
+  padding: 0;
+}
+.case-cover-drop-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+}
+.case-cover-drop-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  padding: 16px;
+  text-align: center;
+}
+.case-cover-drop-empty .case-cover-drop-text {
+  font-size: 14px;
+  color: #374151;
+}
+.case-cover-drop-empty .case-cover-drop-tip {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.case-cover-drop-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.case-cover-drop-remove:hover {
+  background: #ff4d4f;
+}
+
+/* ===================== 表单页 UI 优化（仅视觉，逻辑/字段不变） ===================== */
+
+/* 整体布局：充分利用宽度 + 适度模块间距 + 卡片层次 */
+.case-form-stack {
+  gap: 24px;
+  width: 100%;
+}
+.case-form-stack > .card {
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.case-form-stack .case-section-header {
+  padding: 16px 24px;
+}
+.case-form-stack .case-section-title {
+  font-size: 15px;
+}
+.case-form-stack .case-section-body {
+  padding: 20px 24px 16px;
+}
+
+/* 表单项上下留白 */
+.case-form-stack .form-grid {
+  gap: 16px 24px;
+}
+.case-form-stack .form-item {
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+/* 字段标签：深灰加粗 + 红星拉开距离 */
+.case-form-stack .form-label {
+  color: #262626;
+  font-weight: 600;
+  font-size: 14px;
+}
+.case-form-stack .form-label.required::before {
+  margin-right: 6px;
+  color: #ff4d4f;
+}
+
+/* 输入框 / 下拉 / 文本域：柔和边框、加高、统一圆角 */
+.case-form-stack .input,
+.case-form-stack .select {
+  height: 40px;
+  padding: 0 12px;
+  border-color: #d9d9d9;
+  border-radius: 8px;
+}
+.case-form-stack .textarea {
+  padding: 10px 12px;
+  border-color: #d9d9d9;
+  border-radius: 8px;
+}
+.case-form-stack .input::placeholder,
+.case-form-stack .textarea::placeholder {
+  color: #bfbfbf;
+}
+.case-form-stack .input:hover,
+.case-form-stack .select:hover,
+.case-form-stack .textarea:hover {
+  border-color: #4096ff;
+}
+
+/* 错误态：输入框变红 + 下方红字提示 */
+.case-form-stack .form-error {
+  margin-top: 2px;
+}
+
+/* 字数统计与提示文字 */
+.case-char-count {
+  margin-top: 6px;
+}
+.case-rich-hint {
+  margin-top: 8px;
+}
+
+/* 吸底操作栏 */
+.case-form-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* 详情元信息 */
+.case-detail-meta {
+  display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 8px 16px 12px;
+  border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #374151;
+}
+.case-detail-cover { display: block; max-width: 360px; margin: 12px 16px; border-radius: 8px; }
+.case-detail-summary {
+  margin: 0 16px 8px; padding: 10px 12px; background: #f8fafc;
+  border-radius: 6px; color: #475569; font-size: 13px; line-height: 1.6;
+}
+.case-detail-stack .rich-text { padding: 4px 16px 16px; }
+
+/* 标签字数计数 */
+.case-char-count { text-align: right; font-size: 12px; color: #9ca3af; margin-top: 4px; }
+.case-rich-hint { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+
+/* 附件区 */
+.case-attachment { border: 1px dashed #d1d5db; border-radius: 8px; padding: 12px; }
+.case-attachment-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.case-attachment-name { font-size: 13px; color: #374151; }
+.case-attachment-actions { display: flex; align-items: center; gap: 8px; }
+/* 外部链接文本省略（案例详情共用） */
+.case-link-text {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px;
+  color: #1677ff; font-size: 13px;
+}
+
+/* 确认弹窗提示 */
+.case-confirm-tip { font-size: 12px; color: #9ca3af; margin-top: 8px; }

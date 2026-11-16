@@ -1,0 +1,280 @@
+/* 台账模块共享样式（复用全局 card / query-bar / form-grid / detail-list 等类，仅补充导入弹窗专属样式） */
+
+.import-tip {
+  line-height: 1.8;
+  color: #555;
+  background: #f6f8fa;
+  border: 1px solid #e5e8eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.import-tip .link {
+  padding: 0 2px;
+}
+
+.import-result {
+  margin-top: 12px;
+}
+
+.import-summary {
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 13px;
+}
+
+.import-summary b {
+  color: #1f2329;
+  padding: 0 2px;
+}
+
+.text-danger {
+  color: #d54941;
+}
+
+/* 所属周期：起止日期选择器 */
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* 查询条件里的日期区间需更宽，容纳两个日期输入框 */
+.query-item-date {
+  min-width: 340px;
+}
+
+.date-range .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.date-range-sep {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+/* 查询区「所属周期」起止选择需要更宽的最小宽度 */
+.query-item-period {
+  min-width: 340px;
+}
+
+/* 装载率：输入框 + 自动重算按钮 */
+.rate-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.rate-field .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rate-field .link {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* 表单字段补充说明 */
+.ledger-form-tip {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 运输台账：多段运输录入 */
+.segment-section {
+  margin-top: var(--space-lg);
+}
+
+.segment-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.segment-section-head .view-block-title {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.segment-head-tip {
+  display: block;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.segment-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  flex: none;
+}
+
+.segment-card {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  padding: var(--space-md);
+  background: var(--color-bg-container);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.segment-card + .segment-card {
+  margin-top: var(--space-md);
+}
+
+.segment-card.has-error {
+  border-color: var(--color-error);
+}
+
+.segment-card.is-expanded {
+  box-shadow: var(--shadow-base);
+}
+
+.segment-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.segment-card.is-expanded > .segment-card-head {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px dashed var(--color-border-secondary);
+}
+
+.segment-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 2px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.segment-toggle:hover .segment-card-title {
+  color: var(--color-primary);
+}
+
+.segment-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.segment-chevron {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  margin: 0 3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--color-text-tertiary);
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+
+.segment-chevron.is-open {
+  transform: rotate(45deg);
+}
+
+.segment-card-title {
+  flex: none;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.segment-brief {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+.segment-pending {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  color: var(--color-error);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.segment-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.segment-card-body {
+  animation: segment-fade-in 0.18s ease;
+}
+
+@keyframes segment-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.segment-summary {
+  margin-top: var(--space-md);
+  padding: 8px 12px;
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.segment-mode-chain {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.segment-arrow {
+  color: var(--color-text-tertiary);
+}
+
+.segment-count {
+  margin-left: 6px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+.voucher-form-section {
+  margin-top: var(--space-lg);
+}
+
+.segment-detail-table {
+  margin-top: var(--space-sm);
+}
+
+

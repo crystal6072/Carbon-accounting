@@ -1,0 +1,544 @@
+/* ===================== 工作台（2026-11 UI 重构：深色总览 + 统计卡 + 表格化概览） ===================== */
+
+/* 欢迎行：弱化为单行辅助信息（保留组织 / 日期批注锚点） */
+.dash-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+.dash-intro-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+.dash-intro-dot {
+  color: var(--color-text-placeholder);
+}
+
+/* 数据大屏入口（外部验收汇报用，独立全屏路由） */
+.dash-screen-entry {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-container);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.dash-screen-entry:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+/* ===================== 碳排放总览（深色主块） ===================== */
+.dash-hero {
+  position: relative;
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    120deg,
+    var(--color-dash-hero-from) 0%,
+    var(--color-dash-hero-mid) 55%,
+    var(--color-dash-hero-to) 100%
+  );
+  color: var(--color-text-inverse);
+  overflow: hidden;
+}
+/* 右上角装饰光斑 */
+.dash-hero::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  top: -90px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.dash-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.65fr);
+  gap: var(--space-xl);
+}
+@media (max-width: 1200px) {
+  .dash-hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+}
+
+/* 左栏：产品名 + 碳足迹大数 + 核算时间（贴底） */
+.dash-hero-total {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.dash-hero-product {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-hero-value {
+  font-size: 40px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.1;
+  color: var(--color-text-inverse);
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+.dash-hero-unit {
+  margin-left: 6px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  color: rgba(255, 255, 255, 0.65);
+}
+.dash-hero-time {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 右栏：各阶段构成（表头 + 条形行） */
+.dash-hero-panel {
+  min-width: 0;
+}
+.dash-hero-panel-title {
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.55);
+}
+.dash-hero-thead {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 88px 56px;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.5);
+}
+/* 「占比」固定在第 4 列（与数据行右列对齐） */
+.dash-hero-thead-ratio {
+  grid-column: 4;
+  text-align: right;
+}
+.dash-hero-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dash-bar {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 88px 56px;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 24px;
+}
+.dash-bar-label {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.dash-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-dash-mint);
+}
+.dash-bar-value {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-inverse);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dash-bar-ratio {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.55);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dash-hero-blank {
+  padding: 48px var(--space-md);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+/* ===================== 概览两行：左宽右窄 ===================== */
+.dash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.dash-row:last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 1200px) {
+  .dash-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 工作台卡片：标题无分隔线，内容区上下留白更紧 */
+.dash-card > .card-title {
+  padding: var(--space-md) var(--space-lg) 0;
+  border-bottom: none;
+  font-size: var(--font-size-lg);
+}
+.dash-card > .card-body {
+  padding: var(--space-md) var(--space-lg) 20px;
+}
+
+/* 核算进度：左侧强调统计 */
+.dash-progress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+.dash-progress-item {
+  padding: 2px 0 2px var(--space-md);
+  border-left: 3px solid var(--color-border);
+}
+.dash-progress-item.is-pending {
+  border-color: var(--color-warning);
+}
+.dash-progress-item.is-done {
+  border-color: var(--color-success);
+}
+.dash-progress-value {
+  font-size: 28px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.15;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.dash-progress-label {
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* 待核算待办条 */
+.dash-todo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-dash-todo-bg);
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.dash-todo:hover {
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-sm);
+}
+.dash-todo-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.dash-todo-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-dash-icon-bg);
+  color: var(--color-dash-icon-fg);
+}
+.dash-todo-text {
+  min-width: 0;
+}
+.dash-todo-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+.dash-todo-name {
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-todo-meta {
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.dash-todo-go {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-base);
+  background: var(--color-dash-accent);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.dash-todo:hover .dash-todo-go {
+  background: var(--color-dash-accent-hover);
+}
+.dash-todo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 组织统计：三列居中 + 圆形图标，无分隔线 */
+.dash-org-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+.dash-org-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.dash-org-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-xs);
+  border-radius: 50%;
+  background: var(--color-dash-icon-bg);
+  color: var(--color-dash-icon-fg);
+}
+.dash-org-value {
+  font-size: 24px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.dash-org-label {
+  margin-top: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ===================== 碳足迹概览（表格） ===================== */
+.dash-table {
+  width: 100%;
+}
+.dash-table-head,
+.dash-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.7fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.85fr)
+    minmax(0, 1.1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xs);
+}
+.dash-table-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.dash-table-row {
+  height: 44px;
+  border-bottom: 1px solid var(--color-border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.dash-table-row:hover {
+  background: var(--color-bg-spotlight);
+}
+.dash-table-row > span:not(.dash-table-value) {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-table-row > span {
+  min-width: 0;
+}
+.dash-table-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+.dash-table-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-success);
+  overflow: visible;
+}
+.dash-table-value b {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.dash-table-value em {
+  font-style: normal;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.dash-fp-empty {
+  padding: var(--space-lg) var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-base);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* ===================== 碳报告（单行列表） ===================== */
+.dash-report-more {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.dash-report-more:hover {
+  text-decoration: underline;
+}
+.dash-report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dash-report-item-wrap + .dash-report-item-wrap {
+  border-top: 1px solid var(--color-border-secondary);
+}
+.dash-report-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--space-xs);
+  border-radius: var(--radius-base);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.dash-report-item:hover {
+  background: var(--color-bg-spotlight);
+}
+.dash-report-doc {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-spotlight);
+  color: var(--color-text-tertiary);
+}
+.dash-report-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-report-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-tertiary);
+}
+.dash-report-date {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+.dash-report-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) var(--space-md);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.dash-report-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-base);
+  background: var(--color-bg-disabled);
+  color: var(--color-text-placeholder);
+}
+
+/* ===================== 窄屏：表格横向滚动，不挤压换行 ===================== */
+@media (max-width: 768px) {
+  .dash-intro {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .dash-hero-panel {
+    overflow-x: auto;
+  }
+  .dash-hero-thead,
+  .dash-hero-stages {
+    min-width: 460px;
+  }
+  .dash-table {
+    overflow-x: auto;
+  }
+  .dash-table-head,
+  .dash-table-row {
+    min-width: 640px;
+  }
+  .dash-todo-name {
+    max-width: 180px;
+  }
+}

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>竹木产品碳足迹核算系统 · 标准架构（单页版）</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --ink:#1d2129; --ink2:#4e5969; --ink3:#86909c;
+    --line:#e3e7ee; --bg:#ffffff;
+    --c-access:#5b5fc7; --c-app:#1b5fd0; --c-svc:#0d8f8f; --c-data:#b8760f; --c-infra:#5a6572;
+  }
+  html,body{ width:1920px; height:1080px; overflow:hidden;
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  .board{ width:1920px; height:1080px; padding:30px 40px 24px; display:flex; flex-direction:column; }
+
+  /* ── header ── */
+  header{ flex:0 0 auto; display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:16px; }
+  h1{ font-size:40px; font-weight:800; letter-spacing:.5px; line-height:1.1; }
+  h1 em{ font-style:normal; color:var(--c-app); }
+  .sub{ font-size:15px; color:var(--ink3); margin-top:9px; letter-spacing:.3px; }
+  .pill{ font-size:12px; letter-spacing:1.4px; color:var(--ink3); border:1px solid var(--line);
+         border-radius:999px; padding:8px 16px; margin-bottom:4px; white-space:nowrap; }
+
+  /* ── layers ── */
+  .layers{ flex:1 1 auto; display:flex; flex-direction:column; gap:13px; min-height:0; }
+
+  .layer{ display:flex; flex:1 1 auto; border-radius:12px; border:1px solid var(--line); overflow:hidden;
+          box-shadow:0 1px 2px rgba(29,33,41,.04); min-height:0; }
+
+  .tab{ flex:0 0 236px; padding:14px 20px; color:#fff; display:flex; flex-direction:column; justify-content:center; }
+  .t-no{ font-size:10px; letter-spacing:2px; opacity:.62; font-weight:700; }
+  .t-name{ font-size:27px; font-weight:800; margin-top:6px; letter-spacing:.5px; line-height:1.15; }
+  .t-en{ font-size:9.5px; letter-spacing:1.5px; opacity:.6; text-transform:uppercase; margin-top:5px; }
+  .t-note{ font-size:13px; opacity:.9; margin-top:10px; letter-spacing:.3px; }
+
+  .body{ flex:1; padding:12px 16px; display:flex; flex-direction:column; justify-content:center; gap:9px; }
+
+  .row{ display:flex; align-items:center; gap:9px; flex-wrap:nowrap; }
+  .row-tag{ flex:0 0 auto; min-width:82px; font-size:13px; color:var(--ink3); font-weight:600; letter-spacing:.5px;
+            padding-right:4px; white-space:nowrap; }
+
+  .chip{ flex:1 1 0; display:flex; align-items:center; justify-content:center;
+         font-size:20px; font-weight:600; color:var(--ink); line-height:1.15;
+         padding:13px 8px; border-radius:9px; background:#fff;
+         border:1px solid #dfe4ec; border-left:4px solid var(--c-app); white-space:nowrap;
+         letter-spacing:.2px; }
+  .chip.sm{ font-size:18px; font-weight:600; padding:12px 6px; }
+  .chip.mono{ font-size:17px; letter-spacing:.2px; font-weight:600; color:#3b5878;
+              background:#f6f8fc; border-color:#d7e0ee; border-left-color:#8aa3c4; }
+  .chip.duo{ flex-direction:column; gap:6px; padding:15px 12px; }
+  .chip.duo .n{ font-size:22px; font-weight:700; letter-spacing:.4px; }
+  .chip.duo .d{ font-size:13px; font-weight:500; color:var(--ink3); letter-spacing:.2px; }
+
+  .tint-access .chip{ border-left-color:var(--c-access); }
+  .tint-app    .chip{ border-left-color:var(--c-app); }
+  .tint-svc    .chip{ border-left-color:var(--c-svc); }
+  .tint-data   .chip{ border-left-color:var(--c-data); }
+  .tint-infra  .chip{ border-left-color:var(--c-infra); }
+
+  .g-access{ background:linear-gradient(150deg,#6a6ed6,#4a4ea8); }
+  .g-app   { background:linear-gradient(150deg,#2a70e0,#1549a8); }
+  .g-svc   { background:linear-gradient(150deg,#12a0a0,#0a6f6f); }
+  .g-data  { background:linear-gradient(150deg,#c98816,#9a6508); }
+  .g-infra { background:linear-gradient(150deg,#6b7684,#485260); }
+
+  /* ── basis ── */
+  .basis{ flex:0 0 auto; display:flex; align-items:center; gap:16px; padding-top:14px; }
+  .basis-k{ font-size:13.5px; font-weight:700; color:var(--ink2); letter-spacing:.8px; white-space:nowrap; }
+  .basis-line{ flex:1; height:1px; background:var(--line); }
+  .basis-v{ font-size:13.5px; color:var(--ink3); letter-spacing:.3px; white-space:nowrap; }
+  .basis-v b{ color:var(--ink2); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <header>
+    <div>
+      <h1>竹木产品碳足迹核算系统 · <em>标准架构</em></h1>
+      <div class="sub">五层架构 · 三端一体 · 51 项末级功能 · 依据 GB/T 24067-2024 与国际标准族</div>
+    </div>
+    <div class="pill">PCF PLATFORM ARCHITECTURE</div>
+  </header>
+
+  <div class="layers">
+
+    <!-- L1 -->
+    <section class="layer tint-access">
+      <div class="tab g-access">
+        <div class="t-no">LAYER 01</div>
+        <div class="t-name">用户与接入层</div>
+        <div class="t-en">Access</div>
+        <div class="t-note">三端共用一套系统</div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <span class="chip duo">
+            <span class="n">企业用户端</span>
+            <span class="d">日常碳足迹核算与自建管理</span>
+          </span>
+          <span class="chip duo">
+            <span class="n">租户管理端</span>
+            <span class="d">本租户信息 · 组织 · 成员角色</span>
+          </span>
+          <span class="chip duo">
+            <span class="n">平台运营端</span>
+            <span class="d">基础库 · 模型发布 · 账号权限</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- L2 -->
+    <section class="layer tint-app" style="flex-grow:2.2;">
+      <div class="tab g-app">
+        <div class="t-no">LAYER 02</div>
+        <div class="t-name">应用层</div>
+        <div class="t-en">Application</div>
+        <div class="t-note">51 项末级功能</div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <span class="row-tag">产品碳足迹</span>
+          <span class="chip sm">核算工作台</span>
+          <span class="chip sm">四步核算</span>
+          <span class="chip sm">报告编制</span>
+          <span class="chip sm">DQR 质量评价</span>
+          <span class="chip sm">敏感性分析</span>
+          <span class="chip sm">我的产品库</span>
+          <span class="chip sm">我的工艺库</span>
+          <span class="chip sm">因子与模型</span>
+        </div>
+        <div class="row">
+          <span class="row-tag"></span>
+          <span class="chip sm">能耗台账</span>
+          <span class="chip sm">运输台账</span>
+          <span class="chip sm">含碳量检测</span>
+          <span class="chip sm">文件管理</span>
+          <span class="chip sm">行业数据集</span>
+          <span class="chip sm">木竹碳知识</span>
+          <span class="chip sm">标准规范</span>
+          <span class="chip sm">典型案例</span>
+        </div>
+        <div class="row">
+          <span class="row-tag">系统管理</span>
+          <span class="chip sm">产品品类</span>
+          <span class="chip sm">工艺工序</span>
+          <span class="chip sm">基础库</span>
+          <span class="chip sm">碳核算知识库</span>
+          <span class="chip sm">基线与标签</span>
+          <span class="chip sm">模型管理</span>
+          <span class="chip sm">系统参数</span>
+          <span class="chip sm">组织与权限</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- L3 -->
+    <section class="layer tint-svc">
+      <div class="tab g-svc">
+        <div class="t-no">LAYER 03</div>
+        <div class="t-name">服务层</div>
+        <div class="t-en">Platform Services</div>
+        <div class="t-note">10 类核心服务</div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <span class="chip">核算引擎</span>
+          <span class="chip">生物碳核算</span>
+          <span class="chip">因子匹配</span>
+          <span class="chip">模型发布引用</span>
+          <span class="chip">权限与数据范围</span>
+          <span class="chip">多租户隔离</span>
+          <span class="chip">导入导出</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- L4 -->
+    <section class="layer tint-data">
+      <div class="tab g-data">
+        <div class="t-no">LAYER 04</div>
+        <div class="t-name">数据层</div>
+        <div class="t-en">Data</div>
+        <div class="t-note">平台公共 + 租户私有</div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <span class="chip">主数据域</span>
+          <span class="chip">因子与模型域</span>
+          <span class="chip">核算业务域</span>
+          <span class="chip">报告与文件域</span>
+          <span class="chip">知识与基线域</span>
+          <span class="chip">组织与权限域</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- L5 -->
+    <section class="layer tint-infra">
+      <div class="tab g-infra">
+        <div class="t-no">LAYER 05</div>
+        <div class="t-name">技术栈</div>
+        <div class="t-en">Infrastructure</div>
+        <div class="t-note">原型实测版本</div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <span class="chip mono">React 18.3</span>
+          <span class="chip mono">TypeScript 5.6</span>
+          <span class="chip mono">Vite 5.4</span>
+          <span class="chip mono">TDesign 1.18</span>
+          <span class="chip mono">Router 6.26</span>
+          <span class="chip mono">mermaid 11</span>
+          <span class="chip mono">xlsx 0.18</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="basis">
+    <span class="basis-k">核算依据标准</span>
+    <span class="basis-v"><b>GB/T 24067-2024</b> · ISO 14067 · PAS 2050 · <b>GB/T 44290-2024</b> · LY/T 3436-2025 · T/CBIAS 2108-2025 · GB/T 24064 · ISO 14025</span>
+    <span class="basis-line"></span>
+  </div>
+
+</div>
+</body>
+</html>

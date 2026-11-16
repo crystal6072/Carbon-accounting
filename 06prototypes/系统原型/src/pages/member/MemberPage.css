@@ -1,0 +1,701 @@
+/* 成员管理（租户端 · 系统管理）：列表 + 新建 / 关联 / 编辑 + 停启用 / 移出 / 重置密码 / 有效权限 / 详情 */
+
+/* ===================== 列表页骨架（shadcn 风格：白底卡片 + 浅边框 + 圆角 + 轻阴影） ===================== */
+.member-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 24px 32px;
+  min-height: 100%;
+}
+
+/* 工具条：shadcn Card 容器，筛选区在左、批量操作在右 */
+.member-page .toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.member-page .toolbar-left,
+.member-page .toolbar-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* 筛选控件宽度：搜索框略宽，下拉筛选统一窄宽 */
+.member-page .toolbar-left .input {
+  width: 220px;
+}
+.member-page .toolbar-left .select,
+.member-page .toolbar-left .multi-select {
+  width: 128px;
+}
+.member-page .toolbar-left .cascader-select {
+  width: 148px;
+}
+
+/* shadcn 控件观感：6px 圆角 + 轻过渡 */
+.member-page .btn,
+.member-page .input,
+.member-page .select {
+  border-radius: 6px;
+}
+
+/* 表格卡片：内嵌表格、圆角裁切、表头浅灰 */
+.member-page .table-card {
+  background: var(--color-bg-container);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.member-page .table-card .data-table thead th {
+  padding: 10px 16px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.member-page .table-card .data-table tbody td {
+  padding: 12px 16px;
+}
+
+/* 分页：右对齐、不占卡片 */
+.member-page .pagination {
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.member-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* 顶部软引导（浅色、可关闭、非告警、不阻断） */
+.soft-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-spotlight, rgba(0, 0, 0, 0.03));
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.soft-tip .soft-tip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+  flex: none;
+}
+.soft-tip .soft-tip-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+}
+.soft-tip .soft-tip-close:hover {
+  color: var(--color-text-secondary);
+}
+
+/* 批量新增成员：行内输入表格 */
+.batch-table-wrap {
+  margin-bottom: var(--space-md);
+  overflow-x: auto;
+}
+.batch-input {
+  width: 100%;
+  min-width: 96px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+.batch-error {
+  color: var(--color-error, #d4380d);
+  font-size: var(--font-size-sm);
+}
+
+/* 列表：列较多，容器内横向滚动兜底 */
+.member-table-wrap {
+  overflow-x: auto;
+}
+.member-table-wrap .data-table thead th,
+.member-table-wrap .data-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* 角色标签组 */
+.member-role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 所属组织选到根组织时的轻提示（灰字，非告警） */
+.dept-root-tip {
+  margin: 6px 0 0;
+  color: var(--color-text-tertiary);
+}
+
+/* 「主管理员」与「本人」标记 */
+.member-primary-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-error-bg, rgba(214, 73, 51, 0.08));
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+.member-self-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-primary-bg, rgba(0, 82, 217, 0.08));
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+}
+
+/* 表单：加入方式切换 */
+.member-join-modes {
+  display: flex;
+  gap: var(--space-lg);
+}
+.member-join-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 表单：手机号 + 查找账号按钮同行 */
+.member-mobile-field {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+.member-mobile-field > :first-child {
+  flex: 1;
+}
+
+/* 关联已有账号：命中账号信息卡 */
+.member-link-hit {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-sm);
+  background: var(--color-success-bg, rgba(0, 168, 112, 0.08));
+  margin-bottom: var(--space-md);
+}
+.member-link-hit-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+
+/* 重置密码：方式单选 */
+.member-reset-modes {
+  display: flex;
+  gap: var(--space-lg);
+}
+.member-reset-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 一次性密码展示框 */
+.member-onetime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px dashed var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg, rgba(230, 162, 60, 0.08));
+}
+.member-onetime-code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 2px;
+  color: var(--color-warning);
+}
+
+/* 手机号探测提示横幅（新建成员：待确认关联 / 关联模式 / 已是本租户成员防呆） */
+.member-probe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  margin-top: calc(-1 * var(--space-xs));
+  padding: var(--space-xs) var(--space-sm);
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.06));
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-lg);
+}
+.member-probe-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+/* 关联模式：确认已锁定，绿色系 + 「取消关联」后悔药入口 */
+.member-probe-linked {
+  border-left-color: var(--color-success);
+  background: var(--color-success-bg, rgba(0, 168, 112, 0.08));
+}
+.member-probe-linked .member-probe-text {
+  color: var(--color-text-primary);
+}
+/* 已是本租户成员：红色警告横幅（配合禁用提交按钮） */
+.member-probe-danger {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-bg, rgba(224, 82, 82, 0.08));
+}
+.member-probe-danger .member-probe-text {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-medium, 500);
+}
+.member-probe-danger .link {
+  color: var(--color-danger);
+  text-decoration: underline;
+  margin-left: var(--space-xs);
+}
+/* 「关联该账号」确认按钮 */
+.member-probe-action {
+  flex: none;
+  padding: 3px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg, #fff);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.member-probe-action:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+/* 「取消关联，重新输入手机号」后悔药按钮 */
+.member-probe-cancel {
+  flex: none;
+  padding: 3px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.member-probe-cancel:hover {
+  color: var(--color-danger);
+}
+
+/* 影响确认勾选项 */
+.member-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-lg);
+  cursor: pointer;
+}
+
+/* 移出：名下业务数据提示 */
+.member-remove-data {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg, rgba(230, 162, 60, 0.08));
+  margin-bottom: var(--space-md);
+}
+.member-remove-data-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+}
+
+/* ===== 成员管理 · UI/UX 交互调整 ===== */
+
+/* 模块二：强化表头层级（与下方灰色数据拉开视觉层级） */
+.member-page .data-table thead th {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #1f2d3d);
+  background: var(--color-bg-muted, #f5f7fa);
+}
+
+/* 模块二：行 Hover 效果，帮助视线聚焦 */
+.member-page .data-table tbody tr:hover {
+  background: var(--color-bg-spotlight, #f3f6f9);
+}
+
+/* 模块一：搜索框（带 🔍 图标） */
+.member-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.member-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-tertiary, #8a94a6);
+  pointer-events: none;
+}
+.member-search-input {
+  padding-left: 30px !important;
+  width: 220px;
+}
+
+/* 模块三：独立红色「移出」操作 */
+.member-remove-link {
+  margin-left: var(--space-sm);
+}
+
+/* 模块四：手机号脱敏展示组件 */
+.sensitive-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sensitive-phone-mask {
+  letter-spacing: 0.5px;
+}
+.sensitive-phone-eye {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-tertiary, #8a94a6);
+  cursor: pointer;
+}
+.sensitive-phone-eye:hover {
+  color: var(--color-primary, #2f6bff);
+}
+.sensitive-phone-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: var(--color-text-primary, #1f2d3d);
+  color: #fff;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 12px);
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.sensitive-phone-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--color-text-primary, #1f2d3d);
+}
+
+/* 轻量悬浮提示 Tooltip */
+.tooltip-wrap {
+  display: inline-flex;
+}
+.tooltip-bubble {
+  position: fixed;
+  z-index: 1000;
+  padding: 4px 10px;
+  background: var(--color-text-primary, #1f2d3d);
+  color: #fff;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 12px);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+/* 模块二：空状态设计 */
+.member-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+.member-empty-state .empty-illustration {
+  margin-bottom: var(--space-md);
+}
+.member-empty-state .empty-title {
+  font-size: var(--font-size-lg, 15px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #1f2d3d);
+}
+.member-empty-state .empty-tip {
+  margin: var(--space-xs) 0 var(--space-md);
+  color: var(--color-text-tertiary, #8a94a6);
+  font-size: var(--font-size-sm, 12px);
+}
+
+/* 模块四：编辑弹窗手机号（只读脱敏 → 修改） */
+.member-phone-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.member-phone-mask {
+  font-size: var(--font-size-base, 14px);
+}
+.member-phone-edit {
+  border: none;
+  background: none;
+  color: var(--color-primary, #2f6bff);
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-sm, 12px);
+}
+.member-phone-edit-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.member-phone-cancel {
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary, #8a94a6);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 12px);
+}
+
+/* 模块二：分页器（每页条数切换 / 页码跳转） */
+.pagination .pagination-size {
+  width: auto;
+  min-width: 96px;
+  margin-left: var(--space-sm);
+}
+.pagination .pagination-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 var(--space-sm);
+}
+.pagination .pagination-jump-input {
+  width: 64px;
+}
+.pagination .pagination-jump-btn {
+  margin-left: 4px;
+}
+
+/* 有效权限：角色清单 + 功能点表 */
+.member-perm-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
+}
+.member-perm-table-wrap {
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.member-perm-check {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 详情弹窗：操作记录表 */
+.member-detail-logs {
+  margin-top: var(--space-md);
+}
+
+/* 已禁用 / 已移出成员行置灰展示 */
+.member-row-disabled td {
+  color: var(--color-text-tertiary, #bbb);
+  background: var(--color-fill-tertiary, rgba(0, 0, 0, 0.02));
+}
+.member-row-disabled .mono,
+.member-row-disabled .nowrap,
+.member-row-disabled .member-role-tags {
+  opacity: 0.6;
+}
+
+/* 操作列：禁用态按钮（用于唯一管理员等防误操作场景） */
+.row-actions .link:disabled,
+.row-actions-menu-item.is-disabled {
+  color: var(--color-text-disabled, #ccc);
+  cursor: not-allowed;
+}
+
+/* ===================== 新建成员 · 字段合并与密码智能兜底 ===================== */
+.member-account-hint {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 单个密码输入框：右侧内置「眼睛」与「随机生成」快捷按钮 */
+.member-password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.member-password-field .input {
+  flex: 1;
+  padding-right: 152px;
+}
+.member-password-eye,
+.member-password-random {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+}
+.member-password-eye {
+  right: 96px;
+  width: 28px;
+  height: 28px;
+}
+.member-password-random {
+  right: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-left: 1px solid var(--color-border-secondary);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+.member-password-eye:hover,
+.member-password-random:hover {
+  color: var(--color-primary);
+}
+
+/* 密码强度实时校验 */
+.member-strength {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+.member-strength > span:not(.member-strength-valid):not(.member-strength-invalid)::before {
+  content: '○';
+  margin-right: 4px;
+}
+.member-strength > span.ok {
+  color: var(--color-success);
+}
+.member-strength > span.ok::before {
+  content: '●';
+}
+.member-strength-valid {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+.member-strength-invalid {
+  color: var(--color-warning);
+}
+
+/* ===================== 新建成员 · 结果反馈页 ===================== */
+.member-result-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+.member-result-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-success-bg, rgba(0, 168, 112, 0.12));
+}
+.member-result-card {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.member-result-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 14px var(--space-md);
+}
+.member-result-row + .member-result-row {
+  border-top: 1px solid var(--color-border-secondary);
+}
+.member-result-row:nth-child(odd) {
+  background: var(--color-fill-1, rgba(0, 0, 0, 0.02));
+}
+.member-result-label {
+  flex: none;
+  width: 108px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.member-result-value {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+.member-result-code {
+  font-family: var(--font-family-mono, monospace);
+  letter-spacing: 1px;
+}
+.member-result-password {
+  font-size: var(--font-size-lg);
+  color: var(--color-warning);
+}
+.member-result-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: var(--space-md) 0 var(--space-xs);
+  padding: 10px 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg, rgba(230, 162, 60, 0.08));
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-lg);
+}
+.member-result-tip svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-warning);
+}
